@@ -1,0 +1,262 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForRecordHome,lightning:actionOverride"
+    controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
+    <aura:attribute name="jobDetails" type="ClusterJobDetailsUiModel" access="public" />
+    <aura:attribute name="isVisible" type="Boolean" access="private" />
+    <aura:attribute name="silhouetteStrength" type="String" access="private" default="0" />
+    <aura:attribute name="epsilon" type="Integer" access="private" default="10" />
+    <aura:attribute name="perplexity" type="Integer" access="private" default="30" />
+    <aura:attribute name="timeoutId" type="Integer" access="private" default="0" />
+    <aura:attribute name="isEditMode" type="Boolean" access="private" default="false" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    <div class="c-container slds-scope slds-container slds-panel">
+        <lightning:layout multipleRows="true" verticalAlign="start">
+            <lightning:layoutItem padding="around-small" size="12">
+                <lightning:layout verticalAlign="start" multipleRows="true">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="slds-text-heading_medium">Job details:</div>
+                        <div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Job Name</span>
+                                        <div class="slds-form-element__control">
+
+                                            <aura:if isTrue="{!v.isEditMode}">
+                                                <div class="slds-form-element__control slds-grow">
+                                                    <input type="text" aura:id="jobNameInput"
+                                                        class="slds-input jobNameInput"
+                                                        value="{!v.jobDetails.jobName}" />
+                                                    <lightning:button title="Save" variant="base"
+                                                        iconName="utility:save" onclick="{!c.saveJobNameClick}" />
+                                                    <lightning:button title="Cancel" variant="base"
+                                                        iconName="utility:undo" onclick="{!c.cancelJobNameClick}" />
+                                                </div>
+                                                <aura:set attribute="else">
+                                                    <div class="slds-form-element__static">
+                                                        {!v.jobDetails.jobName} &nbsp;
+                                                        <lightning:button title="Edit job name" variant="base"
+                                                            iconName="utility:edit" onclick="{!c.editJobNameClick}" />
+                                                    </div>
+                                                    <div></div>
+                                                </aura:set>
+                                            </aura:if>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Job Number</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.name}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Job Status</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.status}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Object Name</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.objectName}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Model</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.model.name}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Algorithm</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.model.algorithm}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Number of clusters</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.numberOfClusters}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Silhouette score</span>
+                                        <lightning:helptext
+                                            content="Shows Silhouette score of all clusters in the job. Value ranges from −1 to +1, a high value indicates that the objects are well matched to their clusters" />
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">
+                                                <lightning:formattedNumber value="{!v.jobDetails.score}"
+                                                    maximumFractionDigits="4" />
+                                                <lightning:dynamicIcon type="strength" option="{!v.silhouetteStrength}"
+                                                    class="silIcon" />
+                                            </div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Number of records</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.numberOfRecords}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Created by</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.createdByName}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Start date</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.startDate}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>                                    
+                                </div>
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">End date</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.endDate}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>                                    
+                                </div>
+                            </div>
+                            <div class="slds-form__row">
+                                <div class="slds-form__item" role="listitem">
+                                    <div class="slds-form-element slds-form-element_stacked">
+                                        <span class="slds-form-element__label">Job Status Details</span>
+                                        <div class="slds-form-element__control">
+                                            <div class="slds-form-element__static">{!v.jobDetails.statusText}</div>
+                                            <div></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="page-section page-left">
+                            <div class="slds-text-heading_medium">Clusters:</div>
+                            <div>
+                                <aura:if isTrue="{!v.jobDetails.status == 'Completed'}">
+                                    <lightning:layout multipleRows="true" verticalAlign="start">
+                                        <aura:iteration items="{!v.jobDetails.clusters}" var="cluster"
+                                            indexVar="clusterIndex">
+                                            <lightning:layoutItem padding="around-small" size="6">
+                                                <c:ClusterDetails jobDetails="{!v.jobDetails}" cluster="{!cluster}"
+                                                    clusterIndex="{!clusterIndex}" />
+                                            </lightning:layoutItem>
+                                        </aura:iteration>
+                                    </lightning:layout>
+                                    <aura:set attribute="else">
+                                        <aura:if
+                                            isTrue="{!(empty(v.jobDetails.status)) || (v.jobDetails.status == 'New') || (v.jobDetails.status == 'InProgress')}">
+                                            <div>Cluster job is running</div>
+                                            <div class="spinnerHolder">
+                                                <lightning:spinner alternativeText="Loading" size="small" />
+                                            </div>
+                                            <lightning:button variant="destructive" iconPosition="left"
+                                                iconName="utility:close" onclick="{!c.cancelButtonClick}"
+                                                label="Cancel job" />
+                                            <aura:set attribute="else">
+                                                Cluster job is {!v.jobDetails.status}
+                                            </aura:set>
+                                        </aura:if>
+                                    </aura:set>
+                                </aura:if>
+                            </div>
+                        </div>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </lightning:layoutItem>
+            <lightning:layoutItem flexibility="auto" padding="around-small" size="12">
+                <div class="page-section page-right">
+                    <div class="slds-text-heading_medium">t-SNE Plot
+                        <lightning:helptext class="tsnehelptext"
+                            content="t-SNE is a nonlinear dimensionality reduction technique well-suited for embedding high-dimensional data for visualization in a low-dimensional space. 
+                        t-SNE does not preserve distances, it only preserves nearest neighbors, so visualization of clusters might not match with the clustering algorithm results. t-SNE is a probabilistic algorithm, each consecutive run might produce a different output" />
+                        <span class="slds-text-body_small slds-text-color_weak">Scroll to zoom, max
+                            {!v.jobDetails.maxGraphDataPoints} data points will be displayed</span></div>
+                    <aura:if isTrue="{!(v.jobDetails.status == 'Completed')}">
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col tsneGraph">
+                                <c:ClusterTSNE aura:id="tsneGraph" initJobDetails="false" width="800" height="600"
+                                    collide="true" />
+                            </div>
+                            <div class="slds-col tsneParams">
+                                <div class="slds-text-heading_small">t-SNE Parameters:</div>
+                                <div>
+                                    <lightning:input type="checkbox" label="Collide" aura:id="collideInput"
+                                        onchange="{!c.tsneParameterChange}" checked="true" />
+                                </div>
+                                <div>
+                                    <lightning:slider label="Epsilon" size="x-small" value='{!v.epsilon}'
+                                        onchange="{!c.tsneParameterChange}" min="0" max="20" step="1" />
+                                </div>
+                                <div>
+                                    <lightning:slider label="Perplexity" size="x-small" value='{!v.perplexity}'
+                                        onchange="{!c.tsneParameterChange}" min="0" max="500" step="1" />
+                                </div>
+                            </div>
+                        </div>
+                        <aura:set attribute="else">
+                            <aura:if
+                                isTrue="{!(empty(v.jobDetails.status)) || (v.jobDetails.status == 'New') || (v.jobDetails.status == 'InProgress')}">
+                                <div>Cluster job is running</div>
+                                <div class="spinnerHolder">
+                                    <lightning:spinner alternativeText="Loading" size="small" />
+                                </div>
+                                <aura:set attribute="else">
+                                    Cluster job is {!v.jobDetails.status}
+                                </aura:set>
+                            </aura:if>
+                        </aura:set>
+                    </aura:if>
+
+                </div>
+
+            </lightning:layoutItem>
+        </lightning:layout>
+    </div>
+</aura:component>

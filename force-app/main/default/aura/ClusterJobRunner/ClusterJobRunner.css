@@ -1,0 +1,25 @@
+.THIS {
+    height: 100%;
+}
+.THIS .cjr-card {
+    height: 100%;
+}
+.THIS .cjr-card .slds-card__header {
+    height: 60px;
+    position: relative;
+}
+.THIS .cjr-card .slds-card__footer {
+    height: 80px;
+    width: 100%;
+}
+.THIS .slds-card__body {
+    height: calc(100% - 170px);
+    overflow-y: auto;
+}
+.THIS .cjr-body {
+    width: 99%;
+    height: auto;
+}
+.THIS .cjr-models {
+    height: 100%;
+}

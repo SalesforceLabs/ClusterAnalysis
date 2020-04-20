@@ -1,0 +1,74 @@
+<aura:component access="global">
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <aura:attribute name="fields" type="List" default="[]" />
+    <aura:attribute name="expressionFields" type="List" default="[]" />
+    <aura:attribute name="operations" type="List" default="[
+        {'label': 'Equals', 'value': 'EQ'},
+        {'label': 'Does Not Equal', 'value': 'NE'},
+        {'label': 'Greater Than', 'value': 'GT'},
+        {'label': 'Less Than', 'value': 'LT'},
+        {'label': 'Starts With', 'value': 'SW'},
+        {'label': 'Ends With', 'value': 'EW'},
+        {'label': 'Contains', 'value': 'LK'},
+        {'label': 'In', 'value': 'IN'},
+        {'label': 'Not In', 'value': 'NI'},
+        ]"
+        access="private" />
+    <aura:attribute name="customLogic" type="String" default="" />
+    <aura:registerEvent name="queryChangeEvent" type="c:QueryChangeEvent"/>
+    <aura:method name="validate" action="{!c.validate}" description="Validate expressions" /> 
+    <aura:method name="setModelFilter" action="{!c.setModelFilter}" description="Validate expressions" >
+            <aura:attribute name="filter" type="Object"/>
+    </aura:method>
+    <div class="slds-expression">
+        <div class="slds-expression__options">
+            <div class="slds-form-element"></div>            
+            <ul>
+                <aura:iteration items="{!v.expressionFields}" var="expressionField">
+                    <li class="slds-expression__row">
+                        <fieldset>
+                            <legend class="slds-expression__legend">
+                                <span>{!_index + 1}</span>
+                                <span class="slds-assistive-text">Condition {!_index + 1}</span>
+                            </legend>
+                            <div class="slds-grid slds-gutters_xx-small">
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <lightning:combobox aura:id="fieldComboBox" label="Select a field:" placeholder="Select a field" required="true"
+                                            options="{!v.fields}" onchange="{!c.fieldSelectChange}" value="{!expressionField.fieldValue}"
+                                            spinnerActive="false" name="{!'fcb_' + _index}" />
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-grow-none">
+                                    <div class="slds-form-element">
+                                        <lightning:combobox aura:id="operationComboBox" label="Operation" placeholder="Select Operarion" options="{!v.operations}"
+                                            value="{!expressionField.operation}" required="true" onchange="{!c.customLogicChange}" />
+                                    </div>
+                                </div>
+                                <div class="slds-col">
+                                    <div class="slds-form-element">
+                                        <c:ExpressionValueInput aura:id="evInput" expressionField="{!expressionField}"/>
+                                    </div>
+                                </div>
+                                <div class="slds-col slds-grow-none">
+                                    <div class="slds-form-element">
+                                        <lightning:button value="{!_index}" iconName="utility:delete" iconPosition="left"
+                                            class="deleteExpressionButton" variant="destructive" onclick="{!c.expressionDeleteClick}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </li>
+                </aura:iteration>
+            </ul>
+            <aura:if isTrue="{!v.expressionFields.length > 0}">
+                <div class="slds-expression__custom-logic">
+                    <lightning:input type="text" label="Custom Logic" value="{!v.customLogic}" onblur="{!c.customLogicChange}" />
+                </div>
+            </aura:if>
+            <div class="slds-expression__buttons">
+                <lightning:button label="Add Condition" iconName="utility:add" iconPosition="left" onclick="{!c.expressionAddClick}" />
+            </div>
+        </div>
+    </div>
+</aura:component>

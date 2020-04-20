@@ -1,0 +1,6 @@
+<aura:documentation>
+	<aura:description>Cluster Model Builder Component</aura:description>
+	<aura:example name="ExampleName" ref="exampleComponentName" label="Label">
+		Example Description
+	</aura:example>
+</aura:documentation>

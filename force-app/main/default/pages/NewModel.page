@@ -1,0 +1,26 @@
+<apex:page standardController="ClusterModel__c" sidebar="false" lightningStylesheets="true">
+    <apex:includeLightning />
+    <apex:slds />
+    <!--Lightning Container-->
+    <div style="width:100%;height:700px;" id="LightningContainer" />
+
+    <script type="text/javascript">
+        //Create Lightning Component
+        var recordId = '{!ClusterModel__c.Id}';
+        if (recordId == '') recordId = null;
+        var vfCallBack = function () {
+            if ((typeof sforce != 'undefined') && sforce && (!!sforce.one)) {
+                sforce.one.navigateToURL('{!URLFOR($Action.ClusterModel__c.Tab, $ObjectType.ClusterModel__c)}');
+            }
+            else {
+                window.location = '{!URLFOR($Action.ClusterModel__c.Tab, $ObjectType.ClusterModel__c)}';
+            }
+        };
+        $Lightning.use("clustan:ClusterModelBuilderApp", function () {
+            $Lightning.createComponent("clustan:ClusterModelBuilder", { recordId: recordId, vfCallBack: vfCallBack }, "LightningContainer", function (component) {
+                console.log('Component created');
+            });
+        });
+
+    </script>
+</apex:page>

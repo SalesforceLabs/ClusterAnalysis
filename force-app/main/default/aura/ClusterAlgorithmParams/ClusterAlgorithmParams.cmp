@@ -1,0 +1,32 @@
+<aura:component access="global">
+    <aura:attribute name="parameters" type="List" access="public" />
+    <div class="slds-form paramsForm slds-scrollable" style="max-height: 200px">
+        <aura:iteration items="{!v.parameters}" var="parameter">
+            <div class="slds-form-element">
+                <aura:if isTrue="{!parameter.type == 'INTEGER_PARAMETER'}">
+                    <lightning:input type="number" label="{!parameter.description}" value="{!parameter.value}"
+                        required="true" />
+                </aura:if>
+                <aura:if isTrue="{!parameter.type == 'STRING_PARAMETER'}">
+                    <lightning:input type="text" label="{!parameter.description}" value="{!parameter.value}"
+                        required="true" />
+                </aura:if>
+                <aura:if isTrue="{!parameter.type == 'DECIMAL_PARAMETER'}">
+                    <lightning:input type="number" label="{!parameter.description}" value="{!parameter.value}"
+                        required="true" />
+                </aura:if>
+                <aura:if isTrue="{!parameter.type == 'BOOLEAN_PARAMETER'}">
+                    <lightning:input type="checkbox" label="{!parameter.description}" checked="{!parameter.value}" />
+                </aura:if>
+                <aura:if isTrue="{!parameter.type == 'SELECT_PARAMETER'}">
+                    <lightning:select label="{!parameter.description}" value="{!parameter.value}" required="true">
+                        <aura:iteration items="{!parameter.options}" var="option">
+                            <option value="{!option}">{!option}</option>
+                        </aura:iteration>
+                    </lightning:select>
+                </aura:if>
+            </div>
+        </aura:iteration>
+    </div>
+
+</aura:component>

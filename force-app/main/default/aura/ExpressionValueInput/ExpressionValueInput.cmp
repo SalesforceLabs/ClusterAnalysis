@@ -1,0 +1,21 @@
+<aura:component>
+    <aura:attribute name="expressionField" type="Object" default="" />
+    <aura:registerEvent name="queryChangeEvent" type="c:QueryChangeEvent"/>
+    <aura:if isTrue="{!(v.expressionField.field.dataType == 'DATE')}">
+        <lightning:input type="date" label="Value" value="{!v.expressionField.value}" onchange="expressionValueChange" />
+        <aura:set attribute="else">
+            <aura:if isTrue="{!(v.expressionField.field.dataType == 'DATETIME')}">
+                <lightning:input type="datetime" label="" value="{!v.expressionField.value}" onchange="{!c.expressionValueChange}" />
+                <aura:set attribute="else">
+                    <aura:if isTrue="{!(v.expressionField.field.dataType == 'PICKLIST')}">
+                        <lightning:combobox label="Value" placeholder="Select a value" options="{!v.expressionField.field.picklistValues}"
+                            value="{!v.expressionField.value}" onchange="{!c.expressionValueChange}" />
+                        <aura:set attribute="else">
+                            <lightning:input type="text" label="Value" value="{!v.expressionField.value}" onchange="{!c.expressionValueChange}" />
+                        </aura:set>
+                    </aura:if>
+                </aura:set>
+            </aura:if>
+        </aura:set>
+    </aura:if>
+</aura:component>

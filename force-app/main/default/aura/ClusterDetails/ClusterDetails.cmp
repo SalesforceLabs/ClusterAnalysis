@@ -1,0 +1,27 @@
+<aura:component access="global">
+    <aura:attribute name="jobDetails" type="ClusterJobDetailsUiModel" access="public" />
+    <aura:attribute name="clusterIndex" type="Integer" access="public" />
+    <aura:attribute name="cluster" type="Object" access="public" />
+    <aura:attribute name="centroid" type="Object" access="private" />
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <lightning:tile label="{!v.cluster.clusterName}" href="{!concat('/' , v.cluster.clusterId)}" >
+        <aura:set attribute="media">
+            <!--<lightning:icon iconName="standard:groups" />-->
+            <div class="clusterbox" aura:id="clusterBox"></div>
+        </aura:set>
+        <div class="slds-text-heading_small">Record count: <b>{!v.cluster.recordCount}</b></div>
+        <div class="slds-text-heading_small">Cluster centroid record:</div>
+        <dl class="slds-dl_horizontal">
+            <aura:iteration items="{!v.centroid}" var="centroidField"
+                indexVar="fieldIndex">
+                <dt class="slds-dl_horizontal__label">
+                    <p class="slds-truncate" title="{!centroidField.name}">
+                        {!centroidField.name}:</p>
+                </dt>
+                <dd class="slds-dl_horizontal__detail slds-tile__meta">
+                    <p class="slds-truncate" title="{!centroidField.value}">{!centroidField.value}</p>
+                </dd>
+            </aura:iteration>
+        </dl>
+    </lightning:tile>
+</aura:component>

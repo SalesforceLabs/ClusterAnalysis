@@ -1,0 +1,11 @@
+.THIS {
+}
+.THIS .clusterbox {
+    width: 35px;
+    height: 35px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    display: inline-block;
+    vertical-align: text-bottom;
+}

@@ -1,0 +1,43 @@
+.THIS {
+    height: 100%;
+    padding-left: 0.75rem;
+    padding-right: 1.75rem;
+}
+.THIS .cme-body {
+    padding-left: 0.75rem;
+    padding-right: 1.75rem;
+    width: 100%;
+    height: 100%;
+}
+.THIS .cme-fullheight {
+    height: 100%;
+    min-height: 100%;
+}
+.THIS .cme-modeledit {
+    height: 170px;
+    width: 100%;
+}
+.THIS .cme-fieldheadercontainer {
+    height: 50px;
+}
+.THIS .cme-fieldheader {
+    height: 40px;
+    width: 100%;
+}
+.THIS .cme-fieldedit {
+    height: -moz-calc(100% - (170px + 50px));
+    height: -webkit-calc(100% - (170px + 50px));
+    height: calc(100% - (170px + 50px));
+    width: 100%;
+}
+.THIS .cme-queryfieldname {
+    padding-left: 1rem;
+    font-style: italic;
+}
+.THIS .cme-field {
+    height: 60px;
+    padding-right: 1rem;
+}
+.THIS .cme-nogutters {
+    padding-left:0px;
+}

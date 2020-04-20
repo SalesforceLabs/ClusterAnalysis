@@ -1,0 +1,101 @@
+<aura:component access="global">
+    <aura:attribute name="clusterModel" type="ClusterModelBuilderUiModel" />
+    <aura:method name="validate" action="{!c.validate}" description="Validate model fields" />
+    <div class="cme-body">
+        <div class="slds-grid slds-gutters slds-wrap cme-modeledit">
+            <div class="slds-col slds-size_1-of-3">
+                <lightning:input type="text" aura:id="modelNameInput" label="Model name" required="true" value="{!v.clusterModel.model.name}" />
+            </div>
+            <div class="slds-col slds-size_1-of-3">
+                <lightning:combobox aura:id="algorithmComboBox" label="Clustering Algorithm:" placeholder="Select an algorithm" options="{!v.clusterModel.algorithmList}"
+                    required="true" messageWhenValueMissing="Cluster algorithm is required" value="{!v.clusterModel.model.algorithm}" />
+            </div>
+            <div class="slds-col slds-size_1-of-3">
+                <lightning:input type="number" aura:id="clusterNumberInput" label="Number of clusters" required="true" value="{!v.clusterModel.model.numberOfClusters}"
+                    min="0" max="100" />
+            </div>
+            <div class="slds-col slds-size_1-of-1">
+                <lightning:textarea label="Model description" value="{!v.clusterModel.model.description}" />
+            </div>
+        </div>
+
+
+        <div class="slds-grid slds-gutters slds-wrap cme-fieldheadercontainer">
+            <div class="slds-col slds-size_2-of-3">
+                <div class="slds-grid slds-gutters slds-wrap cme-fieldheader">
+                    <div class="slds-col slds-size_1-of-3">
+                        <h2 class="slds-text-heading_small">Field</h2>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <h2 class="slds-text-heading_small">Distance function or field type</h2>
+                    </div>
+                    <div class="slds-col slds-size_1-of-3">
+                        <h2 class="slds-text-heading_small">Field value weight</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_1-of-3 cme-nogutters">
+                <div class="slds-section slds-is-open">
+                    <h3 class="slds-section__title slds-theme_shade">
+                        <span class="slds-truncate slds-p-horizontal_small" title="Section Title">Distance functions
+                            and field types</span>
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="cme-fieldedit slds-grid slds-gutters slds-wrap">
+            <div class="slds-col slds-size_2-of-3 cme-fullheight">
+                <div class="cme-fullheight slds-scrollable_y">
+                    <div class="slds-grid slds-gutters slds-wrap">
+                        <aura:iteration items="{!v.clusterModel.model.fields}" var="modelField" indexVar="_fieldIndex">
+                            <div class="slds-col slds-size_1-of-3 cme-field">
+                                <div>
+                                    <lightning:formattedText value="{!modelField.displayLabel}" />
+                                </div>
+                                <div class="slds-text-body_small cme-queryfieldname">{!modelField.objectName}.{!modelField.name}</div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 cme-field">
+                                <lightning:combobox aura:id="modelFieldTypeComboBox" label="Field distance function or type"
+                                    placeholder="Select a field distance type" options="{!v.clusterModel.fieldTypeList}"
+                                    required="true" messageWhenValueMissing="Field type is required" value="{!modelField.distanceType}"
+                                    variant="label-hidden" />
+                            </div>
+                            <div class="slds-col slds-size_1-of-3 cme-field">
+                                <aura:if isTrue="{! (modelField.distanceType == 'Numeric' || modelField.distanceType == 'Category' || modelField.distanceType == 'Text') }" >
+                                    <lightning:input type="number" label="Field value weight" required="true" value="{!modelField.weight}"
+                                    min="0" max="1" formatter="percent" step="0.01" variant="label-hidden" />
+                                </aura:if>
+                            </div>
+                        </aura:iteration>
+                    </div>
+                </div>
+            </div>
+            <div class="slds-col slds-size_1-of-3 cme-fullheight slds-scrollable_y">
+                <p>K-medoids uses Gower distance function to combine weighted values of different field types. 
+                    K-means only works with Numeric fields and doesn't support weight values </p>
+                <dl class="slds-list_horizontal slds-wrap">
+                    <dt class="slds-item_label slds-text-heading_small" title="First Label">Numeric:</dt>
+                    <dd class="slds-item_detail" title="Description for first label">Manhattan or Euclidean distance
+                        function will be used to measure similarity of values</dd>
+                    <dt class="slds-item_label slds-text-heading_small" title="Second Label">Text:</dt>
+                    <dd class="slds-item_detail" title="Description for second label">Levenstein distance
+                        function will be used to measure similarity of values. Not supported in K-means</dd>
+                    <dt class="slds-item_label slds-text-heading_small" title="Second Label">Category:</dt>
+                    <dd class="slds-item_detail" title="Description for second label">An Equal (0)/Not equal
+                        (1) comparison will be used to measure similarity of values. Not supported in K-means</dd>
+                    <dt class="slds-item_label slds-text-heading_small" title="Second Label">None:</dt>
+                    <dd class="slds-item_detail" title="Description for second label">The field will be skipped
+                        for similarity calculation. This is usually set for ID and name fields which are required to
+                        identify records</dd>
+                    <dt class="slds-item_label slds-text-heading_small" title="Second Label">Cluster result
+                        output:</dt>
+                    <dd class="slds-item_detail" title="Description for second label">An index of a cluster will
+                        be stored in this field during cluster calculations. The field name must start with 'ClusterNumber'. 
+                        Warning: Any existing values will be overwritten </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</aura:component>

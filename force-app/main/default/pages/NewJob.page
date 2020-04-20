@@ -1,0 +1,23 @@
+<apex:page standardController="ClusterJob__c" sidebar="false">
+    <apex:includeLightning />
+    <!--Lightning Container-->
+    <div style="width:100%;height:auto;" id="LightningContainer" />
+
+    <script type="text/javascript">
+        //Create Lightning Component
+        var vfCallBack = function (jobId) {
+            if ((typeof sforce != 'undefined') && sforce && (!!sforce.one)) {
+                sforce.one.navigateToSObject(jobId);
+            }
+            else {
+                window.location.href = "/" + jobId;;
+            }
+        };
+        $Lightning.use("clustan:ClusterJobRunnerApp", function () {
+            $Lightning.createComponent("clustan:ClusterJobRunner", { vfCallBack: vfCallBack }, "LightningContainer", function (component) {
+                console.log('Component created');
+            });
+        });
+
+    </script>
+</apex:page>

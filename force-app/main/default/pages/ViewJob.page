@@ -1,0 +1,17 @@
+<apex:page standardController="ClusterJob__c" sidebar="false" lightningStylesheets="true" >
+    <apex:includeLightning />
+    <apex:slds />
+    <!--Lightning Container-->
+    <div style="width:100%;height:auto;" id="LightningContainer"/>
+    <apex:relatedList list="ClusterJobResults__r" />
+     
+    <script type="text/javascript">
+    //Create Lightning Component
+    $Lightning.use("clustan:ClusterJobRunnerApp", function() {
+        $Lightning.createComponent("clustan:ClusterJobDetails", { recordId: '{!ClusterJob__c.Id}'},"LightningContainer", function(component) {
+            console.log('Component created');
+        });
+    });
+     
+    </script>
+</apex:page>

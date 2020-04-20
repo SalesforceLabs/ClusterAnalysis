@@ -1,0 +1,110 @@
+<aura:component implements="force:hasRecordId,lightning:actionOverride" controller="ClusterModelBuilderController" access="global">
+    <aura:attribute name="objects" type="List" default="[]" />
+    <aura:attribute name="queryObjects" type="List" default="[]" />
+    <aura:attribute name="activeSection" type="String" default="" access="private" />
+    <aura:attribute name="clusterObjectLoading" type="Boolean" default="false" access="private" />
+    <aura:attribute name="searchField" type="String" default="" />
+    <aura:attribute name="soqlQuery" type="String" default="" />
+    <aura:attribute name="clusterModel" type="ClusterModelBuilderUiModel" />
+    <aura:attribute name="wizardPage" type="Integer" default="0" />
+    <aura:attribute name="progressStep" type="String" default="Step0" />
+    <aura:attribute name="vfCallBack" type="Object" default="" access="public" />
+    <aura:attribute name="timeoutId" type="Integer" access="private" default="0" />
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <aura:handler name="queryChangeEvent" event="c:QueryChangeEvent" includeFacets="true" action="{!c.queryChangeEventHandler}" />
+    <ltng:require scripts="{!$Resource.clustanSoqlParser + '/clustanSoqlParser.min.js'}" />
+    <div class="slds-scope cmb-fullheight">
+        <lightning:notificationsLibrary aura:id="notifLib" />
+        <lightning:navigation aura:id="navigation"/>
+        <lightning:card class="cmb-card">
+            <aura:set attribute="title">
+                Cluster Model
+                <div class="cmb-path">
+                    <lightning:progressIndicator currentStep="{!v.progressStep}" type="path" variant="base">
+                        <lightning:progressStep label="Select data for clustering" value="Step0" onstepfocus="{!c.progressStepFocus}" />
+                        <lightning:progressStep label="Configure cluster model" value="Step1" onstepfocus="{!c.progressStepFocus}" />
+                    </lightning:progressIndicator>
+                </div>
+            </aura:set>
+            <aura:set attribute="footer">
+                <button class="slds-button slds-button_neutral" onclick="{!c.cancelButtonClick}">Cancel</button>
+                <aura:if isTrue="{!v.wizardPage == 1}">
+                    <lightning:button variant="neutral" iconPosition="left" iconName="utility:back" onclick="{!c.backButtonClick}"
+                        label="Back" />
+                    <lightning:button variant="brand" iconPosition="left" iconName="utility:save" onclick="{!c.saveButtonClick}"
+                        label="Save" />
+                </aura:if>
+                <aura:if isTrue="{!v.wizardPage == 0}">
+                    <lightning:button variant="brand" iconPosition="left" iconName="utility:forward" onclick="{!c.nextButtonClick}"
+                        label="Next" />
+                </aura:if>
+            </aura:set>
+            <div aura:id="wizPage0" class="slds-grid slds-gutters slds-wrap cmb-body">
+                <div class="slds-col slds-size_2-of-3 cmb-objectselector">
+                    <span>
+                        <lightning:combobox aura:id="clusterObjectSelect" label="Select a cluster object:" placeholder="Select an object"
+                            options="{!v.clusterModel.objects}" onchange="{!c.clusterObjectSelectChange}" required="true"
+                            messageWhenValueMissing="Cluster object is required" value="{!v.clusterModel.objectName}"
+                            spinnerActive="true" />
+                    </span>
+                    <aura:if isTrue="{!v.clusterObjectLoading}">
+                        <lightning:spinner alternativeText="Loading" size="small" />
+                    </aura:if>
+                </div>
+                <div class="slds-col slds-size_1-of-3">
+
+                </div>
+                <div class="slds-col slds-size_1-of-3 cmb-fieldselector">
+                    <div class="cmb-fullheight">
+                        <div class="slds-col slds-size_1-of-1 cmb-fieldsearch">
+                            <aura:if isTrue="{!v.activeSection != ''}">
+                                <lightning:input type="search" label="Field Search" value="{!v.searchField}" onchange="{!c.searchChange}" />
+                            </aura:if>
+                        </div>
+                        <div class="cmb-fieldaccordion">
+                            <lightning:accordion aura:id="queryObjectsAccordion" allowMultipleSectionsOpen="true"
+                                activeSectionName="{!v.activeSection}">
+                                <aura:iteration items="{!v.queryObjects}" var="queryObject">
+                                    <lightning:accordionSection name="{!'section_' + queryObject.name}" label="{!queryObject.label}">
+                                        <aura:set attribute="actions">
+                                            <lightning:input type="checkbox" title="Select all" aura:id="selectallCheckbox"
+                                                onchange="{!c.selectAllChange}" value="{!_index}" />
+                                        </aura:set>
+                                        <aura:set attribute="body">
+                                            <fieldset aura:id="queryFieldSet">
+                                                <aura:iteration items="{!queryObject.fields}" var="queryField" indexVar="_fieldIndex">
+                                                    <div data-string="{!queryField.displayLabel + ' ' + queryField.value}"
+                                                        aura:id="queryfielddiv">
+                                                        <lightning:input type="checkbox" name="{!'queryFieldCheckbox' + _index}"
+                                                            label="{!queryField.displayLabel}" value="{!queryField.value}"
+                                                            aura:id="queryFieldCheckbox" checked="{!queryField.checked}"
+                                                            required="{!queryField.required}" onchange="{!c.queryFieldChange}" />
+                                                        <span class="slds-text-body_small cmb-queryfieldname">{!queryField.name}</span>
+                                                    </div>
+                                                </aura:iteration>
+                                            </fieldset>
+                                        </aura:set>
+                                    </lightning:accordionSection>
+                                </aura:iteration>
+                            </lightning:accordion>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-col slds-size_2-of-3 cmb-expression">
+                    <div class="slds-scrollable_y cmb-expressionscrollable">
+                        <aura:if isTrue="{!v.activeSection != ''}">
+                            <div class="slds-text-title">Filter</div>
+                            <c:ClusterExpressionBuilder aura:id="expBuilder" />
+                            <lightning:textarea aura:id="soqlInput" value="{!v.soqlQuery}" required="true" class="slds-form-element soqlArea"
+                                label="SOQL Query" onchange="{!c.soqlInputChange}" />
+                        </aura:if>
+                    </div>
+                </div>
+            </div>
+            <div aura:id="wizPage1" class="slds-grid slds-gutters slds-wrap cmb-body">
+                <c:ClusterModelEditor aura:id="cmEditor" clusterModel="{!v.clusterModel}" />
+            </div>
+        </lightning:card>
+
+    </div>
+</aura:component>

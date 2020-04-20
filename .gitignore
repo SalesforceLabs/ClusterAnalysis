@@ -1,0 +1,9 @@
+# Ignore SFDX object definitions and other settings
+.sfdx
+.DS_Store
+.project
+.salesforce
+.settings
+node_modules
+.idea
+mdapi-source

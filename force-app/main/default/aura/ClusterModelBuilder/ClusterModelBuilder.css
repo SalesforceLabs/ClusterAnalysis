@@ -1,0 +1,65 @@
+.THIS {
+    height: 100%;
+}
+.THIS .slds-card, .THIS .cmb-fullheight {
+    height: 100%;
+}
+.THIS .cmb-card .slds-card__header {
+    height: 80px;
+    position: relative;
+}
+.THIS .cmb-card .slds-card__footer {
+    height: 80px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+}
+.THIS .slds-card__body{
+    height: -moz-calc(100% - 170px);
+    height: -webkit-calc(100% - 170px);
+    height: calc(100% - 170px);
+}
+.THIS .cmb-body{
+    height: 100%;
+    padding-left: 0.75rem;
+}
+.THIS .cmb-path{
+    height: 50px;
+    padding-left: 0.75rem;
+}
+.THIS .cmb-objectselector {
+    height: 13%;
+}
+.THIS .cmb-fieldselector {
+    height: 87%;
+}
+.THIS .cmb-queryfieldname {
+    padding-left: 1.5rem;
+    font-style: italic;
+}
+.THIS .cmb-fieldsearch{
+    height: 60px;
+    width: 100%;
+}
+.THIS .cmb-fieldaccordion {
+    height: -moz-calc(100% - 60px);
+    height: -webkit-calc(100% - 60px);
+    height: calc(100% - 60px);
+    width: 100%;
+    overflow-y: auto;
+}
+.THIS .cmb-expression {
+    height: 87%;
+    padding-top: 0.25rem;
+}
+.THIS .soqlArea{
+    width: 95%;
+    height: 150px;
+    margin-top: 10px;
+}
+.THIS .soqlArea textarea{
+    height: 150px;
+}
+.THIS .cmb-expressionscrollable{
+    min-height: 100%;
+}

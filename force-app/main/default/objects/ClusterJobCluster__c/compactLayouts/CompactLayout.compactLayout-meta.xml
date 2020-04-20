@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>CompactLayout</fullName>
+    <fields>ClusterJob__c</fields>
+    <fields>Name</fields>
+    <fields>ClusterName__c</fields>
+    <fields>ClusterNumber__c</fields>
+    <label>CompactLayout</label>
+</CompactLayout>

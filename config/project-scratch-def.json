@@ -1,0 +1,10 @@
+{
+  "orgName": "imukhamedgaliyev Company",
+  "edition": "Developer",
+  "features": ["DebugApex"],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    }
+  }
+}

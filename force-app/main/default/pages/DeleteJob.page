@@ -1,0 +1,44 @@
+<apex:page lightningStylesheets="true" standardController="ClusterJob__c" extensions="ClusterDeleteJobControllerExt" title="Delete cluster job">
+  <apex:slds />
+  <script type="text/javascript">
+    function navigateToHomeTab() {
+      if ((typeof sforce != 'undefined') && sforce && (!!sforce.one)) {
+        sforce.one.navigateToURL('{!URLFOR($Action.ClusterModel__c.Tab, $ObjectType.ClusterModel__c)}');
+      }
+      else {
+        window.location = '{!URLFOR($Action.ClusterModel__c.Tab, $ObjectType.ClusterModel__c)}';
+      }
+    }
+  </script>
+
+
+  <div class="slds-scope slds-container slds-panel">
+    <apex:outputPanel id="deleteConfirmPanel" layout="block" rendered="{!batchJobId == ''}">
+      <apex:form>
+        <div class="slds-m-left_medium slds-m-top_medium">
+          <h1 class="slds-text-heading_medium">Delete cluster job {!ClusterJob__c.JobName__c} ({!ClusterJob__c.name}) </h1>
+          <p>
+            Are you sure you want to delete this job? Once you confirm an async job will start which will remove all related job results,
+            clusters and this job record. This might take several minutes
+          </p>
+          <div class="slds-m-top_medium">
+            <apex:commandButton action="{!deleteJob}" value="Yes" id="theButton" styleClass="slds-button slds-button_destructive" />
+            <button class="slds-button slds-button_neutral" onclick="window.history.back();">Cancel</button>
+          </div>
+        </div>
+      </apex:form>
+    </apex:outputPanel>
+    <apex:outputPanel id="deleteResultPanel" layout="block" rendered="{!batchJobId != ''}">
+      <div class="slds-m-left_medium slds-m-top_medium">
+        <p>
+          Started batch job {!batchJobId} to delete cluster job {!ClusterJob__c.name}. This might take some time, check status in Setup/Apex
+          Jobs
+        </p>
+        <div class="slds-m-top_medium">
+          <button class="slds-button slds-button_neutral" onclick="navigateToHomeTab()">Back</button>
+        </div>
+      </div>
+    </apex:outputPanel>
+  </div>
+
+</apex:page>

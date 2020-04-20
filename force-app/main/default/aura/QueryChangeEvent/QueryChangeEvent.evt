@@ -1,0 +1,1 @@
+<aura:event type="COMPONENT" description="Model query change event"/>

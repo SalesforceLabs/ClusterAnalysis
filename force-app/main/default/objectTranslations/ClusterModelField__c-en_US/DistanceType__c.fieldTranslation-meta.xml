@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomFieldTranslation xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label><!-- Distance Type --></label>
+    <name>DistanceType__c</name>
+    <picklistValues>
+        <masterLabel>Category</masterLabel>
+        <translation><!-- Category --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Numeric</masterLabel>
+        <translation><!-- Numeric --></translation>
+    </picklistValues>
+    <picklistValues>
+        <masterLabel>Text</masterLabel>
+        <translation><!-- Text --></translation>
+    </picklistValues>
+</CustomFieldTranslation>

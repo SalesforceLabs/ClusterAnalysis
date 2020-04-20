@@ -1,0 +1,20 @@
+<aura:component implements="force:lightningQuickActionWithoutHeader,force:hasRecordId"
+    controller="ClusterModelLauncherController" extends="c:ClusterUiBaseComponent" access="global">
+    <aura:attribute name="uiModel" type="ClusterModelLauncherUiModel" />
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />    
+    <lightning:navigation aura:id="navigation" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    <div class="slds-scope cml-fullheight">
+        <header class="slds-modal__header slds-modal__title slds-hyphenate">
+            Run cluster analysis for {!v.uiModel.model.name}
+        </header>
+        <div class="slds-modal__content slds-p-around_medium cml-content" id="modal-content-id-1">            
+            <c:ClusterAlgorithmParams parameters="{!v.uiModel.parameters}" />
+        </div>
+        <footer class="slds-modal__footer">
+            <lightning:button label="Run" variant="brand" iconName="utility:right" iconPosition="left"
+                onclick="{!c.runClick}" />
+            <lightning:button label="Cancel" onclick="{!c.cancelClick}" />
+        </footer>
+    </div>
+</aura:component>

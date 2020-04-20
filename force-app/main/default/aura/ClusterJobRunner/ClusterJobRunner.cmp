@@ -1,0 +1,57 @@
+<aura:component implements="lightning:actionOverride" controller="ClusterModelLauncherController"
+    extends="c:ClusterUiBaseComponent" access="global">
+    <aura:attribute name="jobRunnerModel" type="ClusterJobRunnerUiModel" access="public" />
+    <aura:attribute name="sectionsMap" type="List" access="private" />
+    <aura:attribute name="selectedModel" type="String" access="private" default="" />
+    <aura:attribute name="parameters" type="List" access="private" default="[]" />
+    <aura:attribute name="vfCallBack" type="Object" default="" access="public" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    <lightning:navigation aura:id="navigation" />
+    <div class="c-container slds-scope slds-container slds-panel">
+        <lightning:card class="cjr-card">
+            <aura:set attribute="title">
+                New cluster job
+            </aura:set>
+            <aura:set attribute="footer">
+                <button class="slds-button slds-button_neutral" onclick="{!c.cancelButtonClick}">Cancel</button>
+                <lightning:button variant="brand" iconPosition="left" iconName="utility:right"
+                    onclick="{!c.runButtonClick}" label="Run" />
+            </aura:set>
+            <div class="cjr-body">
+                <lightning:layout multipleRows="true" verticalAlign="start">
+                    <lightning:layoutItem padding="around-small" size="6">
+                        <div class="page-section page-right cjr-models">
+                            <div class="slds-text-heading_small">Cluster models:
+                                <span class="slds-text-body_small slds-text-color_weak">Select a model to run</span>
+                            </div>
+                            <lightning:verticalNavigation selectedItem="{!v.selectedModel}" onselect="{!c.onModelSelect}"
+                                class="navigation">
+                                <aura:iteration items="{!v.sectionsMap}" var="section">
+                                    <lightning:verticalNavigationSection label="{!section.label}">
+                                        <aura:iteration items="{!section.models}" var="model">
+                                            <lightning:verticalNavigationItem label="{!model.name}"
+                                                name="{!model.modelId}" />
+                                        </aura:iteration>
+                                    </lightning:verticalNavigationSection>
+                                </aura:iteration>
+                            </lightning:verticalNavigation>
+                        </div>
+                    </lightning:layoutItem>
+                    <lightning:layoutItem flexibility="auto" padding="around-small" size="6">
+                        <aura:if isTrue="{!v.selectedModel != ''}">
+                            <div class="slds-text-heading_small">Parameters:
+                                <span class="slds-text-body_small slds-text-color_weak">Enter algorithm parameters and
+                                    click "Run"</span>
+                            </div>
+                            <div class="page-section page-right">
+                                <c:ClusterAlgorithmParams parameters="{!v.parameters}" />
+                            </div>
+                        </aura:if>
+                    </lightning:layoutItem>
+                </lightning:layout>
+            </div>
+        </lightning:card>
+    </div>
+</aura:component>
