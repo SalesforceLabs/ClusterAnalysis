@@ -109,7 +109,7 @@ public with sharing class ClusterKMeansRunnerTest {
             ClusterJobDetailsUiModel jobDetailModel = ClusterJobDetailsController.getJob(state.clusterJob.Id);
             System.assertEquals(state.clusterJob.JobStatus__c, jobDetailModel.status, 'Unexpected job status retrieved');
             
-            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id);
+            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
         }
     }
@@ -136,6 +136,7 @@ public with sharing class ClusterKMeansRunnerTest {
             outputField.isNameField = false;
             outputField.isCategory = false;
             outputField.isNumeric = false;
+            outputField.isLongText = false;
             outputField.isText = false;
             model.fields.add(outputField);
             ClusterKMeansRunner runner = (ClusterKMeansRunner)ClusterAlgorithmFactory.getRunner(model);

@@ -67,6 +67,7 @@ public class ClusterModelWrapper {
         }
         field.isNumeric = field.distanceType == ClusterConstants.FIELDTYPE_NUMERIC;
         field.isText = field.distanceType == ClusterConstants.FIELDTYPE_TEXT;
+        field.isLongText = field.distanceType == ClusterConstants.FIELDTYPE_LONGTEXT;
         field.isCategory = field.distanceType == ClusterConstants.FIELDTYPE_CATEGORY;
     }
     public List<ClusterModelField__c> getModelFields() {
@@ -81,6 +82,16 @@ public class ClusterModelWrapper {
             modelFields.add(field);
         }
         return modelFields;
+    }
+    public Boolean hasLongTextFields() {
+        Boolean hasLongText = false;
+        for (ClusterModelFieldWrapper field : this.fields) {
+            if (field.isLongText) {
+                hasLongText = true;
+                break;
+            }
+        }
+        return hasLongText;
     }
 
     @AuraEnabled

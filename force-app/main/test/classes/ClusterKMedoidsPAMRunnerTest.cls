@@ -132,7 +132,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             ClusterJobDetailsUiModel jobDetailModel = ClusterJobDetailsController.getJob(state.clusterJob.Id);
             System.assertEquals(state.clusterJob.JobStatus__c, jobDetailModel.status, 'Unexpected job status retrieved');
             
-            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id);
+            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
         }
     }
@@ -159,7 +159,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(jobDetails.model.modelId, wrapper.modelId, 'Incorrect job model id');
             System.assertEquals(ClusterConstants.JOBSTATUS_FAILED, jobDetails.status, 'Incorrect job status for an empty dataset');
             
-            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId);
+            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId, 100, 0);
             System.assertEquals(0, dataPoints.size(), 'Incorrect number of data points');
         }
     }  

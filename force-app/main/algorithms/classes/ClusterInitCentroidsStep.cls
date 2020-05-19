@@ -54,11 +54,13 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
             this.jobState.sampleResultsIds.add(record.Id);
             ClusterDataPoint dp = this.createDataPoint(record);
             dataPoints.add(dp);
+            dp.index = index;
             if (this.cacheRecords) {
                 jobState.dataPointsIdMap.put(dp.recordId, index);
             }
             index++;
         }
+        this.algRunner.initializeDistanceCache(dataPoints.size());
         //k-means++ centroid initialization
         log.debug('Initializing centroids');
         //Select first centroid randomly
@@ -71,14 +73,14 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
             for (Integer dpIndex = 0; dpIndex < dataPoints.size(); dpIndex++) {
                 //Compute distance from current data point to each selected centroid
                 //And choose the minimum distance
-                Double minDistance = this.algRunner.calculateDistance(dataPoints[dpIndex].values, this.jobState.centroids[0].values);
+                Double minDistance = this.algRunner.calculateDPDistance(dataPoints[dpIndex], this.jobState.centroids[0]);
                 Boolean isCentroid = false;
                 for (Integer cIndex = 1; cIndex < this.jobState.centroids.size(); cIndex++){
                     if (this.jobState.centroids[cIndex].recordId == dataPoints[dpIndex].recordId) {
                         isCentroid = true;
                         break;
                     }
-                    Double distance = this.algRunner.calculateDistance(dataPoints[dpIndex].values, this.jobState.centroids[cIndex].values);
+                    Double distance = this.algRunner.calculateDPDistance(dataPoints[dpIndex], this.jobState.centroids[cIndex]);
                     minDistance = Math.min(minDistance, distance);
                 }
                 if (!isCentroid && (minDistance > maxDistance)) {

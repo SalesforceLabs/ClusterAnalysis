@@ -4,6 +4,10 @@
         <application>Cluster_Analysis</application>
         <visible>true</visible>
     </applicationVisibilities>
+    <applicationVisibilities>
+        <application>Cluster_Analysis_Classic</application>
+        <visible>true</visible>
+    </applicationVisibilities>
     <classAccesses>
         <apexClass>ApexDebugLogger</apexClass>
         <enabled>true</enabled>

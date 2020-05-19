@@ -219,9 +219,10 @@
         var fieldDesc = this.findFieldDescByObjectAndFieldName(model, queryField.name, queryField.objectName);
         switch (fieldDesc.dataType){
             case 'STRING':
-            case 'TEXTAREA':
             case 'ENCRYPTEDSTRING':
                 return 'Text';
+            case 'TEXTAREA':
+                return 'LongText';
             case 'DATE':
             case 'DATETIME':
             case 'CURRENCY':

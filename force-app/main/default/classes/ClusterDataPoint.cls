@@ -13,7 +13,8 @@ public with sharing class ClusterDataPoint {
     @AuraEnabled
     public Integer clusterIndex;
     @AuraEnabled
-    public String recordName;
+    public String recordName;    
+    public Integer index; //index of the item in the array
     public Double cost;
     public ClusterDataPoint() {
 

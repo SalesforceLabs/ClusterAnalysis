@@ -54,8 +54,24 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
             ClusterDataPoint currentCentroid = centroids[currentDataPoint.clusterIndex];
             //Calculating per cluster sum and count of all data point values
             for (Integer findex=0; findex<model.fields.size(); findex++) {
-                if (model.fields[findex].distanceType == ClusterConstants.FIELDTYPE_NUMERIC) {
+                if (model.fields[findex].isNumeric) {
                     currentCentroid.values[findex] = Double.valueOf(currentCentroid.values[findex]) + Double.valueOf(currentDataPoint.values[findex]);
+                }
+                else if (model.fields[findex].isLongText) {
+                    Object[] tf1 = (Object[])currentCentroid.values[findex];
+                    Object[] tf2 = (Object[])currentDataPoint.values[findex];
+                    Integer tf1Size = tf1.size();
+                    Integer tf2Size = tf2.size();
+                    if (tf1Size < tf2Size) {
+                        //Resizing centroid array
+                        for (Integer sizeIndex = 0; sizeIndex < tf2Size - tf1Size; sizeIndex++) {
+                            tf1.add(0.0);
+                        }
+                    }
+                    for (Integer tfIndex = 0; tfIndex < tf1Size; tfIndex++) {
+                        Double v2 = tfIndex < tf2Size ? Double.valueOf(tf2[tfIndex]) : 0.0;
+                        tf1[tfIndex] = Double.valueOf(tf1[tfIndex]) + v2;
+                    }            
                 }
             }
             this.clusterSizes[currentDataPoint.clusterIndex]++;
@@ -70,9 +86,15 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
         for (Integer cindex=0; cindex<centroids.size(); cindex++) {
             if (this.clusterSizes[cindex] != 0) {
                 for (Integer i=0; i<model.fields.size(); i++) {
-                    if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_NUMERIC) {
-                        centroids[cindex].values[i] = Double.valueOf(centroids[cindex].values[i])/this.clusterSizes[cindex];
+                    if (model.fields[i].isNumeric) {
+                        centroids[cindex].values[i] = Double.valueOf(centroids[cindex].values[i]) / this.clusterSizes[cindex];
                     }
+                    else if (model.fields[i].isLongText) {
+                        Object[] tf = (Object[])centroids[cindex].values[i];
+                        for (Integer tfIndex = 0; tfIndex < tf.size(); tfIndex++) {
+                            tf[tfIndex] = Double.valueOf(tf[tfIndex]) / this.clusterSizes[cindex];
+                        }            
+                    }    
                 }
             }
             centroids[cindex].clusterIndex = cindex;

@@ -45,19 +45,18 @@ public with sharing class ClusterPAMDataAssignmentStep extends ClusterIterableBa
         Map<Id, Integer> reassignedRecords = new Map<Id, Integer>();
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             ClusterDataPoint currentRecord = dataPoints[sindex];
-            currentObject = currentRecord.values;
             //ClusterDataHelper.normalizeObject(currentObject, jobState);
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Boolean isCentroid = false;
-            Double minDistance = this.runner.calculateDistance(currentObject, centroids[nearestCentroidIndex].values);
+            Double minDistance = this.runner.calculateDPDistance(currentRecord, centroids[nearestCentroidIndex]);
             for (Integer cindex = 1; cindex < centroidSize; cindex++) {
                 isCentroid = centroids[cindex].recordId == currentRecord.recordId;
                 if (isCentroid) {
                     currentRecord.clusterIndex = null;
                     break;
                 }
-                Double distance = this.runner.calculateDistance(currentObject, centroids[cindex].values);
+                Double distance = this.runner.calculateDPDistance(currentRecord, centroids[cindex]);
                 if (Math.abs(distance) < Math.abs(minDistance)) {
                     minDistance = distance;
                     nearestCentroidIndex = cindex;

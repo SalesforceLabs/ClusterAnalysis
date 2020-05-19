@@ -14,10 +14,15 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
     public static Logger log = LogFactory.getLogger();
     @TestVisible
-    public static ClusterJobState jobState;
+    private static ClusterJobState jobState;
     public List<ClusterAlgorithmStep> steps;
+    public ClusterDistanceCacheManager distanceCacheManager;
     public ClusterAlgorithmRunner() {
         this.steps = new List<ClusterAlgorithmStep>();
+    }
+
+    public void initializeDistanceCache(Integer numberOfObjects) {
+        this.distanceCacheManager = new ClusterDistanceCacheManager(numberOfObjects);
     }
 
     public virtual ClusterAlgorithmRunner.ModelValidationResult validateModel(ClusterModelWrapper model) {
@@ -36,7 +41,8 @@ public abstract with sharing class ClusterAlgorithmRunner {
             }
             else if ((model.fields[i].distanceType == ClusterConstants.FIELDTYPE_CATEGORY) || 
                 (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_NUMERIC) || 
-                (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_TEXT)) 
+                (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_TEXT) ||
+                (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_LONGTEXT)) 
             {
                 hasValueFields = true;
             }
@@ -153,6 +159,20 @@ public abstract with sharing class ClusterAlgorithmRunner {
         }
     }
     public abstract Boolean prepareNextStep();
-    public abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
+
+    public virtual Double calculateDPDistance(ClusterDataPoint currentObject, ClusterDataPoint centroid) {
+        //Check cache if both data points are loaded into sample array
+        if (currentObject.index != null && centroid.index != null) {
+            double distance = this.distanceCacheManager.get(currentObject.index, centroid.index);
+            if (distance == null) {
+                distance = this.calculateDistance(currentObject.values, centroid.values);
+                this.distanceCacheManager.set(currentObject.index, centroid.index, distance);
+            }
+            return distance;
+        }
+        return this.calculateDistance(currentObject.values, centroid.values);
+    }
+
+    protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
     public abstract ClusterAlgorithmParameter[] getParameters(ClusterModelWrapper model);
 }

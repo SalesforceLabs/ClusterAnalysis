@@ -27,7 +27,7 @@ public with sharing class ClusterUiControllerTest {
             System.assertEquals(jobDetails.model.modelId, uiModel.model.modelId, 'Incorrect job model id');
             System.assertEquals(5, jobDetails.clusters.size(), 'Incorrect job model id');
             
-            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId);
+            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId, 100, 0);
             System.assertEquals(true, dataPoints.size() > 0, 'Cluster job data points were not retrieved');
 
             ClusterJobDetailsUiModel saveJobDetails = ClusterJobDetailsController.setJobName(jobDetails.jobId, 'Test job name');
@@ -287,7 +287,7 @@ public with sharing class ClusterUiControllerTest {
             System.assertEquals(jobDetails.model.modelId, uiModel.model.modelId, 'Incorrect job model id');
             System.assertEquals(5, jobDetails.clusters.size(), 'Incorrect job model id');
             
-            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId);
+            List<ClusterDataPoint> dataPoints = ClusterJobDetailsController.getDataPoints(jobDetails.jobId, 100, 0);
             System.assertEquals(true, dataPoints.size() > 0, 'Cluster job data points were not retrieved');
     
             ClusterJobDetailsUiModel saveJobDetails = ClusterJobDetailsController.setJobName(jobDetails.jobId, 'Test job name');

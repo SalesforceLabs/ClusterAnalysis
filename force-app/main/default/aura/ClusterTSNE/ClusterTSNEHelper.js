@@ -14,35 +14,53 @@
     init: function() {
     },
 
-    loadDataPoints: function (component) {
+    loadDataPoints: function (component, offset) {
         let jobDetails = component.get('v.jobDetails');
         let action = component.get("c.getDataPointsJson");
-        action.setParams({ jobId: jobDetails.jobId });
+        let count = 20;
+        action.setParams({ jobId: jobDetails.jobId, maxCount: count, offset: offset });
         let helper = this;
-
+        console.log('Loading data points, offset: ' + offset);
         action.setCallback(this, helper.getServerCallbackFunction(component, helper,
             function (dataPointsJson) {
-                let dataPoints = JSON.parse(dataPointsJson);
-                if (jobDetails.model.algorithm == 'K-Means') {
-                    dataPoints = dataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
-                }
-                component.set("v.dataPoints", dataPoints);
-                try {
-                    //Sometimes d3 script is not fully loaded and initialized, so we give it some time
-                    window.setTimeout(
-                        $A.getCallback(function() {
-                            helper.runTSNE(component, dataPoints, jobDetails);
-                        }), 1000
-                    );                    
-                }
-                catch (ex) {
-                    console.error(ex);
-                }
+                helper.loadDataPointsCallback(component, dataPointsJson, offset, count);
             },
             function (state, errors) {
             })
         );
         $A.enqueueAction(action);
+    },
+
+    loadDataPointsCallback: function(component, dataPointsJson, offset, maxCount) {
+        let dataPoints = JSON.parse(dataPointsJson);
+        let allDataPoints = component.get('v.dataPoints');
+        let jobDetails = component.get('v.jobDetails');
+        let helper = this;
+        
+        allDataPoints = (allDataPoints == null) ? dataPoints : allDataPoints.concat(dataPoints);
+        if ((dataPoints.length < maxCount) || (offset > jobDetails.maxGraphDataPoints)) {
+            if (jobDetails.model.algorithm == 'K-Means') {
+                allDataPoints = allDataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
+            }
+            component.set("v.dataPoints", allDataPoints);
+            //Sometimes d3 script is not fully loaded and initialized, so we give it some time
+            window.setTimeout(
+                $A.getCallback(function() {
+                    try {
+                        helper.runTSNE(component, allDataPoints, jobDetails);
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }), 1000
+            );                    
+        }
+        else {
+            //Load next data points batch
+            component.set("v.dataPoints", allDataPoints);
+            offset += maxCount;
+            this.loadDataPoints(component, offset);
+        }
     },
 
     getNodeStrokeColor: function(dataPoint) {
@@ -269,13 +287,18 @@
 				for (let i = 0; i < numChunks; i++) {
     				p = p.then(_ => new Promise(resolve =>
         				setTimeout($A.getCallback(function () {
-                            console.log('Processing chunk ' + (i+1) + ' of ' + numChunks);
-                      		self.processBatch(i * chunkSize, chunkSize);            				
-                            if (i == numChunks - 1) {
-                                console.log('Distance calculations complete');
-                                callback(distanceMatrix);
+                            try {
+                                console.log('Processing chunk ' + (i+1) + ' of ' + numChunks);
+                                self.processBatch(i * chunkSize, chunkSize);            				
+                                if (i == numChunks - 1) {
+                                    console.log('Distance calculations complete');
+                                    callback(distanceMatrix);
+                                }
+                                resolve();
                             }
-                            resolve();
+                            catch(e) {
+                                console.error(e);
+                            }
         				}), 500)
                     ));
 				}
@@ -374,15 +397,64 @@
                 distance += model.fields[i].weight * this.calculateCategoryGowerDistance(String(currentObject[i]), String(centroid[i]));
                 weight += model.fields[i].weight;
             }
+            else if (model.fields[i].isLongText) {
+                let tf1 = currentObject[i];
+                let tf2 = centroid[i];
+                let idf = jobState.minMaxValues[i].maxValue;
+                distance += model.fields[i].weight * this.calculateCosineDistance(tf1, tf2, idf);
+                weight += model.fields[i].weight;
+            }
         }
         return distance / weight;
     },
 
+    calculateCosineDistance: function(vector1, vector2, idfVector) {
+        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
+        return 1.0 - this.calculateCosineSimilarity(vector1, vector2, idfVector);
+    },
+
+    calculateCosineSimilarity: function(vector1, vector2, idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little
+        let dotProduct = 0.0;
+        let magnitude1 = 0.0;
+        let magnitude2 = 0.0;
+        let zero = 0.0;
+        //Vector sizes might be different
+        let v1Size = vector1.length;
+        let v2Size = vector2.length;
+        let idfSize = idfVector.length;
+        let length = Math.max(v1Size, v2Size);
+        for (let i = 0; i < length; i++) {
+            let v1 = i < v1Size ? vector1[i] : zero;
+            let v2 = i < v2Size ? vector2[i] : zero;
+            if ((idfVector != null) && i < idfSize) {
+                v1 = v1 * idfVector[i];
+                v2 = v2 * idfVector[i];
+            }
+            dotProduct += v1 * v2;
+            magnitude1 += v1 * v1;
+            magnitude2 += v2 * v2;
+        }
+        magnitude1 = Math.sqrt(magnitude1);
+        magnitude2 = Math.sqrt(magnitude2);
+        let magnitude = magnitude1 * magnitude2;
+        if (this.doublesEqual(magnitude, zero)) {
+            return zero;
+        }
+        else {
+            return dotProduct / magnitude;
+        }
+    },
+
     encodeHtml: function(rawStr) {
         if (typeof rawStr !== 'string') return rawStr;
-        return rawStr.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
-            return '&#' + i.charCodeAt(0) + ';';
-        });
+        let p = document.createElement("p");
+        p.textContent = rawStr;
+        return p.innerHTML;
+    },
+
+    doublesEqual: function (a, b) {
+        return Math.abs(a-b) < 0.000001;
     },
 
 })

@@ -103,7 +103,7 @@ public with sharing class ClusterDataHelper {
         for (ClusterDataPoint dataPoint:jobState.dataPoints) {
             if (clusterIndex == dataPoint.clusterIndex && dataPoint.recordId != sourceDataPoint.recordId) {
                 currentClusterSize++;
-                currentClusterDistance += runner.calculateDistance(sourceDataPoint.values, dataPoint.values);
+                currentClusterDistance += runner.calculateDPDistance(sourceDataPoint, dataPoint);
             }
         }
         currentClusterDistance = (currentClusterSize > 0) ? currentClusterDistance / currentClusterSize : 0;
@@ -116,7 +116,7 @@ public with sharing class ClusterDataHelper {
         Double minDistance = DOUBLE_MAX_VALUE;
         Integer nearestClusterIndex = -1;
         for (Integer i = 0; i < jobState.centroids.size(); i++) {
-            Double currentDistance = runner.calculateDistance(dataPoint.values, jobState.centroids[i].values);
+            Double currentDistance = runner.calculateDPDistance(dataPoint, jobState.centroids[i]);
             if ((currentDistance < minDistance) && (dataPoint.clusterIndex != i)) {
                 minDistance = currentDistance;
                 nearestClusterIndex = i;
@@ -190,6 +190,13 @@ public with sharing class ClusterDataHelper {
                 distance += modelField.weight * calculateCategoryGowerDistance(String.valueOf(currentObject[i]), String.valueOf(centroid[i]));
                 weight += modelField.weight;
             }
+            else if (modelField.isLongText) {
+                Object[] tf1 = (Object[])currentObject[i];
+                Object[] tf2 = (Object[])centroid[i];
+                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
+                distance += modelField.weight * calculateCosineDistance(tf1, tf2, idf);
+                weight += modelField.weight;
+            }
         }
         return distance / weight;
     }
@@ -209,6 +216,15 @@ public with sharing class ClusterDataHelper {
                     // Let's just log and swallow null values or division by zero for now
                 } 
             }
+            else if (model.fields[i].isLongText) {
+                //For euclidean distance we will calculate cosine distance for long text and emulate dot product
+                //TODO: Consider throwing a model validation exception if Euclidean distance is used with LongText
+                Object[] tf1 = (Object[])currentObject[i];
+                Object[] tf2 = (Object[])centroid[i];
+                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
+                Double distance = model.fields[i].weight * calculateCosineDistance(tf1, tf2, idf);
+                sumDistance += distance * distance;
+            }
         }
         return Math.sqrt(sumDistance);
     }
@@ -216,6 +232,46 @@ public with sharing class ClusterDataHelper {
     public static Double calculateManhattanDistance(Object[] currentObject, Object[] centroid, ClusterJobState jobState) {
         //Numeric part of Gower distance uses Manhattan algorithm
         return calculateGowerDistance(currentObject, centroid, jobState);
+    }
+
+    public static Double calculateCosineDistance(Object[] vector1, Object[] vector2, Double[] idfVector) {
+        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
+        return 1.0 - calculateCosineSimilarity(vector1, vector2, idfVector);
+    }
+
+    public static Double calculateCosineSimilarity(Object[] vector1, Object[] vector2, Double[] idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little
+        //vector1 and vector2 are Object[] because when we deserialize from json the value has the type Object[]
+        //and we cannot cast type to Double[]
+        Double dotProduct = 0.0;
+        Double magnitude1 = 0.0;
+        Double magnitude2 = 0.0;
+        Double zero = 0.0;
+        //Vector sizes might be different
+        Integer v1Size = vector1.size();
+        Integer v2Size = vector2.size();
+        Integer idfSize = idfVector.size();
+        Integer length = Math.max(v1Size, v2Size);
+        for (Integer i = 0; i < length; i++) {
+            Double v1 = i < v1Size ? (Double)vector1[i] : zero;
+            Double v2 = i < v2Size ? (Double)vector2[i] : zero;
+            if ((idfVector != null) && i < idfSize) {
+                v1 = v1 * idfVector[i];
+                v2 = v2 * idfVector[i];
+            }
+            dotProduct += v1 * v2;
+            magnitude1 += v1 * v1;
+            magnitude2 += v2 * v2;
+        }
+        magnitude1 = Math.sqrt(magnitude1);
+        magnitude2 = Math.sqrt(magnitude2);
+        Double magnitude = magnitude1 * magnitude2;
+        if (doublesEqual(magnitude, zero)) {
+            return zero;
+        }
+        else {
+            return dotProduct / magnitude;
+        }
     }
 
     public static Integer getRandomInt(Integer min, Integer max) {
@@ -232,6 +288,7 @@ public with sharing class ClusterDataHelper {
             jobState.sampleResultsIds.add(record.Id);
             ClusterDataPoint dp = new ClusterDataPoint(record);
             dataPoints.add(dp);
+            dp.index = index;
             jobState.dataPointsIdMap.put(dp.recordId, index);
             index++;
         }

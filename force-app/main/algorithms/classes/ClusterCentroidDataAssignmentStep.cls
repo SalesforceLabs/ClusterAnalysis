@@ -58,14 +58,13 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
             ClusterDataPoint currentDataPoint = new ClusterDataPoint(currentRecord);
-            currentObject = currentDataPoint.values;
             ClusterDataHelper.normalizeObject(currentObject, jobState);
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Integer previousCentroidIndex = 0;
-            Double minDistance = this.runner.calculateDistance(currentObject, centroids[nearestCentroidIndex].values);
+            Double minDistance = this.runner.calculateDPDistance(currentDataPoint, centroids[nearestCentroidIndex]);
             for (Integer cindex = 1; cindex < centroidSize; cindex++) {
-                Double distance = this.runner.calculateDistance(currentObject, centroids[cindex].values);
+                Double distance = this.runner.calculateDPDistance(currentDataPoint, centroids[cindex]);
                 if (Math.abs(distance) < Math.abs(minDistance)) {
                     minDistance = distance;
                     nearestCentroidIndex = cindex;

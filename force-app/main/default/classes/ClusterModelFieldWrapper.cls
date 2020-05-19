@@ -44,6 +44,8 @@ public class ClusterModelFieldWrapper {
     @AuraEnabled
     public Boolean isText;
     @AuraEnabled
+    public Boolean isLongText;
+    @AuraEnabled
     public Boolean isCategory;
     public Boolean isIdField;
     public Boolean isNameField;

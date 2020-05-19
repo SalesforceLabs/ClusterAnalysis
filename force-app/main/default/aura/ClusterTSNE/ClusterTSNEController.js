@@ -9,7 +9,7 @@
         action.setCallback(this, helper.getServerCallbackFunction(component, helper, 
             function(uiModel) {
                 component.set("v.jobDetails", uiModel);
-                helper.loadDataPoints(component);
+                helper.loadDataPoints(component, 0);
             },
             function (state, errors) {
             })
@@ -21,7 +21,7 @@
         var params = event.getParam('arguments');
         if (params && params.jobDetails) {
             component.set('v.jobDetails', params.jobDetails);
-            helper.loadDataPoints(component);
+            helper.loadDataPoints(component, 0);
         }
 
     },

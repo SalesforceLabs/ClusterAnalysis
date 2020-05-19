@@ -17,7 +17,7 @@
         for (Integer i=0; i<model.fields.size(); i++) {
             if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_TEXT || model.fields[i].distanceType == ClusterConstants.FIELDTYPE_CATEGORY) {
                 result.isValid = false;
-                result.messages.add('K-Means only supports numeric fields. Please change model algorithm to K-Medoids or change the field distance type. Field ' + model.fields[i].name);
+                result.messages.add('K-Means only supports numeric and long text fields. Please change model algorithm to K-Medoids or change the field distance type. Field ' + model.fields[i].name);
             }
         }
         if ((model.numberOfClusters < 2) || (model.parameters != null && model.parameters.size() > 0 && Integer.valueOf(model.parameters.get('numberOfClusters')) < 2)) {
@@ -101,7 +101,7 @@
         return isLastStep;
     }
 
-    public override Double calculateDistance(Object[] currentObject, Object[] centroid) {
+    protected override Double calculateDistance(Object[] currentObject, Object[] centroid) {
         return this.useEuclideanDistance ? ClusterDataHelper.calculateEuclideanDistance(currentObject, centroid, this.state) :
             ClusterDataHelper.calculateManhattanDistance(currentObject, centroid, this.state);
     }
@@ -110,7 +110,7 @@
         List<ClusterAlgorithmParameter> parameters = new List<ClusterAlgorithmParameter>();
         Object clusterNumber = model == null ? 4 : model.numberOfClusters;
         parameters.add(new ClusterAlgorithmParameter('numberOfClusters', 'Number of clusters', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, clusterNumber, null));
-        parameters.add(new ClusterAlgorithmParameter('distanceFunction', 'Distance Function', ClusterAlgorithmParameter.ParameterType.SELECT_PARAMETER, ClusterConstants.DISTANCE_EUCLIDEAN, 
+        parameters.add(new ClusterAlgorithmParameter('distanceFunction', 'Distance Function', ClusterAlgorithmParameter.ParameterType.SELECT_PARAMETER, ClusterConstants.DISTANCE_MANHATTAN, 
             new String[]{ ClusterConstants.DISTANCE_MANHATTAN, ClusterConstants.DISTANCE_EUCLIDEAN }));
         return parameters;
     }

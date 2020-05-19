@@ -63,7 +63,7 @@
                                     variant="label-hidden" />
                             </div>
                             <div class="slds-col slds-size_1-of-3 cme-field">
-                                <aura:if isTrue="{! (modelField.distanceType == 'Numeric' || modelField.distanceType == 'Category' || modelField.distanceType == 'Text') }" >
+                                <aura:if isTrue="{! (modelField.distanceType == 'Numeric' || modelField.distanceType == 'Category' || modelField.distanceType == 'Text' || modelField.distanceType == 'LongText') }" >
                                     <lightning:input type="number" label="Field value weight" required="true" value="{!modelField.weight}"
                                     min="0" max="1" formatter="percent" step="0.01" variant="label-hidden" />
                                 </aura:if>

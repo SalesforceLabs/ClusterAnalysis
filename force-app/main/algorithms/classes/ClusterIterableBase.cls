@@ -1,6 +1,9 @@
 public with sharing abstract class ClusterIterableBase implements Database.Batchable<Object>, Database.Stateful, ClusterAlgorithmStep {
     public ClusterAlgorithmRunner runner;
     private Integer batchSize;
+    private Boolean hadErrorsDuringProcessing = false;
+    private String lastProcessingError;
+
     public static Logger log = LogFactory.getLogger();
 
     public ClusterIterableBase() {
@@ -44,10 +47,13 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
             this.processRecords(bc, scope);
         }
         catch (Exception ex) {
+            this.hadErrorsDuringProcessing = true;
+            this.lastProcessingError = ex.getMessage();
             log.error('Exception caught while processing ' + scope.size() + ' records', ex);
             ClusterJobManager.saveJobState(jobState, ClusterConstants.JOBSTATUS_FAILED, ex.getMessage());
             throw ex;
         }
+        log.debug('Finished processing the chunk, current heap size: ' + Limits.getHeapSize());
     }
 
     public abstract void processRecords(Database.BatchableContext bc, Object[] scope);
@@ -55,6 +61,9 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
     public virtual void finish(Database.BatchableContext bc){
         ClusterJobState jobState = this.runner.getJobState();
         try {
+            if (this.hadErrorsDuringProcessing) {
+                throw new ClusterException('The following errors reported during processing: ' + this.lastProcessingError);
+            }
             ClusterJobManager.saveJobState(jobState, ClusterConstants.JOBSTATUS_IN_PROGRESS, '');
             log.debug('Finishing batch job: ' + jobState.currentJobId);
             this.done();

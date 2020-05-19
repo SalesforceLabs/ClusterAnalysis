@@ -69,18 +69,18 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
             ClusterIterableBase.log.debug('New centroids ' + newCentroids);
             for (Integer dpindex = 0; dpindex < allDataPoints.size(); dpindex++) {
                 if (allDataPoints[dpindex].recordId == currentRecord.recordId) continue;
-                Object[] currentObject = allDataPoints[dpindex].values;
+                ClusterDataPoint currentObject = allDataPoints[dpindex];
                 //Finding the nearest centroid and min distance
                 //TODO: since this is almost the same logic as in PAM data assignment step repeating it is not needed if we remember assignment and cost here
                 //This however will require more memory
                 Integer nearestCentroidIndex = 0;
                 Boolean isCentroid = false;
-                Double minDistance = this.runner.calculateDistance(currentObject, newCentroids[nearestCentroidIndex].values);
+                Double minDistance = this.runner.calculateDPDistance(currentObject, newCentroids[nearestCentroidIndex]);
                 for (Integer cindex = 1; cindex < centroidSize; cindex++) {
                     isCentroid = newCentroids[cindex].recordId == allDataPoints[dpindex].recordId;
                     if (isCentroid)
                         break;
-                    Double distance = this.runner.calculateDistance(currentObject, newCentroids[cindex].values);
+                    Double distance = this.runner.calculateDPDistance(currentObject, newCentroids[cindex]);
                     if (Math.abs(distance) < Math.abs(minDistance)) {
                         minDistance = distance;
                         nearestCentroidIndex = cindex;
