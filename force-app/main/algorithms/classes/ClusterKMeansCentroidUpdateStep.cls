@@ -47,10 +47,11 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
         ClusterMinMaxValue[] minMaxValues = jobState.minMaxValues;
         Integer length = model.fields.size();
         Integer scopeSize = scope.size();
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
         List<ClusterDataPoint> centroids = jobState.centroids;
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
-            ClusterDataPoint currentDataPoint = new ClusterDataPoint(currentRecord);
+            ClusterDataPoint currentDataPoint = new ClusterDataPoint(currentRecord, objectProcessor);
             ClusterDataPoint currentCentroid = centroids[currentDataPoint.clusterIndex];
             //Calculating per cluster sum and count of all data point values
             for (Integer findex=0; findex<model.fields.size(); findex++) {

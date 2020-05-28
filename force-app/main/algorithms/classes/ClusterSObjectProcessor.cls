@@ -45,4 +45,26 @@ public with sharing class ClusterSObjectProcessor {
             fieldProcessor.processTotals(this.jobState.model.fields[i], this.jobState.minMaxValues[i], this.jobState.numRecords);
         }
     }
+
+    public Object[] parseValuesFromJson(string jsonValues) {
+        //We have to use our own json parser (with blackjack :)) because standard parser converts Double[] to Object[] which takes 3 times more Apex heap
+        JSONParser parser = JSON.createParser(jsonValues);
+        JSONToken nextToken = parser.nextToken();
+        Object[] values = null;
+        if (nextToken == JSONToken.START_ARRAY) {
+            values = new Object[this.jobState.model.fields.size()];
+            for (Integer i = 0; i < this.jobState.model.fields.size(); i++) {
+                ClusterModelFieldWrapper field = this.jobState.model.fields[i];
+                Object value;
+                if (field.isLongText) {
+                    value = this.longTextProcessor.parseValueFromJson(parser);
+                }
+                else {
+                    value = this.scalarProcessor.parseValueFromJson(parser);
+                }
+                values[i] = value;
+            }
+        }
+        return values;
+    }
 }

@@ -34,11 +34,11 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
         return [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :this.jobState.clusterJob.Id ORDER BY Random__c LIMIT :count];
     }
 
-    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord) {
+    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
         ClusterDataPoint dp = new ClusterDataPoint();
         dp.recordId = resultRecord.Id;
         dp.externalId = resultRecord.RecordId__c;
-        dp.values = (Object[])JSON.deserializeUntyped(resultRecord.Json__c);
+        dp.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
         ClusterDataHelper.normalizeObject(dp.values, this.jobState);
         return dp;
     }
@@ -46,21 +46,26 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
     public void run() {
         log.debug('Retrieving random records from db');
         List<ClusterJobResult__c> randomRecords = this.getRandomRecords(Math.min(ClusterConstants.getSampleRecordSize(this.jobState.model), this.jobState.numRecords));
+        log.debug('Finished retrieving random records, current heap size: ' + Limits.getHeapSize());
 
         log.debug('Initializing sample records');
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(this.jobState);
         for (ClusterJobResult__c record:randomRecords){
             this.jobState.sampleResultsIds.add(record.Id);
-            ClusterDataPoint dp = this.createDataPoint(record);
+            ClusterDataPoint dp = this.createDataPoint(record, objectProcessor);
             dataPoints.add(dp);
             dp.index = index;
             if (this.cacheRecords) {
                 jobState.dataPointsIdMap.put(dp.recordId, index);
             }
             index++;
+            log.debug('Processed record ' + index + ', heap size: ' + Limits.getHeapSize());
         }
+        log.debug('Finished initializing sample records, current heap size: ' + Limits.getHeapSize());
         this.algRunner.initializeDistanceCache(dataPoints.size());
+        log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());
         //k-means++ centroid initialization
         log.debug('Initializing centroids');
         //Select first centroid randomly

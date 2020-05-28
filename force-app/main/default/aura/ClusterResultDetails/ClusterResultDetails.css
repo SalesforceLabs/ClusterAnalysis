@@ -1,0 +1,7 @@
+.THIS {
+}
+.THIS .crd_columntext {
+    white-space: normal;
+    height: auto;
+    overflow-wrap: break-word;
+}

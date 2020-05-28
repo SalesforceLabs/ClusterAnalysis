@@ -42,4 +42,27 @@ public with sharing class ClusterScalarFieldValueProcessor implements ClusterFie
             minMaxValue.delta = Double.valueOf(minMaxValue.maxValue) - Double.valueOf(minMaxValue.minValue);
         }
     }
+
+    public Object parseValueFromJson(JSONParser parser) {
+        JSONToken nextToken = parser.nextToken();
+        Object value;
+        switch on nextToken {            
+            when VALUE_NUMBER_FLOAT, VALUE_NUMBER_INT {
+                value = parser.getDoubleValue();
+            }
+            when VALUE_STRING {
+                value = parser.getText();
+            }
+            when VALUE_NULL {
+                value = null;
+            }
+            when VALUE_FALSE, VALUE_TRUE {
+                value = parser.getBooleanValue();
+            }
+            when else {
+                throw new ClusterException('Cannot parse json value ' + parser.getText());
+            }
+        }
+        return value;
+    }
 }

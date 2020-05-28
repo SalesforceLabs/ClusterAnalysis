@@ -17,7 +17,7 @@
     loadDataPoints: function (component, offset) {
         let jobDetails = component.get('v.jobDetails');
         let action = component.get("c.getDataPointsJson");
-        let count = 20;
+        let count = 50;
         action.setParams({ jobId: jobDetails.jobId, maxCount: count, offset: offset });
         let helper = this;
         console.log('Loading data points, offset: ' + offset);
@@ -439,7 +439,7 @@
         magnitude2 = Math.sqrt(magnitude2);
         let magnitude = magnitude1 * magnitude2;
         if (this.doublesEqual(magnitude, zero)) {
-            return zero;
+            return 1.0;
         }
         else {
             return dotProduct / magnitude;

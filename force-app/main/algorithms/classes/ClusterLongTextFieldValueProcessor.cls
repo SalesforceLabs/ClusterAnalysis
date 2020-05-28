@@ -12,7 +12,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
 
     public ClusterLongTextFieldValueProcessor(ClusterJobState state) {
         this.jobState = state;
-        this.wordPreprocessor = new ClusterWordPreprocessor(ClusterConstants.getStopWords('english')); //TODO: move this to field desc
+        this.wordPreprocessor = new ClusterWordPreprocessor('english'); //TODO: move this to field desc
     }
 
     public Object processFieldValue(SObject record, ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue) {
@@ -140,5 +140,31 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             }
         }
         return idf;
+    }
+
+    public Object parseValueFromJson(JSONParser parser) {
+        JSONToken nextToken = parser.nextToken();
+        Object value;
+        if (nextToken == JSONToken.VALUE_NULL) {
+            value = null;
+        }
+        else if (nextToken == JSONToken.START_ARRAY) {
+            List<Double> tfList = new List<Double>();
+            nextToken = parser.nextToken();
+            while (nextToken != JSONToken.END_ARRAY && nextToken != null) {
+                if (nextToken == JSONToken.VALUE_NUMBER_FLOAT || nextToken == JSONToken.VALUE_NUMBER_INT || nextToken == JSONToken.VALUE_NULL) {
+                    tfList.add(parser.getDoubleValue());
+                }
+                else {
+                    throw new ClusterException('Cannot parse long text array item ' + parser.getText());
+                }
+                nextToken = parser.nextToken();
+            }
+            value = tfList;
+        }
+        else {
+            throw new ClusterException('Cannot parse long text value ' + parser.getText());
+        }
+        return value;
     }
 }

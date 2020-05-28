@@ -52,8 +52,12 @@ public with sharing class ClusterJobDetailsController {
         List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        for (ClusterJobResult__c record:randomRecords){
-            ClusterDataPoint dp = new ClusterDataPoint(record);
+        ClusterJob__c job = ClusterJobManager.getJob(jobId);
+        ClusterJobState jobState = new ClusterJobState();
+        jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        for (ClusterJobResult__c record:randomRecords) {
+            ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
             dataPoints.add(dp);
         }
         return dataPoints; 
