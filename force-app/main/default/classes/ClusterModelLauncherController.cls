@@ -33,7 +33,9 @@ public with sharing class ClusterModelLauncherController {
 
     @AuraEnabled
     public static ClusterJobRunnerUiModel getModels(){
-        List<ClusterModel__c> modelList = [SELECT Id, Name, Object__c, Algorithm__c, Filter__c, Parameters__c, SOQL__c , isCustomSoql__c, Description__c, NumberOfClusters__c FROM ClusterModel__c ORDER BY Object__c, Name];
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterModel__c);
+        List<ClusterModel__c> modelList = [SELECT Id, Name, Object__c, Algorithm__c, Filter__c, Parameters__c, SOQL__c , isCustomSoql__c, Description__c, NumberOfClusters__c 
+            FROM ClusterModel__c WITH SECURITY_ENFORCED ORDER BY Object__c, Name];
         ClusterJobRunnerUiModel uiModel = new ClusterJobRunnerUiModel();
         uiModel.models = new List<ClusterModelWrapper>();
         for (ClusterModel__c model:modelList) {

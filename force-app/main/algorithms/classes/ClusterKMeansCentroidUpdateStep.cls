@@ -38,6 +38,8 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
     
     protected override Database.QueryLocator getBatchQueryLocator() {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
+        //CRUD permissions on ClusterJobResult__c are checked in ClusterAccessCheck.checkCRUDPermission in ClusterAlgorithmRunner.start which is calling all ClusterAlgorithmStep implementors
+        //exception is thrown there in case of no access
         return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
     }
 
