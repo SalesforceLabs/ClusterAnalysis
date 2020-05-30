@@ -75,9 +75,9 @@ public with sharing class ClusterModelBuilderController {
             ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterModelField__c);
     
             //CRUD permissions are checked in ClusterAccessCheck.checkCRUDPermission, exception is thrown in case of no access
-            cmodel = [SELECT Id, Name, Algorithm__c, Filter__c, Parameters__c, SOQL__c , isCustomSoql__c, Description__c, NumberOfClusters__c FROM ClusterModel__c WHERE Id = :model.modelId FOR UPDATE];
+            cmodel = [SELECT Id, Name, Algorithm__c, Filter__c, Parameters__c, SOQL__c , isCustomSoql__c, Description__c, NumberOfClusters__c FROM ClusterModel__c WHERE Id = :model.modelId WITH SECURITY_ENFORCED FOR UPDATE];
             //removing existing fields
-            List<ClusterModelField__c> existingFields = [SELECT Id, Name, Model__c FROM ClusterModelField__c WHERE Model__c = :model.modelId FOR UPDATE];
+            List<ClusterModelField__c> existingFields = [SELECT Id, Name, Model__c FROM ClusterModelField__c WHERE Model__c = :model.modelId WITH SECURITY_ENFORCED FOR UPDATE];
             delete existingFields;
             model.populateModelRecord(cmodel);
             update cmodel;

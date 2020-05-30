@@ -20,7 +20,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
         if (jobIdsToDelete == null || jobIdsToDelete.size() == 0) {
             ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterModel__c);
             ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterModelField__c);
-            List<ClusterJob__c> jobs = [SELECT Id, JobStatus__c, JobStatusText__c FROM ClusterJob__c WHERE ClusterModel__c IN :modelIdsToDelete];
+            List<ClusterJob__c> jobs = [SELECT Id, JobStatus__c, JobStatusText__c FROM ClusterJob__c WHERE ClusterModel__c IN :modelIdsToDelete WITH SECURITY_ENFORCED];
             this.jobIdsToDelete = new List<Id>();
             for (ClusterJob__c job: jobs) {
                 this.jobIdsToDelete.add(job.Id);
@@ -30,7 +30,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
             update jobs;
         }
         else {
-            List<ClusterJob__c> jobs = [SELECT Id, JobStatus__c FROM ClusterJob__c WHERE Id IN :jobIdsToDelete];
+            List<ClusterJob__c> jobs = [SELECT Id, JobStatus__c FROM ClusterJob__c WHERE Id IN :jobIdsToDelete WITH SECURITY_ENFORCED];
             for (ClusterJob__c job: jobs) {
                 job.JobStatus__c = ClusterConstants.JOBSTATUS_MARKED_FOR_CANCEL;
             }
@@ -45,7 +45,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
     private Database.QueryLocator getBatchQueryLocator() {
         ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterJob__c);
         ClusterAccessCheck.checkFLSReadPermission(Schema.sObjectType.ClusterJobResult__c.fields.ClusterJob__c);
-        return Database.getQueryLocator([SELECT Id FROM ClusterJobResult__c WHERE ClusterJob__c IN :this.jobIdsToDelete]);
+        return Database.getQueryLocator([SELECT Id FROM ClusterJobResult__c WHERE ClusterJob__c IN :this.jobIdsToDelete WITH SECURITY_ENFORCED]);
     }
 
     public virtual Database.QueryLocator start(Database.BatchableContext bc) {
@@ -71,7 +71,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
     public virtual void finish(Database.BatchableContext bc){
         ClusterAccessCheck.checkFLSReadPermission(Schema.sObjectType.ClusterJobCluster__c.fields.ClusterJob__c);
         if (Schema.sObjectType.ClusterJobCluster__c.isAccessible() && Schema.sObjectType.ClusterJobCluster__c.isDeletable()) {
-            List<ClusterJobCluster__c> clustersToDelete = [SELECT Id FROM ClusterJobCluster__c WHERE ClusterJob__c IN :this.jobIdsToDelete];
+            List<ClusterJobCluster__c> clustersToDelete = [SELECT Id FROM ClusterJobCluster__c WHERE ClusterJob__c IN :this.jobIdsToDelete WITH SECURITY_ENFORCED];
             if (clustersToDelete.size() > 0) {
                 log.debug('Deleting ' + clustersToDelete.size() + ' clusters');
                 delete clustersToDelete;
@@ -81,7 +81,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
             if (Schema.sObjectType.ClusterJob__c.isAccessible() && Schema.sObjectType.ClusterJob__c.isDeletable()) {
                 log.debug('Deleting ' + this.jobIdsToDelete.size() + ' jobs');
                 ClusterAccessCheck.checkFLSReadPermission(Schema.sObjectType.ClusterJob__c.fields.Id);
-                List<ClusterJob__c> jobsToDelete = [SELECT Id FROM ClusterJob__c WHERE Id IN :this.jobIdsToDelete];
+                List<ClusterJob__c> jobsToDelete = [SELECT Id FROM ClusterJob__c WHERE Id IN :this.jobIdsToDelete WITH SECURITY_ENFORCED];
                 delete jobsToDelete;
             }
         }
@@ -89,14 +89,14 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
             if (Schema.sObjectType.ClusterModelField__c.isAccessible() && Schema.sObjectType.ClusterModelField__c.isDeletable() 
                 && Schema.sObjectType.ClusterModel__c.isAccessible() && Schema.sObjectType.ClusterModel__c.isDeletable() 
                 && Schema.sObjectType.ClusterModelField__c.fields.Model__c.isAccessible()) {
-                List<ClusterModelField__c> fieldsToDelete = [SELECT Id FROM ClusterModelField__c WHERE Model__c IN :this.modelIdsToDelete];
+                List<ClusterModelField__c> fieldsToDelete = [SELECT Id FROM ClusterModelField__c WHERE Model__c IN :this.modelIdsToDelete WITH SECURITY_ENFORCED];
                 if (fieldsToDelete.size() > 0) {
                     if (Schema.sObjectType.ClusterModelField__c.isAccessible() && Schema.sObjectType.ClusterModelField__c.isDeletable()) {
                         log.debug('Deleting ' + fieldsToDelete.size() + ' model fields');
                         delete fieldsToDelete;
                     }
                 }
-                List<ClusterModel__c> modelsToDelete = [SELECT Id FROM ClusterModel__c WHERE Id IN :this.modelIdsToDelete];
+                List<ClusterModel__c> modelsToDelete = [SELECT Id FROM ClusterModel__c WHERE Id IN :this.modelIdsToDelete WITH SECURITY_ENFORCED];
                 if (modelsToDelete.size() > 0) {
                     if (Schema.sObjectType.ClusterModel__c.isAccessible() && Schema.sObjectType.ClusterModel__c.isDeletable()) {
                         log.debug('Deleting ' + modelIdsToDelete.size() + ' models');
