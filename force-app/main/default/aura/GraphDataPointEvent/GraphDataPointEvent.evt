@@ -1,0 +1,4 @@
+<aura:event type="COMPONENT" description="Data point mouse over event" access="global">
+    <aura:attribute name="dataPoint" type="Object" access="global"/>
+
+</aura:event>

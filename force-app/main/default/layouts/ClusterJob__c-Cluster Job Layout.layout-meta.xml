@@ -151,7 +151,6 @@
         <fields>RelatedRecordLink__c</fields>
         <fields>ClusterNumber__c</fields>
         <fields>ClusterName__c</fields>
-        <fields>Json__c</fields>
         <relatedList>ClusterJobResult__c.ClusterJob__c</relatedList>
         <sortField>ClusterNumber__c</sortField>
         <sortOrder>Asc</sortOrder>
@@ -170,7 +169,7 @@
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
     <summaryLayout>
-        <masterLabel>00h11000001cDFN</masterLabel>
+        <masterLabel>00h55000000hUgU</masterLabel>
         <sizeX>4</sizeX>
         <sizeY>2</sizeY>
         <summaryLayoutItems>

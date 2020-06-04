@@ -40,7 +40,7 @@ public with sharing class ClusterJobManager {
     public static ClusterJob__c getJob(Id jobId) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJob__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        return [SELECT Id, ClusterModel__c, NumberOfClusters__c, ObjectName__c, JobStatus__c, JobStatusText__c, StartDate__c, EndDate__c, InternalJobId__c, Score__c 
+        return [SELECT Id, JobName__c, ClusterModel__c, NumberOfClusters__c, ObjectName__c, JobStatus__c, JobStatusText__c, StartDate__c, EndDate__c, InternalJobId__c, Score__c 
             FROM ClusterJob__c WHERE Id = :jobId WITH SECURITY_ENFORCED];
     }
 

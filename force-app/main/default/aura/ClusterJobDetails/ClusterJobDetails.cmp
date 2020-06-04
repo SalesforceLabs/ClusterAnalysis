@@ -6,7 +6,11 @@
     <aura:attribute name="epsilon" type="Integer" access="private" default="10" />
     <aura:attribute name="perplexity" type="Integer" access="private" default="30" />
     <aura:attribute name="timeoutId" type="Integer" access="private" default="0" />
+    <aura:attribute name="pollingCount" type="Integer" access="private" default="0" />
     <aura:attribute name="isEditMode" type="Boolean" access="private" default="false" />
+    <aura:attribute name="tsneTooltipVisible" type="Boolean" access="private" default="false" />
+    
+    <aura:handler name="graphDataPointHoverEvent" event="c:GraphDataPointEvent" includeFacets="true" action="{!c.graphDataPointHoverEventHandler}" />
 
     <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
     <lightning:notificationsLibrary aura:id="notifLib" />
@@ -224,19 +228,28 @@
                                 <c:ClusterTSNE aura:id="tsneGraph" initJobDetails="false" width="800" height="600"
                                     collide="true" />
                             </div>
-                            <div class="slds-col tsneParams">
-                                <div class="slds-text-heading_small">t-SNE Parameters:</div>
-                                <div>
-                                    <lightning:input type="checkbox" label="Collide" aura:id="collideInput"
-                                        onchange="{!c.tsneParameterChange}" checked="true" />
+                            <div class="slds-col">
+                                <div class="tsneParams">
+                                    <div class="slds-text-heading_small">t-SNE Parameters:</div>
+                                    <div>
+                                        <lightning:input type="checkbox" label="Collide" aura:id="collideInput"
+                                            onchange="{!c.tsneParameterChange}" checked="true" />
+                                    </div>
+                                    <div>
+                                        <lightning:slider label="Epsilon" size="x-small" value='{!v.epsilon}'
+                                            onchange="{!c.tsneParameterChange}" min="0" max="20" step="1" />
+                                    </div>
+                                    <div>
+                                        <lightning:slider label="Perplexity" size="x-small" value='{!v.perplexity}'
+                                            onchange="{!c.tsneParameterChange}" min="0" max="500" step="1" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <lightning:slider label="Epsilon" size="x-small" value='{!v.epsilon}'
-                                        onchange="{!c.tsneParameterChange}" min="0" max="20" step="1" />
-                                </div>
-                                <div>
-                                    <lightning:slider label="Perplexity" size="x-small" value='{!v.perplexity}'
-                                        onchange="{!c.tsneParameterChange}" min="0" max="500" step="1" />
+                                <div class="tsneDataPoint">
+                                    <aura:if isTrue="{!v.tsneTooltipVisible}">
+                                        <div class="slds-box slds-theme_shade">
+                                            <c:ClusterResultDetails aura:id="tsneDetails" jobState="{!v.jobDetails.state}" showRecordName="true" /> 
+                                        </div>
+                                    </aura:if>
                                 </div>
                             </div>
                         </div>

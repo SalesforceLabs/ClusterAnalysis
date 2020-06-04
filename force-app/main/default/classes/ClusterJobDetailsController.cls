@@ -50,7 +50,7 @@ public with sharing class ClusterJobDetailsController {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission above, exception is thrown in case of no access
         List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
-            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId ORDER BY Random__c LIMIT :count OFFSET :offset];
+            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterJob__c job = ClusterJobManager.getJob(jobId);
         ClusterJobState jobState = new ClusterJobState();
@@ -96,5 +96,33 @@ public with sharing class ClusterJobDetailsController {
         job.JobName__c = jobName;
         update job;
         return getJob(jobId);     
+    }
+
+    @AuraEnabled
+    public static ClusterResultDetailsUiModel getJobResultModel(Id jobResultId){
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
+        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+            FROM ClusterJobResult__c WHERE Id = :jobResultId WITH SECURITY_ENFORCED];
+        
+        ClusterJobResult__c result = results.get(0);
+        ClusterJob__c job = ClusterJobManager.getJob(result.ClusterJob__c);
+        
+        ClusterJobState jobState = new ClusterJobState();
+        jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
+
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterDataPoint dp = new ClusterDataPoint(result, objectProcessor);
+
+        ClusterResultDetailsUiModel uiModel = new ClusterResultDetailsUiModel();
+        uiModel.jobId = job.Id;
+        uiModel.jobName = job.JobName__c;
+        uiModel.jobStateString = ClusterJobManager.loadJobState(job.Id);
+        uiModel.dataPoint = dp;
+        uiModel.resultName = result.Name;
+        uiModel.clusterId = result.Cluster__c;
+        if (result.Cluster__r != null) {
+            uiModel.clusterName = result.Cluster__r.ClusterName__c;
+        }
+        return uiModel; 
     }
 }

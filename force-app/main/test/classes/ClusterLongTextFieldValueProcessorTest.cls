@@ -8,7 +8,7 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
     public static void testTfIdf() {
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
-            ClusterWordPreprocessor wordPreprocessor = new ClusterWordPreprocessor(new Set<String>(ENGLISH_STOP_WORDS.split(',')));
+            ClusterWordPreprocessor wordPreprocessor = new ClusterWordPreprocessor('english');
             Map<String, Integer> wordMap = new Map<String,Integer>();
             List<String> wordList = new List<String>();
             String text = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah';
@@ -16,7 +16,7 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.assertEquals(true, wordMap.containsKey('never'), 'TF word parsing failed');
             System.assertEquals(false, wordMap.containsKey('do'), 'TF word parsing failed');
             System.assertEquals(true, wordMap.containsKey('know'), 'TF word parsing failed');
-            System.assertEquals('cared', wordList.get(1), 'TF word parsing failed');
+            System.assertEquals('care', wordList.get(1), 'TF word parsing failed');
             System.assertEquals(4, wordList.size(), 'TF word parsing failed');
             System.assertEquals(2, wordMap.get('never'), 'TF word count failed');
             System.assertEquals(1, wordMap.get('know'), 'TF word count failed');

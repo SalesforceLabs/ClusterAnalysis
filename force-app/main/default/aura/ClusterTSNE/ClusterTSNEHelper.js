@@ -10,14 +10,28 @@
         "#a964fb", "#92e460", "#a05787", "#9c87a0", "#20c773", "#8b696d", "#78762d", "#e154c6", "#40835f", "#d73656", "#1afd5c",
         "#c4f546", "#3d88d8", "#bd3896", "#1397a3", "#f940a5", "#66aeff", "#d097e7", "#fe6ef9", "#d86507", "#8b900a", "#d47270",
         "#e8ac48", "#cf7c97", "#cebb11", "#718a90", "#e78139", "#ff7463", "#bea1fd"],
-    
+
     init: function() {
+    },
+
+    fireGraphDataPointHoverEvent: function(component, dataPoint) {
+        var graphDataPointHoverEvent = component.getEvent('graphDataPointHoverEvent');
+        graphDataPointHoverEvent.setParams({ "dataPoint" : dataPoint });
+        graphDataPointHoverEvent.fire();
     },
 
     loadDataPoints: function (component, offset) {
         let jobDetails = component.get('v.jobDetails');
         let action = component.get("c.getDataPointsJson");
-        let count = 50;
+        let hasLongText = false;
+        for (let i = 0; i < jobDetails.model.fields.length; i++) {
+            if (jobDetails.model.fields[i].isLongText) {
+                hasLongText = true;
+                break;
+            }
+        }
+        //Setting smaller batch size for long text fields to avoid Apex heap limit
+        let count = hasLongText ? 50 : 500;
         action.setParams({ jobId: jobDetails.jobId, maxCount: count, offset: offset });
         let helper = this;
         console.log('Loading data points, offset: ' + offset);
@@ -82,7 +96,7 @@
         else {        
             helper.drawTSNE3(component, dataPoints, jobDetails, distances);
         }
-    },
+    },    
 
     drawTSNE3: function (component, dataPoints, jobDetails, distances) {
         if (this.d3simulation) {
@@ -146,28 +160,7 @@
         // tooltip mouseover event handler
         let tipMouseover = function(d,i) {
             d3.select(this).style("stroke", "black");
-            let color = helper.d3clusterColors[dataPoints[i].clusterIndex];
-            let html  = helper.encodeHtml(d.recordName) + "<br/>" +
-                "<span>Cluster: " + dataPoints[i].clusterIndex + "</span><div class='clusterbox' style='background-color:" + color + ";'></div><br/>";
-            let dl = "<div class='slds-region_narrow' style='width: " + width.toString() + "px'><dl class='slds-dl_horizontal'>";
-            for (let fi=0; fi<jobDetails.model.fields.length; fi++) {
-                if (d.values[fi] == d.recordName)
-                    continue;
-                let fieldValue = d.values[fi];
-                if (jobDetails.model.fields[fi].dataType == 'datetime' && fieldValue != null) {
-                    fieldValue = new Date(fieldValue);
-                }
-                dl += '<dt class="slds-dl_horizontal__label">' +
-                    '<p class="slds-truncate">' + helper.encodeHtml(jobDetails.model.fields[fi].name) + '</p></dt>' + 
-                '<dd class="slds-dl_horizontal__detail slds-tile__meta">' +
-                '<p class="slds-truncate">' + helper.encodeHtml(fieldValue) + '</p></dd>';
-            }
-            html += dl + "</dl></div>";
-            tooltip.html(html)
-                .transition()
-                .duration(200) // ms
-                .style("opacity", .9) // started as 0!
-
+            helper.fireGraphDataPointHoverEvent(component, dataPoints[i]);
         };
         // tooltip mouseout event handler
         let tipMouseout = function(d) {

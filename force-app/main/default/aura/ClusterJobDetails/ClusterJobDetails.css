@@ -18,6 +18,10 @@
 }
 .THIS .tsneParams {
 }
+.THIS .tsneDataPoint {
+    max-width: 500px;
+    margin-top: 30px;
+}
 .THIS .tsneParams .slds-checkbox {
     /*
     padding-top: 8px !important;

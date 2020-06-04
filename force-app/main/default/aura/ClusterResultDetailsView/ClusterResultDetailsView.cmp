@@ -1,0 +1,66 @@
+<aura:component implements="force:hasRecordId,flexipage:availableForRecordHome,lightning:actionOverride"
+    controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
+    <aura:attribute name="jobResultDetails" type="Object" access="public" />
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <lightning:notificationsLibrary aura:id="notifLib" />
+    <div class="c-container slds-scope slds-container slds-panel">
+
+        <div class="slds-page-header slds-page-header_record-home">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning:icon iconName="standard:data_streams" alternativeText="Cluster Job Result" title="Cluster Job Result" />                            
+                        </div>
+                        <div class="slds-media__body">
+                            <div class="slds-page-header__name">
+                                <div class="slds-page-header__name-title">
+                                    <h1>
+                                        <span>Cluster Job Result Record</span>
+                                        <span
+                                            class="slds-page-header__title slds-truncate">{!v.jobResultDetails.resultName}</span>
+                                    </h1>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slds-page-header__col-actions">
+                </div>
+            </div>
+            <div class="slds-page-header__row slds-page-header__row_gutters">
+                <div class="slds-page-header__col-details">
+                    <ul class="slds-page-header__detail-row">                        
+                        <li class="slds-page-header__detail-block crd_headerfirstchild">
+                            <div class="slds-text-title slds-truncate">Cluster Job</div>
+                            <a href="{!('/' + v.jobResultDetails.jobId)}" onclick="{!c.jobLinkClick}">
+                                <div class="slds-truncate">{!v.jobResultDetails.jobName}</div>
+                            </a>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate">Cluster Name</div>
+                            <a href="{!('/' + v.jobResultDetails.clusterId)}" onclick="{!c.clusterLinkClick}">
+                                <div class="slds-truncate">{!v.jobResultDetails.clusterName}</div>
+                            </a>
+                        </li>
+                        <li class="slds-page-header__detail-block">
+                            <div class="slds-text-title slds-truncate">Cluster Number</div>
+                            <div class="slds-truncate">{!v.jobResultDetails.dataPoint.clusterIndex}</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <lightning:layout multipleRows="true" verticalAlign="start">
+            <lightning:layoutItem padding="around-small" size="8">
+                <div class="slds-box slds-theme_shade">
+                    <c:ClusterResultDetails aura:id="dataPointDetails" showRecordName="true" />
+                </div>
+            </lightning:layoutItem>
+        </lightning:layout>
+
+    </div>
+
+</aura:component>

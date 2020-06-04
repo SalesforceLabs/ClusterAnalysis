@@ -1,6 +1,7 @@
 ({
     onInit : function(component, event, helper) {
         component.set('v.isVisible', true);
+        component.set('v.pollingCount', 0);
         helper.loadJobDetails(component, event, helper, false);
     },
     cancelButtonClick : function(component, event, helper) {
@@ -40,5 +41,12 @@
             );
             component.set('v.timeoutId', timeoutId);
         }
+    },
+    graphDataPointHoverEventHandler: function(component, event) {
+        component.set('v.tsneTooltipVisible', true);
+        let tsneDetails = component.find('tsneDetails');
+        let dataPoint = event.getParam("dataPoint");
+        tsneDetails.set('v.dataPoint', dataPoint);
+        tsneDetails.rebind();
     }
 })
