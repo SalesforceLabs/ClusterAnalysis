@@ -338,6 +338,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>ClusterModelField__c.Language__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>ClusterModelField__c.RelationName__c</field>
         <readable>true</readable>
     </fieldPermissions>

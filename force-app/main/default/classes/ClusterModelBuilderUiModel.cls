@@ -89,5 +89,7 @@ public class ClusterModelBuilderUiModel {
     public List<UiSelectOption> algorithmList;
     @AuraEnabled
     public List<UiSelectOption> fieldTypeList;
+    @AuraEnabled
+    public List<UiSelectOption> languageList;
     
 }

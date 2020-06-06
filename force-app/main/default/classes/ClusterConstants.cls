@@ -21,9 +21,8 @@ public with sharing class ClusterConstants {
     public static final String DISTANCE_EUCLIDEAN = 'Euclidean';
     public static final String DISTANCE_GOWER = 'Gower';
 
-    public static final String ENGLISH_STOP_WORDS = 'a,able,about,across,after,all,almost,also,am,among,an,and,any,are,as,at,be,because,been,but,by,can,cannot,could,dear,did,do,does,either,else,ever,every,for,from,get,' + 
-        'got,had,has,have,he,her,hers,him,his,how,however,i,if,in,into,is,it,its,just,least,let,like,likely,may,me,might,most,must,my,neither,no,nor,not,of,off,often,on,only,or,other,our,own,rather,said,say,says,she,should,' + 
-        'since,so,some,than,that,the,their,them,then,there,these,they,this,tis,to,too,twas,us,wants,was,we,were,what,when,where,which,while,who,whom,why,will,with,would,yet,you,your';
+    public static final String LANGUAGE_NONE = 'none';
+    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 15000; //Max size of word list for tf-idf
 
     public static final Integer TEST_BATCH_SIZE = 200;
 
@@ -85,9 +84,28 @@ public with sharing class ClusterConstants {
         return getIntegerSettingValue('TSNESize', 500); 
     }
 
+    public static List<UiSelectOption> getSupportedModelLanguages() {
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel FROM ClusterLanguage__mdt WHERE DeveloperName <> :LANGUAGE_NONE ORDER BY MasterLabel];
+        List<UiSelectOption> langList = new List<UiSelectOption>();
+        langList.add(new UiSelectOption('None', 'None'));
+        for (ClusterLanguage__mdt language : languages) {
+            langList.add(new UiSelectOption(language.DeveloperName, language.MasterLabel));
+        }
+        return langList;
+    }
+
     public static Set<String> getStopWords(String language) {
-        //TODO: move this to custom settings
-        return new Set<String>(ENGLISH_STOP_WORDS.split(','));
+        Set<String> emptySet = new Set<String>();
+        if (language == null || language == '' || language.toLowerCase() == LANGUAGE_NONE) {
+            return emptySet;
+        }
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel,clustan__StopWords__c FROM ClusterLanguage__mdt WHERE DeveloperName = :language];
+        if (languages.size() > 0) {
+            return new Set<String>(languages.get(0).StopWords__c.split(','));
+        }
+        return emptySet;
     }
 
 }

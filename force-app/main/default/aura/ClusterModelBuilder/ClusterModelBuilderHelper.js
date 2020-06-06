@@ -196,6 +196,7 @@
                 if (existingField){
                     field.weight = existingField.weight;
                     field.distanceType = existingField.distanceType;
+                    field.language = existingField.language;
                 }
             });
         }
@@ -211,6 +212,7 @@
             distanceType: this.getDistanceTypeFromQueryField(model, queryField),
             weight: 1
         };
+        fieldWrapper.language = fieldWrapper.distanceType == 'LongText' ? 'English' : 'None';
         return fieldWrapper;
     },
 

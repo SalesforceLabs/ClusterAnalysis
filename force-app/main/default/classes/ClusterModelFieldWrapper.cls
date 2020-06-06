@@ -14,6 +14,7 @@ public class ClusterModelFieldWrapper {
         this.objectName = field.ObjectName__c;
         this.relationName = field.RelationName__c; 
         this.weight = field.Weight__c;
+        this.language = field.Language__c;
     }
     public void populateFieldRecord(ClusterModelField__c field){
         field.Id = this.fieldId;
@@ -22,6 +23,7 @@ public class ClusterModelFieldWrapper {
         field.ObjectName__c = this.objectName;
         field.RelationName__c = this.relationName; 
         field.Weight__c = this.weight;
+        field.Language__c = this.language;
     }
     @AuraEnabled
     public Id fieldId;
@@ -39,6 +41,8 @@ public class ClusterModelFieldWrapper {
     public Decimal weight;
     @AuraEnabled
     public String dataType;
+    @AuraEnabled
+    public String language;
     @AuraEnabled
     public Boolean isNumeric;
     @AuraEnabled

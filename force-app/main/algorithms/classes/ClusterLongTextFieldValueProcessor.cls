@@ -4,15 +4,19 @@
  * @author: Iskander Mukhamedgaliyev
  */
 public with sharing class ClusterLongTextFieldValueProcessor implements ClusterFieldValueProcessor {
-    public static final String WORD_BREAK_REGEX = '(\\w+\'{1}\\w+|\\w+|\\d+)';
-    public static final Pattern WORD_BREAK_PATTERN = Pattern.compile(WORD_BREAK_REGEX);
+    public static final String WORD_SPLIT_REGEX = '\\s|\\n|\\r|\\?|\\!|\\.|\\,|\\*|\\||\\(|\\)|\\[|\\]|\\{|\\}|\\"|\\`|\\$|\\^|\\~|\\/|\\\\|\\;|\\:|\\=';
     public static final Integer TFIDF_SCALE = 5;
+    private static Logger log = LogFactory.getLogger();
     ClusterJobState jobState;
-    ClusterWordPreprocessor wordPreprocessor;
+    Map<String,ClusterWordPreprocessor> wordPreprocessors;
 
     public ClusterLongTextFieldValueProcessor(ClusterJobState state) {
         this.jobState = state;
-        this.wordPreprocessor = new ClusterWordPreprocessor('english'); //TODO: move this to field desc
+        List<UiSelectOption> languages = ClusterConstants.getSupportedModelLanguages();
+        this.wordPreprocessors = new Map<String,ClusterWordPreprocessor>();
+        for (UiSelectOption language : languages) {
+            wordPreprocessors.put(language.value.toLowerCase(), new ClusterWordPreprocessor(language.value.toLowerCase()));
+        }
     }
 
     public Object processFieldValue(SObject record, ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue) {
@@ -36,7 +40,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         if (text == '') {
             return null;
         }
-        Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessor);
+        Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get('english'));
 
         //Converting to decimal and reducing scale to save on memory and storage size
         //This array will be deserialized to json string and stored in results object
@@ -52,13 +56,8 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return dtf;
     }
 
-    private static String[] splitText(Pattern p, String text) {
-        Matcher m = p.matcher(text);
-        List<String> result = new List<String>();
-        while (m.find()) {
-            result.add(m.group());
-        }
-        return result;
+    private static String[] splitText(String text) {
+        return text==null ? null : text.split(WORD_SPLIT_REGEX);
     }
 
     public static Double[] calculateTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor) {
@@ -66,7 +65,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             return null;
         }
         //Removing html tags and breaking into words
-        String[] words = splitText(WORD_BREAK_PATTERN, text.stripHtmlTags());
+        String[] words = splitText(text.stripHtmlTags());
 
         //This will contain word counts for the current document
         Map<String, Integer> currentWordMap = new Map<String,Integer>();
@@ -106,10 +105,15 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
     private static void addWordToMap(String word, Map<String, Integer> wordMap, Integer count, List<String> wordList) {
         Integer currentCount = wordMap.get(word);
         if (currentCount == null) {
-            wordMap.put(word, count);
-            //Also adding new word to the list
-            if (wordList != null) {
-                wordList.add(word);
+            if ((wordList == null) || (wordList.size() < ClusterConstants.MAX_TFIDF_WORDBAG_SIZE)) {
+                wordMap.put(word, count);
+                //Also adding new word to the list
+                if (wordList != null) {
+                    wordList.add(word);
+                }
+            }
+            else if (wordList != null) {
+                log.debug('Maximum size of word bag reached. Cannot add new word "' + word + '" to the list');
             }
         }
         else {
