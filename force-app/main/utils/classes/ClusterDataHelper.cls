@@ -254,8 +254,9 @@ public with sharing class ClusterDataHelper {
             Double v1 = i < v1Size ? vector1[i] : zero;
             Double v2 = i < v2Size ? vector2[i] : zero;
             if ((idfVector != null) && i < idfSize) {
-                v1 = v1 * idfVector[i];
-                v2 = v2 * idfVector[i];
+                Double idf = idfVector[i];
+                v1 = v1 * idf;
+                v2 = v2 * idf;
             }
             dotProduct += v1 * v2;
             magnitude1 += v1 * v1;

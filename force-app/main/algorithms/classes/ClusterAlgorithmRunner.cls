@@ -31,6 +31,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
         result.messages = new List<String>();
         Boolean hasIdField = false;
         Boolean hasValueFields = false;
+        Integer longTextFieldCount = 0;
         for (Integer i=0; i<model.fields.size(); i++) {
             if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_OUTPUT) {
                 result.isValid &= model.fields[i].name.toLowerCase().startsWith('clusternumber');
@@ -45,6 +46,9 @@ public abstract with sharing class ClusterAlgorithmRunner {
                 (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_LONGTEXT)) 
             {
                 hasValueFields = true;
+                if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_LONGTEXT) {
+                    longTextFieldCount++;
+                }
             }
         }
         if (!result.isValid) {
@@ -57,6 +61,10 @@ public abstract with sharing class ClusterAlgorithmRunner {
         if (!hasValueFields) {
             result.isValid = false;
             result.messages.add('Model must have at least one Numeric, Category or Text field');
+        }
+        if (longTextFieldCount > 1) {
+            result.isValid = false;
+            result.messages.add('Model can have only one long text field');
         }
         List<String> accessErrors = ClusterAccessCheck.checkModelObjectAccessPermissions(model);
         if (accessErrors.size() > 0) {

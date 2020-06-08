@@ -49,7 +49,7 @@ public with sharing class ClusterConstants {
     }
 
     public static Integer getLongTextBatchSize() {
-        return getIntegerSettingValue('LongTextBatchSize', 200);
+        return getIntegerSettingValue('LongTextBatchSize', 100);
     }
 
     public static Integer getKMedoidsBatchSize() {
