@@ -70,13 +70,24 @@ public with sharing abstract class ClusterBatchBase implements Database.Batchabl
 
     public virtual void finish(Database.BatchableContext bc){
         ClusterJobState jobState = this.runner.getJobState();
+        //TODO: some batches might fail due to governor limit errors, such exceptions can't be caught in Apex. We need to check the job status here
         try {
+            if (bc != null) {
+                List<AsyncApexJob> jobs = [SELECT ApexClassId,CompletedDate,CreatedById,CreatedDate,ExtendedStatus,Id,JobItemsProcessed,JobType,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,ParentJobId,Status,TotalJobItems FROM AsyncApexJob WHERE Id=:bc.getJobId()];
+                if (jobs.size() == 1) {
+                    AsyncApexJob aajob = jobs.get(0);
+                    if (aajob.NumberOfErrors > 0) {
+                        throw new ClusterException('Some or all batches in batch job ' + aaJob.Id + ' failed with status: ' + aajob.ExtendedStatus + ', number of errors: ' + aajob.NumberOfErrors); 
+                    }
+                }
+            }
             if (this.hadErrorsDuringProcessing) {
                 throw new ClusterException('The following errors reported during processing: ' + this.lastProcessingError);
             }
             ClusterJobManager.saveJobState(jobState, ClusterConstants.JOBSTATUS_IN_PROGRESS, '');
             this.done();
             log.debug('Finishing batch job: ' + jobState.currentJobId);
+            log.debug('Current heap size: ' + Limits.getHeapSize());
         }
         catch (Exception ex) {
             String logMessage = 'Exception caught during finalization of step ' + jobState.currentAlgorithmStep;

@@ -4,6 +4,7 @@
  * @author: Iskander Mukhamedgaliyev
  */
 public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implements ClusterAlgorithmStep {
+    private static final Integer RANDOM_SIZE = 1000000;
 
     public ClusterPrepareDataStep() {
 
@@ -32,7 +33,6 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         Object[] values = new Object[length];
         Integer scopeSize = scope.size();
         ClusterJobResult__c[] results = new ClusterJobResult__c[scopeSize];
-        Integer sampleRecordSize = ClusterConstants.getSampleRecordSize(model);
         ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
 
         if (scopeSize > 0) {
@@ -54,7 +54,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
             result.RecordName__c = dataPoint.recordName;            
             result.ClusterJob__c = jobState.clusterJob.Id;
             result.Json__c = JSON.serialize(dataPoint.values);
-            result.Random__c = ClusterDataHelper.getRandomInt(0, sampleRecordSize); //Randomize record order
+            result.Random__c = ClusterDataHelper.getRandomInt(0, RANDOM_SIZE); //Randomize record order
             results[sindex] = result;
         }
         ClusterBatchBase.log.debug('Inserting result records');

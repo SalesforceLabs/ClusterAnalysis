@@ -40,7 +40,8 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         if (text == '') {
             return null;
         }
-        Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get('english'));
+        String language = fieldDesc.language != null ? fieldDesc.language.toLowerCase() : ClusterConstants.LANGUAGE_NONE;
+        Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language));
 
         //Converting to decimal and reducing scale to save on memory and storage size
         //This array will be deserialized to json string and stored in results object
@@ -75,7 +76,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             if (words[i].length() < 2) {
                 continue;
             }
-            String token = wordPreprocessor.preprocess(words[i]);
+            String token = wordPreprocessor != null ? wordPreprocessor.preprocess(words[i]) : words[i];
             //Skip words that were filtered out by the preprocessor
             if (token == null) {
                 continue;
@@ -153,6 +154,9 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             value = null;
         }
         else if (nextToken == JSONToken.START_ARRAY) {
+            //Double[] tfList = (Double[])parser.readValueAs(Double[].class);
+            //value = tfList;
+            
             List<Double> tfList = new List<Double>();
             nextToken = parser.nextToken();
             while (nextToken != JSONToken.END_ARRAY && nextToken != null) {
@@ -165,6 +169,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 nextToken = parser.nextToken();
             }
             value = tfList;
+            
         }
         else {
             throw new ClusterException('Cannot parse long text value ' + parser.getText());

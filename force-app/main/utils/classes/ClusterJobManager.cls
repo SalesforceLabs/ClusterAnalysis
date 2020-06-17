@@ -57,6 +57,18 @@ public with sharing class ClusterJobManager {
         else {
             hasFLS = false;
         }
+        if (Schema.SObjectType.ClusterJob__c.fields.InternalJobId__c.isUpdateable()) {
+            state.clusterJob.InternalJobId__c = state.currentJobId;
+        } 
+        else {
+            hasFLS = false;
+        }
+        if (Schema.SObjectType.ClusterJob__c.fields.JobStatus__c.isUpdateable()) {
+            state.clusterJob.JobStatus__c = status;
+        }
+        else {
+            hasFLS = false;
+        }
         if (Schema.SObjectType.ClusterJob__c.fields.JobStatusText__c.isUpdateable()) {
             state.clusterJob.JobStatusText__c = statusText;
         } 

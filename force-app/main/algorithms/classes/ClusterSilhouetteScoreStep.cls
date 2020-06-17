@@ -6,6 +6,7 @@
 public with sharing class ClusterSilhouetteScoreStep extends ClusterIterableBase {
     public static Logger log = LogFactory.getLogger();
     private Double totalSilhouetteScore;
+    private Integer sampleCount;
 
     public ClusterSilhouetteScoreStep() {
 
@@ -19,13 +20,15 @@ public with sharing class ClusterSilhouetteScoreStep extends ClusterIterableBase
         log.debug('Starting Silhouette score calculation step');
         super.init(runner);
         this.totalSilhouetteScore = 0;
+        ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
+        this.sampleCount = Math.min(ClusterConstants.getSampleRecordSize(jobState.model), jobState.numRecords);        
     }
 
     protected override Object[] getRecords() {
         //Silhouette coefficient will be calculated for a small number of sample records
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         if (jobState.dataPoints == null || jobState.dataPoints.size() == 0) {
-            ClusterDataHelper.populateRandomDataPoints(Math.min(ClusterConstants.getSampleRecordSize(jobState.model), jobState.numRecords), jobState);
+            return ClusterDataHelper.getRandomDataPoints(this.sampleCount, jobState);
         }
         return jobState.dataPoints;
     }    
@@ -50,7 +53,7 @@ public with sharing class ClusterSilhouetteScoreStep extends ClusterIterableBase
         log.debug('Silhouette score calculation complete, storing results');
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         //TODO: Calculate silhouette for each cluster, probably add Score field to JobCluster object
-        jobState.clusterJob.Score__c = this.totalSilhouetteScore / jobState.dataPoints.size();
+        jobState.clusterJob.Score__c = this.totalSilhouetteScore / this.sampleCount;
         super.done();
     }
 }

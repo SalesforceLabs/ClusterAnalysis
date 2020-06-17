@@ -10,7 +10,6 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
     public Boolean hasAssignmentChanged;
     public Boolean hasSwapped;
     public List<Id> sampleResultsIds;
-    public List<List<Id>> clusterAssignmentMatrix;
     public Integer iterationsCount;
     public ClusterKMeansJobState() {
         this.centroids = new List<ClusterDataPoint>();

@@ -52,12 +52,10 @@ public with sharing class ClusterJobDetailsController {
         List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        ClusterJob__c job = ClusterJobManager.getJob(jobId);
-        ClusterJobState jobState = new ClusterJobState();
-        jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
         for (ClusterJobResult__c record:randomRecords) {
-            ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
+            ClusterDataPoint dp = new ClusterDataPoint(record, null);
+            //We will parse json in javascript to save apex CPU time
+            dp.valuesJson = record.Json__c;
             dataPoints.add(dp);
         }
         return dataPoints; 

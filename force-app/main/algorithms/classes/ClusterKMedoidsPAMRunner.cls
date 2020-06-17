@@ -28,7 +28,12 @@
         model.numberOfClusters = Integer.valueOf(model.parameters.get('numberOfClusters'));
         model.distanceFunction = ClusterConstants.DISTANCE_GOWER;
         Boolean hasLongTextFields = model.hasLongTextFields();
-        this.runRefinementStep = Boolean.valueOf(model.parameters.get('runRefinementStep'));
+        if (model.parameters.containsKey('runRefinementStep')) {
+            this.runRefinementStep = !model.hasLongTextFields() && Boolean.valueOf(model.parameters.get('runRefinementStep'));
+        }
+        else {
+            this.runRefinementStep = false;
+        }
         //Initializing steps
         Integer kMedoidsBatchSize = Test.isRunningTest() ? ClusterConstants.TEST_BATCH_SIZE : 
             hasLongTextFields ? ClusterConstants.getKMedoidsLongTextBatchSize() : ClusterConstants.getKMedoidsBatchSize();

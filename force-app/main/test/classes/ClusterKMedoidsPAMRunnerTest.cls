@@ -269,13 +269,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(currentStep + 1, state.currentAlgorithmStep, 'Incorrect next step if there is no swap');
 
             currentStep = state.currentAlgorithmStep;
-            ClusterSilhouetteRefinementStep refineStep = (ClusterSilhouetteRefinementStep)runner.steps[state.currentAlgorithmStep];
-            refineStep.init(runner);
-            refineStep.execute(null, state.dataPoints);
-            refineStep.finish(null);
-            System.assertEquals(currentStep + 1, state.currentAlgorithmStep, 'Incorrect next step after refinement');
-
-            currentStep = state.currentAlgorithmStep;
             ClusterCentroidDataAssignmentStep dataAssignmentStep = (ClusterCentroidDataAssignmentStep)runner.steps[state.currentAlgorithmStep];
             dataAssignmentStep.init(runner);
             // Get a query locator

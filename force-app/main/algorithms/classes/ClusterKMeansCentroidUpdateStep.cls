@@ -61,8 +61,8 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
                     currentCentroid.values[findex] = Double.valueOf(currentCentroid.values[findex]) + Double.valueOf(currentDataPoint.values[findex]);
                 }
                 else if (model.fields[findex].isLongText) {
-                    Object[] tf1 = (Object[])currentCentroid.values[findex];
-                    Object[] tf2 = (Object[])currentDataPoint.values[findex];
+                    Double[] tf1 = (Double[])currentCentroid.values[findex];
+                    Double[] tf2 = (Double[])currentDataPoint.values[findex];
                     Integer tf1Size = tf1.size();
                     Integer tf2Size = tf2.size();
                     if (tf1Size < tf2Size) {
@@ -72,8 +72,8 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
                         }
                     }
                     for (Integer tfIndex = 0; tfIndex < tf1Size; tfIndex++) {
-                        Double v2 = tfIndex < tf2Size ? Double.valueOf(tf2[tfIndex]) : 0.0;
-                        tf1[tfIndex] = Double.valueOf(tf1[tfIndex]) + v2;
+                        Double v2 = tfIndex < tf2Size ? tf2[tfIndex] : 0.0;
+                        tf1[tfIndex] = tf1[tfIndex] + v2;
                     }            
                 }
             }

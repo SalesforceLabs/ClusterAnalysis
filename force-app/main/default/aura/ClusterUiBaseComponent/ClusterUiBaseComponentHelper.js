@@ -50,4 +50,14 @@
             closeCallback: callback
         });
     },
+    wrapTryCatch: function(component, action, catchAction) {
+        try {
+            action();
+        }
+        catch (e){
+            console.error(e);
+            if (catchAction) catchAction();
+            this.showNotification(component, "error", "Something has gone wrong!", "Unfortunately the following error has occurred: " + e.message);
+        }
+    },
 })

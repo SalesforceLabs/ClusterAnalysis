@@ -8,6 +8,6 @@
     </values>
     <values>
         <field>Value__c</field>
-        <value xsi:type="xsd:string">100</value>
+        <value xsi:type="xsd:string">35</value>
     </values>
 </CustomMetadata>

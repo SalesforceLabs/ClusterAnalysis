@@ -31,13 +31,15 @@
             }
         }
         //Setting smaller batch size for long text fields to avoid Apex heap limit
-        let count = hasLongText ? 50 : 500;
+        let count = hasLongText ? 100 : 500;
         action.setParams({ jobId: jobDetails.jobId, maxCount: count, offset: offset });
         let helper = this;
         console.log('Loading data points, offset: ' + offset);
         action.setCallback(this, helper.getServerCallbackFunction(component, helper,
             function (dataPointsJson) {
-                helper.loadDataPointsCallback(component, dataPointsJson, offset, count);
+                helper.wrapTryCatch(component, () => {
+                    helper.loadDataPointsCallback(component, dataPointsJson, offset, count);
+                });
             },
             function (state, errors) {
             })
@@ -47,6 +49,10 @@
 
     loadDataPointsCallback: function(component, dataPointsJson, offset, maxCount) {
         let dataPoints = JSON.parse(dataPointsJson);
+        for (let i=0; i<dataPoints.length; i++) {
+            dataPoints[i].values = JSON.parse(dataPoints[i].valuesJson);
+            dataPoints[i].valuesJson = null;
+        }
         let allDataPoints = component.get('v.dataPoints');
         let jobDetails = component.get('v.jobDetails');
         let helper = this;

@@ -59,7 +59,7 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
             ClusterDataPoint currentDataPoint = new ClusterDataPoint(currentRecord, objectProcessor);
-            ClusterDataHelper.normalizeObject(currentObject, jobState);
+            //ClusterDataHelper.normalizeObject(currentObject, jobState);
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Integer previousCentroidIndex = 0;

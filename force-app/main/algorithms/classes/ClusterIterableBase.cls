@@ -36,13 +36,13 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
 
     public virtual Object[] start(Database.BatchableContext bc) {
         Object[] records = this.getRecords();
-        log.debug('Entering batch start, processing ' + records.size() + ' records');
+        log.debug('Entering batch start, processing ' + records.size() + ' records, current heap size: ' + Limits.getHeapSize());
         return records;
     }
 
     public virtual void execute(Database.BatchableContext bc, Object[] scope) {
         ClusterJobState jobState = this.runner.getJobState();
-        log.debug('Entering execute, processing ' + scope.size() + ' records');
+        log.debug('Entering execute, processing ' + scope.size() + ' records, current heap size: ' + Limits.getHeapSize());
         try {
             this.processRecords(bc, scope);
         }
@@ -61,11 +61,21 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
     public virtual void finish(Database.BatchableContext bc){
         ClusterJobState jobState = this.runner.getJobState();
         try {
+            if (bc != null) {
+                List<AsyncApexJob> jobs = [SELECT ApexClassId,CompletedDate,CreatedById,CreatedDate,ExtendedStatus,Id,JobItemsProcessed,JobType,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,ParentJobId,Status,TotalJobItems FROM AsyncApexJob WHERE Id=:bc.getJobId()];
+                if (jobs.size() == 1) {
+                    AsyncApexJob aajob = jobs.get(0);
+                    if (aajob.NumberOfErrors > 0) {
+                        throw new ClusterException('Some or all batches in batch job ' + aaJob.Id + ' failed with status: ' + aajob.ExtendedStatus + ', number of errors: ' + aajob.NumberOfErrors); 
+                    }
+                }
+            }
             if (this.hadErrorsDuringProcessing) {
                 throw new ClusterException('The following errors reported during processing: ' + this.lastProcessingError);
             }
             ClusterJobManager.saveJobState(jobState, ClusterConstants.JOBSTATUS_IN_PROGRESS, '');
             log.debug('Finishing batch job: ' + jobState.currentJobId);
+            log.debug('Current heap size: ' + Limits.getHeapSize());
             this.done();
         }
         catch (Exception ex) {

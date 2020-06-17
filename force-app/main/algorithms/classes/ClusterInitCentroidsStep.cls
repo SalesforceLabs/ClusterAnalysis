@@ -28,10 +28,10 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
         jobState.dataPointsIdMap = new Map<String, Integer>();
     }
     
-    private List<ClusterJobResult__c> getRandomRecords(Integer count) {
+    private Database.QueryLocator getRandomRecords(Integer count) {
         ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        return [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :this.jobState.clusterJob.Id ORDER BY Random__c LIMIT :count];
+        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :this.jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
     }
 
     private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
@@ -45,14 +45,19 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
 
     public void run() {
         log.debug('Retrieving random records from db');
-        List<ClusterJobResult__c> randomRecords = this.getRandomRecords(Math.min(ClusterConstants.getSampleRecordSize(this.jobState.model), this.jobState.numRecords));
+        Database.QueryLocator randomRecordLocator = this.getRandomRecords(Math.min(ClusterConstants.getSampleRecordSize(this.jobState.model), this.jobState.numRecords));
         log.debug('Finished retrieving random records, current heap size: ' + Limits.getHeapSize());
 
         log.debug('Initializing sample records');
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(this.jobState);
-        for (ClusterJobResult__c record:randomRecords){
+        Database.QueryLocatorIterator randomRecordIterator = randomRecordLocator.iterator();
+ 
+        // Iterate over the records
+        while (randomRecordIterator.hasNext())
+        {
+            ClusterJobResult__c record = (ClusterJobResult__c)randomRecordIterator.next();
             this.jobState.sampleResultsIds.add(record.Id);
             ClusterDataPoint dp = this.createDataPoint(record, objectProcessor);
             dataPoints.add(dp);
@@ -63,6 +68,7 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
             index++;
             log.debug('Processed record ' + index + ', heap size: ' + Limits.getHeapSize());
         }
+
         log.debug('Finished initializing sample records, current heap size: ' + Limits.getHeapSize());
         this.algRunner.initializeDistanceCache(dataPoints.size());
         log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());

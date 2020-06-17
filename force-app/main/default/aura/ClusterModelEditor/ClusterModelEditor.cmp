@@ -96,9 +96,9 @@
                     <dt class="slds-item_label slds-text-heading_small">Category:</dt>
                     <dd class="slds-item_detail">An Equal (0)/Not equal
                         (1) comparison will be used to measure similarity of values. Not supported in K-means</dd>
-                    <dt class="slds-item_label slds-text-heading_small">Long Text:</dt>
+                    <dt class="slds-item_label slds-text-heading_small">Long Text (BETA):</dt>
                     <dd class="slds-item_detail">TF-IDF algorithm (based on identical keywords)
-                        will be used to measure similarity. Not supported in K-means</dd>    
+                        will be used to measure similarity.</dd>    
                     <dt class="slds-item_label slds-text-heading_small">None:</dt>
                     <dd class="slds-item_detail">The field will be skipped
                         for similarity calculation. This is usually set for ID and name fields which are required to

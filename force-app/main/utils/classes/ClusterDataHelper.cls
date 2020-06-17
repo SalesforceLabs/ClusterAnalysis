@@ -277,22 +277,25 @@ public with sharing class ClusterDataHelper {
         return Math.round(Math.random() * (max - min) + min);
     }
 
-    public static void populateRandomDataPoints(Integer count, ClusterKMeansJobState jobState) {
+    public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterKMeansJobState jobState) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count];
+        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
-        for (ClusterJobResult__c record:randomRecords){
-            jobState.sampleResultsIds.add(record.Id);
+        Database.QueryLocatorIterator randomRecordIterator = randomRecordLocator.iterator();
+ 
+        // Iterate over the records
+        while (randomRecordIterator.hasNext())
+        {
+            ClusterJobResult__c record = (ClusterJobResult__c)randomRecordIterator.next();
             ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
             dataPoints.add(dp);
-            dp.index = index;
-            jobState.dataPointsIdMap.put(dp.recordId, index);
             index++;
         }
-        jobState.dataPoints = dataPoints;
+        return dataPoints;
     }
 
     public static Boolean doublesEqual(Double a, Double b) {

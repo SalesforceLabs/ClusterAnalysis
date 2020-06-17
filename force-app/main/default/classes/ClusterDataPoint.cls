@@ -7,6 +7,8 @@ public with sharing class ClusterDataPoint {
     @AuraEnabled
     public Object[] values;
     @AuraEnabled
+    public String valuesJson;
+    @AuraEnabled
     public Id recordId;
     @AuraEnabled
     public String externalId;
@@ -24,6 +26,8 @@ public with sharing class ClusterDataPoint {
         this.externalId = resultRecord.RecordId__c;
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
         this.recordName = resultRecord.RecordName__c;
-        this.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
+        if (objectProcessor != null) {
+            this.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
+        }
     }
 }
