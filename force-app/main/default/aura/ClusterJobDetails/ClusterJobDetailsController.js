@@ -48,5 +48,8 @@
         let dataPoint = event.getParam("dataPoint");
         tsneDetails.set('v.dataPoint', dataPoint);
         tsneDetails.rebind();
+    },
+    handleDestroy : function (component, event, helper) {
+        component.set('v.isVisible', false);
     }
 })

@@ -108,6 +108,7 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
         if (this.cacheRecords) {
             //For K-Medoids we will cache records in memory
             //Since we are using CLARA algorithm the number of records should fit in 12M heap (async mode)
+            //For K-Means we will also cache because there are some heap issues in SilhouetteScore step with LongText when we initialize cache there
             this.jobState.dataPoints = dataPoints;
         }
         log.debug('Init centroids step finished');

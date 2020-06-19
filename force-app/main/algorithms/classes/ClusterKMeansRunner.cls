@@ -41,7 +41,7 @@
         //Initializing steps
         ClusterPrepareDataStep step1 = new ClusterPrepareDataStep();
         this.steps.add(step1);
-        ClusterInitCentroidsStep step2 = new ClusterInitCentroidsStep(false);
+        ClusterInitCentroidsStep step2 = new ClusterInitCentroidsStep(true);
         this.steps.add(step2);
         ClusterCentroidDataAssignmentStep step3 = new ClusterCentroidDataAssignmentStep(true, false, false, false);
         this.steps.add(step3);

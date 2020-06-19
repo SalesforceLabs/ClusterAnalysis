@@ -11,6 +11,8 @@
     <aura:attribute name="tsneTooltipVisible" type="Boolean" access="private" default="false" />
     
     <aura:handler name="graphDataPointHoverEvent" event="c:GraphDataPointEvent" includeFacets="true" action="{!c.graphDataPointHoverEventHandler}" />
+    <aura:handler name="destroy" value="{!this}" action="{!c.handleDestroy}"/>
+    <aura:handler event="aura:locationChange" action="{!c.handleDestroy}"/>
 
     <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
     <lightning:notificationsLibrary aura:id="notifLib" />

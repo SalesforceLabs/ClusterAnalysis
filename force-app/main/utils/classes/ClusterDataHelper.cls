@@ -98,9 +98,14 @@ public with sharing class ClusterDataHelper {
 
     public static Double calculateMeanDistanceToCluster(ClusterDataPoint sourceDataPoint, Integer clusterIndex, ClusterAlgorithmRunner runner) {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
+        return calculateMeanDistanceToCluster(sourceDataPoint, clusterIndex, runner, jobState.dataPoints);
+    }
+
+    public static Double calculateMeanDistanceToCluster(ClusterDataPoint sourceDataPoint, Integer clusterIndex, ClusterAlgorithmRunner runner, ClusterDataPoint[] sampleDataPoints) {
+        ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         Integer currentClusterSize = 0;
         Double currentClusterDistance = 0;
-        for (ClusterDataPoint dataPoint:jobState.dataPoints) {
+        for (ClusterDataPoint dataPoint:sampleDataPoints) {
             if (clusterIndex == dataPoint.clusterIndex && dataPoint.recordId != sourceDataPoint.recordId) {
                 currentClusterSize++;
                 currentClusterDistance += runner.calculateDPDistance(sourceDataPoint, dataPoint);
@@ -281,22 +286,26 @@ public with sharing class ClusterDataHelper {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
         Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+        
+        return getDataPoints(randomRecordLocator, jobState);
+    }
 
+    public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterKMeansJobState jobState) {
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
-        Database.QueryLocatorIterator randomRecordIterator = randomRecordLocator.iterator();
+        Database.QueryLocatorIterator dpRecordIterator = dpLocator.iterator();
  
         // Iterate over the records
-        while (randomRecordIterator.hasNext())
+        while (dpRecordIterator.hasNext())
         {
-            ClusterJobResult__c record = (ClusterJobResult__c)randomRecordIterator.next();
+            ClusterJobResult__c record = (ClusterJobResult__c)dpRecordIterator.next();
             ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
             dataPoints.add(dp);
             index++;
         }
         return dataPoints;
-    }
+    }    
 
     public static Boolean doublesEqual(Double a, Double b) {
         return Math.abs(a-b) < DOUBLEEPSILON;
