@@ -67,10 +67,20 @@
                             </div>
                             <div class="slds-col slds-size_2-of-12 cme-field">
                                 <aura:if isTrue="{! (modelField.distanceType == 'LongText') }" >
-                                    <lightning:combobox aura:id="modelFieldLanguageComboBox" label="Field language"
-                                        placeholder="Select a field language" options="{!v.clusterModel.languageList}"
-                                        required="false" value="{!modelField.language}"
-                                        variant="label-hidden" />
+                                    <div class="slds-grid">
+                                        <div class="slds-col">
+                                            <lightning:combobox aura:id="modelFieldLanguageComboBox" label="Field language"
+                                                placeholder="Select a field language" options="{!v.clusterModel.languageList}"
+                                                required="false" value="{!modelField.language}"
+                                                variant="label-hidden" />
+                                        </div>
+                                        <div class="slds-col cme-help">
+                                            <lightning:helptext
+                                                content="Cluster analysis for long text fields is in beta. Calculation of K-Means models with long text fields might take several hours depending on the number of records."
+                                                iconName="utility:warning"
+                                            />
+                                        </div>
+                                    </div>
                                 </aura:if>
                             </div>
                             <div class="slds-col slds-size_3-of-12 cme-field">                                
