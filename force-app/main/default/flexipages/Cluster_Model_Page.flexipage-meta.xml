@@ -43,7 +43,7 @@
             </componentInstanceProperties>
             <componentName>force:relatedListSingleContainer</componentName>
         </componentInstances>
-        <name>Facet-9336c2ca-6c60-45c9-b0ca-10f884eec295</name>
+        <name>Facet-58e40be1-5cc0-4e47-8374-aec6c3167225</name>
         <type>Facet</type>
     </flexiPageRegions>
     <flexiPageRegions>
@@ -88,11 +88,11 @@
         <componentInstances>
             <componentInstanceProperties>
                 <name>body</name>
-                <value>Facet-9336c2ca-6c60-45c9-b0ca-10f884eec295</value>
+                <value>Facet-58e40be1-5cc0-4e47-8374-aec6c3167225</value>
             </componentInstanceProperties>
             <componentInstanceProperties>
                 <name>title</name>
-                <value>Fields</value>
+                <value>Standard.Tab.fields</value>
             </componentInstanceProperties>
             <componentName>flexipage:tab</componentName>
         </componentInstances>

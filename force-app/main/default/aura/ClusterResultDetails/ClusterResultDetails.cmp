@@ -1,0 +1,29 @@
+<aura:component controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
+    <aura:attribute name="dataPoint" type="Object" access="public" />
+    <aura:attribute name="jobState" type="Object" access="public" />
+    <aura:attribute name="showRecordName" type="Boolean" access="public" default="false" />
+    <aura:attribute name="objectValues" type="Object" access="private" />
+    <aura:attribute name="clusterColorCss" type="String" access="private" default="" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <aura:method name="rebind" action="{!c.rebind}" description="Redraw t-SNE plot" access="global" >
+    </aura:method>
+    <div>
+        <aura:if isTrue="{!v.showRecordName}">
+            <a href="{!('/' + v.dataPoint.externalId)}" onclick="{!c.recordLinkClick}"><div class="slds-text-heading_small">{!v.dataPoint.recordName}</div></a>
+            <span>Cluster: {!v.dataPoint.clusterIndex}</span><div aura:id="clusterBox" style="{!v.clusterColorCss}"></div>
+        </aura:if>
+        <dl class="slds-dl_horizontal">
+            <aura:iteration items="{!v.objectValues}" var="objectField"
+                indexVar="fieldIndex">
+                <dt class="slds-dl_horizontal__label">
+                    <p class="crd_columntext" title="{!objectField.name}">
+                        {!objectField.name}:</p>
+                </dt>
+                <dd class="slds-dl_horizontal__detail slds-tile__meta">
+                    <p class="crd_columntext" title="{!objectField.value}">{!objectField.value}</p>
+                </dd>
+            </aura:iteration>
+        </dl>
+    </div>
+</aura:component>	

@@ -4,6 +4,7 @@
  * @author: Iskander Mukhamedgaliyev
  */
 public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implements ClusterAlgorithmStep {
+    private static final Integer RANDOM_SIZE = 1000000;
 
     public ClusterPrepareDataStep() {
 
@@ -19,7 +20,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
             jobState.minMaxValues[i] = new ClusterMinMaxValue();
         }
     }
-    
+
     protected override Database.QueryLocator getBatchQueryLocator() {
         return Database.getQueryLocator(this.runner.getJobState().model.soql);
     }
@@ -32,7 +33,8 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         Object[] values = new Object[length];
         Integer scopeSize = scope.size();
         ClusterJobResult__c[] results = new ClusterJobResult__c[scopeSize];
-        Integer sampleRecordSize = ClusterConstants.getSampleRecordSize(model);
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+
         if (scopeSize > 0) {
             //Checking the access of the real object returned from the soql query. 
             //Somebody could provide a SOQL query from an object which is different from the model object
@@ -46,44 +48,13 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             SObject record = scope[sindex];
             ClusterJobResult__c result = new ClusterJobResult__c();
-            for (Integer i = 0; i < length; i++) {
-                Object fieldValue = ClusterDataHelper.getSObjectFieldValue(record, model.fields[i]);
-                values[i] = fieldValue;
-                //Populating minMaxValues with min and max values for each field respectively
-                //This is essential for distance calculations
-                Integer compare = ClusterDataHelper.compareFieldValueAbs(minMaxValues[i].maxValue, fieldValue, model.fields[i]);
-                if (compare < 0) {
-                    //For text distances min and max values will contain string length
-                    if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_TEXT) {
-                        minMaxValues[i].maxValue = fieldValue == null ? 0 : String.valueOf(fieldValue).length();
-                    }
-                    else {
-                        minMaxValues[i].maxValue = fieldValue;
-                    }
-                }
-                compare = ClusterDataHelper.compareFieldValueAbs(minMaxValues[i].minValue, fieldValue, model.fields[i]);
-                if (compare > 0 || (minMaxValues[i].minValue == null)) {
-                    if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_TEXT) {
-                        minMaxValues[i].minValue = fieldValue == null ? 0 : String.valueOf(fieldValue).length();
-                    }
-                    else {
-                        minMaxValues[i].minValue = fieldValue;
-                    }
-                }
-                if (model.fields[i].isIdField) {
-                    result.RecordId__c = String.valueOf(fieldValue);
-                }
-                if (model.fields[i].isNameField) {
-                    result.RecordName__c = String.valueOf(fieldValue);
-                }                
-            }            
+            ClusterDataPoint dataPoint = objectProcessor.processSObject(record);
             //Populating ClusterJobResult__c
-            if ((result.RecordName__c == null) || (result.RecordName__c == '')) {
-                result.RecordName__c = result.RecordId__c;
-            }
+            result.RecordId__c = dataPoint.externalId;
+            result.RecordName__c = dataPoint.recordName;            
             result.ClusterJob__c = jobState.clusterJob.Id;
-            result.Json__c = JSON.serialize(values);
-            result.Random__c = ClusterDataHelper.getRandomInt(0, sampleRecordSize); //Randomize record order
+            result.Json__c = JSON.serialize(dataPoint.values);
+            result.Random__c = ClusterDataHelper.getRandomInt(0, RANDOM_SIZE); //Randomize record order
             results[sindex] = result;
         }
         ClusterBatchBase.log.debug('Inserting result records');
@@ -100,12 +71,8 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         if (jobState.numRecords == 0) {
             throw new ClusterException('Model SOQL query returned 0 records, interrupting the cluster job');
         }
-        //precalculating delta (max-min)
-        for (Integer i=0; i<model.fields.size(); i++) {
-            if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_NUMERIC) {
-                jobState.minMaxValues[i].delta = Double.valueOf(jobState.minMaxValues[i].maxValue) - Double.valueOf(jobState.minMaxValues[i].minValue);
-            }
-        }
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        objectProcessor.processTotals();        
         super.done();
     }
 }

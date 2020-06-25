@@ -36,23 +36,35 @@ public with sharing class ClusterJobDetailsController {
         return jobModel;
     }
 
-    public static ClusterDataPoint[] getDataPoints(Id jobId) {
+    public static ClusterDataPoint[] getDataPoints(Id jobId, Integer maxCount, Integer offset) {
         Integer count = ClusterConstants.getTSNEPlotLimit();
+        if (offset > count) {
+            return new List<ClusterDataPoint>();
+        }
+        if (offset + maxCount > count) {
+            count = count - offset;
+        }
+        else {
+            count = maxCount;
+        }
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission above, exception is thrown in case of no access
         List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
-            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId ORDER BY Random__c LIMIT :count];
+            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        for (ClusterJobResult__c record:randomRecords){
-            ClusterDataPoint dp = new ClusterDataPoint(record);
+        for (ClusterJobResult__c record:randomRecords) {
+            ClusterDataPoint dp = new ClusterDataPoint(record, null);
+            //We will parse json in javascript to save apex CPU time
+            dp.valuesJson = record.Json__c;
             dataPoints.add(dp);
         }
         return dataPoints; 
     }
 
     @AuraEnabled
-    public static String getDataPointsJson(Id jobId) {
-        List<ClusterDataPoint> dataPoints = getDataPoints(jobId);
+    public static String getDataPointsJson(Id jobId, Integer maxCount, Integer offset) {
+        //We will load data points in batches to avoid heap size issues
+        List<ClusterDataPoint> dataPoints = getDataPoints(jobId, maxCount, offset);
         //There is a weird bug with @AuraEnabled and Object[] json deserialization - it skips null items
         //So we will serialize manually here and deserialize in javascript controller until that is fixed
         //This is bad and consumes apex memory, but fixes the problem for now
@@ -82,5 +94,33 @@ public with sharing class ClusterJobDetailsController {
         job.JobName__c = jobName;
         update job;
         return getJob(jobId);     
+    }
+
+    @AuraEnabled
+    public static ClusterResultDetailsUiModel getJobResultModel(Id jobResultId){
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
+        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+            FROM ClusterJobResult__c WHERE Id = :jobResultId WITH SECURITY_ENFORCED];
+        
+        ClusterJobResult__c result = results.get(0);
+        ClusterJob__c job = ClusterJobManager.getJob(result.ClusterJob__c);
+        
+        ClusterJobState jobState = new ClusterJobState();
+        jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
+
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterDataPoint dp = new ClusterDataPoint(result, objectProcessor);
+
+        ClusterResultDetailsUiModel uiModel = new ClusterResultDetailsUiModel();
+        uiModel.jobId = job.Id;
+        uiModel.jobName = job.JobName__c;
+        uiModel.jobStateString = ClusterJobManager.loadJobState(job.Id);
+        uiModel.dataPoint = dp;
+        uiModel.resultName = result.Name;
+        uiModel.clusterId = result.Cluster__c;
+        if (result.Cluster__r != null) {
+            uiModel.clusterName = result.Cluster__r.ClusterName__c;
+        }
+        return uiModel; 
     }
 }

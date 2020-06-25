@@ -109,7 +109,7 @@ public with sharing class ClusterKMeansRunnerTest {
             ClusterJobDetailsUiModel jobDetailModel = ClusterJobDetailsController.getJob(state.clusterJob.Id);
             System.assertEquals(state.clusterJob.JobStatus__c, jobDetailModel.status, 'Unexpected job status retrieved');
             
-            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id);
+            List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
         }
     }
@@ -120,7 +120,7 @@ public with sharing class ClusterKMeansRunnerTest {
         //and then run and test job output step with skipFieldNameCheck=false so it is able to update standard fields
         String modelJson = '{"algorithm":"K-Means","fields":[{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1}' 
         + ',{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1}'
-        + '],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Name, NumberOfEmployees, Company FROM Lead LIMIT 200"}';
+        + '],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Name, NumberOfEmployees, Company FROM Lead LIMIT 50"}';
         
         ClusterModelWrapper model = ClusterTestData.createModel(modelJson);
         User clusterUser = ClusterTestData.createClusterUser();
@@ -136,6 +136,7 @@ public with sharing class ClusterKMeansRunnerTest {
             outputField.isNameField = false;
             outputField.isCategory = false;
             outputField.isNumeric = false;
+            outputField.isLongText = false;
             outputField.isText = false;
             model.fields.add(outputField);
             ClusterKMeansRunner runner = (ClusterKMeansRunner)ClusterAlgorithmFactory.getRunner(model);

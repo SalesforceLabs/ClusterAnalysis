@@ -16,6 +16,7 @@
     </aura:method>
     <aura:method name="redraw" action="{!c.redraw}" description="Redraw t-SNE plot" access="global" >
     </aura:method>
+    <aura:registerEvent name="graphDataPointHoverEvent" type="c:GraphDataPointEvent"/>
     <lightning:notificationsLibrary aura:id="notifLib" />
     <aura:if isTrue="{! empty(v.distances) }" >
         <div class="slds-text-body_small slds-text-color_weak">Calculating distance matrix...</div>

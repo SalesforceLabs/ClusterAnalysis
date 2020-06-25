@@ -27,9 +27,16 @@
         this.state.model = model;
         model.numberOfClusters = Integer.valueOf(model.parameters.get('numberOfClusters'));
         model.distanceFunction = ClusterConstants.DISTANCE_GOWER;
-        this.runRefinementStep = Boolean.valueOf(model.parameters.get('runRefinementStep'));
+        Boolean hasLongTextFields = model.hasLongTextFields();
+        if (model.parameters.containsKey('runRefinementStep')) {
+            this.runRefinementStep = !model.hasLongTextFields() && Boolean.valueOf(model.parameters.get('runRefinementStep'));
+        }
+        else {
+            this.runRefinementStep = false;
+        }
         //Initializing steps
-        Integer kMedoidsBatchSize = Test.isRunningTest() ? ClusterConstants.TEST_BATCH_SIZE : ClusterConstants.getKMedoidsBatchSize();
+        Integer kMedoidsBatchSize = Test.isRunningTest() ? ClusterConstants.TEST_BATCH_SIZE : 
+            hasLongTextFields ? ClusterConstants.getKMedoidsLongTextBatchSize() : ClusterConstants.getKMedoidsBatchSize();
         ClusterPrepareDataStep step1 = new ClusterPrepareDataStep();
         this.steps.add(step1);
         ClusterInitCentroidsStep step2 = new ClusterInitCentroidsStep(true);
@@ -40,13 +47,14 @@
         ClusterPAMSwapStep step4 = new ClusterPAMSwapStep(kMedoidsBatchSize);
         this.steps.add(step4);
         this.dataSwapStepIndex = this.steps.size() - 1;
+        Integer swapBatchSize = hasLongTextFields ? ClusterConstants.getKMedoidsLongTextBatchSize() : ClusterConstants.getKMedoidsSwapBatchSize();
         if (this.runRefinementStep) {
-            ClusterSilhouetteRefinementStep step5 = new ClusterSilhouetteRefinementStep(ClusterConstants.getKMedoidsSwapBatchSize());
+            ClusterSilhouetteRefinementStep step5 = new ClusterSilhouetteRefinementStep(swapBatchSize);
             this.steps.add(step5);
         }
         ClusterCentroidDataAssignmentStep step6 = new ClusterCentroidDataAssignmentStep(true, false, false, this.runRefinementStep);
         this.steps.add(step6);
-        ClusterSilhouetteScoreStep step7 = new ClusterSilhouetteScoreStep(ClusterConstants.getKMedoidsSwapBatchSize());
+        ClusterSilhouetteScoreStep step7 = new ClusterSilhouetteScoreStep(swapBatchSize);
         this.steps.add(step7);
         super.init(model);
     }
@@ -97,7 +105,7 @@
         return false;
     }
 
-    public override Double calculateDistance(Object[] currentObject, Object[] centroid) {
+    protected override Double calculateDistance(Object[] currentObject, Object[] centroid) {
         return ClusterDataHelper.calculateGowerDistance(currentObject, centroid, this.state);
     }
 

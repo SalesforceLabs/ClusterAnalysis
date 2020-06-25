@@ -35,6 +35,7 @@ public with sharing class ClusterModelBuilderController {
         uiModel.model = cmWrapper;
         uiModel.algorithmList = getAlgorithmList();
         uiModel.fieldTypeList = getPickListValues(ClusterModelField__c.DistanceType__c.getDescribe());
+        uiModel.languageList = ClusterConstants.getSupportedModelLanguages();
         return uiModel;
     }
 
@@ -43,7 +44,7 @@ public with sharing class ClusterModelBuilderController {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterModel__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
         model = [SELECT Id, Name, Object__c, Algorithm__c, Filter__c, Parameters__c, SOQL__c , isCustomSoql__c, Description__c, NumberOfClusters__c,
-                (SELECT Id, Name, FieldName__c, Model__c, ObjectName__c, DistanceType__c, Weight__c, RelationName__c FROM ClusterModelFields__r)
+                (SELECT Id, Name, FieldName__c, Model__c, ObjectName__c, DistanceType__c, Weight__c, RelationName__c, Language__c FROM ClusterModelFields__r)
                 FROM ClusterModel__c WHERE Id = :modelId];
         return new ClusterModelWrapper(model);
     }
@@ -68,6 +69,7 @@ public with sharing class ClusterModelBuilderController {
         ClusterAccessCheck.checkFLSCreatePermission(Schema.sObjectType.ClusterModelField__c.fields.ObjectName__c);
         ClusterAccessCheck.checkFLSCreatePermission(Schema.sObjectType.ClusterModelField__c.fields.RelationName__c);
         ClusterAccessCheck.checkFLSCreatePermission(Schema.sObjectType.ClusterModelField__c.fields.Weight__c);
+        ClusterAccessCheck.checkFLSCreatePermission(Schema.sObjectType.ClusterModelField__c.fields.Language__c);
         ClusterAccessCheck.checkFLSReadPermission(Schema.sObjectType.ClusterModelField__c.fields.Id);
 
         if (model.modelId != null) {

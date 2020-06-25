@@ -196,6 +196,7 @@
                 if (existingField){
                     field.weight = existingField.weight;
                     field.distanceType = existingField.distanceType;
+                    field.language = existingField.language;
                 }
             });
         }
@@ -211,6 +212,7 @@
             distanceType: this.getDistanceTypeFromQueryField(model, queryField),
             weight: 1
         };
+        fieldWrapper.language = fieldWrapper.distanceType == 'LongText' ? 'English' : 'None';
         return fieldWrapper;
     },
 
@@ -219,9 +221,10 @@
         var fieldDesc = this.findFieldDescByObjectAndFieldName(model, queryField.name, queryField.objectName);
         switch (fieldDesc.dataType){
             case 'STRING':
-            case 'TEXTAREA':
             case 'ENCRYPTEDSTRING':
                 return 'Text';
+            case 'TEXTAREA':
+                return 'LongText';
             case 'DATE':
             case 'DATETIME':
             case 'CURRENCY':

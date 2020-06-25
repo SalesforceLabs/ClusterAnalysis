@@ -11,17 +11,6 @@
         </aura:set>
         <div class="slds-text-heading_small">Record count: <b>{!v.cluster.recordCount}</b></div>
         <div class="slds-text-heading_small">Cluster centroid record:</div>
-        <dl class="slds-dl_horizontal">
-            <aura:iteration items="{!v.centroid}" var="centroidField"
-                indexVar="fieldIndex">
-                <dt class="slds-dl_horizontal__label">
-                    <p class="slds-truncate" title="{!centroidField.name}">
-                        {!centroidField.name}:</p>
-                </dt>
-                <dd class="slds-dl_horizontal__detail slds-tile__meta">
-                    <p class="slds-truncate" title="{!centroidField.value}">{!centroidField.value}</p>
-                </dd>
-            </aura:iteration>
-        </dl>
+        <c:ClusterResultDetails aura:id="clusterResultDetails" dataPoint="{!v.centroid}" jobState="{!v.jobDetails.state}" />        
     </lightning:tile>
 </aura:component>

@@ -26,6 +26,11 @@
                 <label>Text</label>
             </value>
             <value>
+                <fullName>LongText</fullName>
+                <default>false</default>
+                <label>Long Text</label>
+            </value>
+            <value>
                 <fullName>None</fullName>
                 <default>false</default>
                 <label>None</label>

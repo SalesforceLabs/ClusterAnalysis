@@ -10,6 +10,7 @@ public with sharing class ClusterConstants {
     public static final String FIELDTYPE_NUMERIC = 'Numeric';
     public static final String FIELDTYPE_CATEGORY = 'Category';
     public static final String FIELDTYPE_TEXT = 'Text';
+    public static final String FIELDTYPE_LONGTEXT = 'LongText';
     public static final String FIELDTYPE_NONE = 'None';
     public static final String FIELDTYPE_OUTPUT = 'Output';
 
@@ -19,6 +20,9 @@ public with sharing class ClusterConstants {
     public static final String DISTANCE_MANHATTAN = 'Manhattan';
     public static final String DISTANCE_EUCLIDEAN = 'Euclidean';
     public static final String DISTANCE_GOWER = 'Gower';
+
+    public static final String LANGUAGE_NONE = 'none';
+    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 15000; //Max size of word list for tf-idf
 
     public static final Integer TEST_BATCH_SIZE = 200;
 
@@ -44,8 +48,16 @@ public with sharing class ClusterConstants {
         return getIntegerSettingValue('BatchSize', 1000); 
     }
 
+    public static Integer getLongTextBatchSize() {
+        return getIntegerSettingValue('LongTextBatchSize', 100);
+    }
+
     public static Integer getKMedoidsBatchSize() {
         return getIntegerSettingValue('KMedoidsBatchSize', 200);
+    }
+
+    public static Integer getKMedoidsLongTextBatchSize() {
+        return getIntegerSettingValue('KMedoidsLongTextBatchSize', 20);
     }
 
     public static Integer getKMedoidsSwapBatchSize() {
@@ -70,6 +82,30 @@ public with sharing class ClusterConstants {
 
     public static Integer getTSNEPlotLimit() {
         return getIntegerSettingValue('TSNESize', 500); 
+    }
+
+    public static List<UiSelectOption> getSupportedModelLanguages() {
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel FROM ClusterLanguage__mdt WHERE DeveloperName <> :LANGUAGE_NONE ORDER BY MasterLabel];
+        List<UiSelectOption> langList = new List<UiSelectOption>();
+        langList.add(new UiSelectOption('None', 'None'));
+        for (ClusterLanguage__mdt language : languages) {
+            langList.add(new UiSelectOption(language.DeveloperName, language.MasterLabel));
+        }
+        return langList;
+    }
+
+    public static Set<String> getStopWords(String language) {
+        Set<String> emptySet = new Set<String>();
+        if (language == null || language == '' || language.toLowerCase() == LANGUAGE_NONE) {
+            return emptySet;
+        }
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel,clustan__StopWords__c FROM ClusterLanguage__mdt WHERE DeveloperName = :language];
+        if (languages.size() > 0) {
+            return new Set<String>(languages.get(0).StopWords__c.split(','));
+        }
+        return emptySet;
     }
 
 }

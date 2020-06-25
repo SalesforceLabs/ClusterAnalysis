@@ -28,37 +28,50 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
         jobState.dataPointsIdMap = new Map<String, Integer>();
     }
     
-    private List<ClusterJobResult__c> getRandomRecords(Integer count) {
+    private Database.QueryLocator getRandomRecords(Integer count) {
         ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        return [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :this.jobState.clusterJob.Id ORDER BY Random__c LIMIT :count];
+        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :this.jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
     }
 
-    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord) {
+    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
         ClusterDataPoint dp = new ClusterDataPoint();
         dp.recordId = resultRecord.Id;
         dp.externalId = resultRecord.RecordId__c;
-        dp.values = (Object[])JSON.deserializeUntyped(resultRecord.Json__c);
+        dp.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
         ClusterDataHelper.normalizeObject(dp.values, this.jobState);
         return dp;
     }
 
     public void run() {
         log.debug('Retrieving random records from db');
-        List<ClusterJobResult__c> randomRecords = this.getRandomRecords(Math.min(ClusterConstants.getSampleRecordSize(this.jobState.model), this.jobState.numRecords));
+        Database.QueryLocator randomRecordLocator = this.getRandomRecords(Math.min(ClusterConstants.getSampleRecordSize(this.jobState.model), this.jobState.numRecords));
+        log.debug('Finished retrieving random records, current heap size: ' + Limits.getHeapSize());
 
         log.debug('Initializing sample records');
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        for (ClusterJobResult__c record:randomRecords){
+        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(this.jobState);
+        Database.QueryLocatorIterator randomRecordIterator = randomRecordLocator.iterator();
+ 
+        // Iterate over the records
+        while (randomRecordIterator.hasNext())
+        {
+            ClusterJobResult__c record = (ClusterJobResult__c)randomRecordIterator.next();
             this.jobState.sampleResultsIds.add(record.Id);
-            ClusterDataPoint dp = this.createDataPoint(record);
+            ClusterDataPoint dp = this.createDataPoint(record, objectProcessor);
             dataPoints.add(dp);
+            dp.index = index;
             if (this.cacheRecords) {
                 jobState.dataPointsIdMap.put(dp.recordId, index);
             }
             index++;
+            log.debug('Processed record ' + index + ', heap size: ' + Limits.getHeapSize());
         }
+
+        log.debug('Finished initializing sample records, current heap size: ' + Limits.getHeapSize());
+        this.algRunner.initializeDistanceCache(dataPoints.size());
+        log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());
         //k-means++ centroid initialization
         log.debug('Initializing centroids');
         //Select first centroid randomly
@@ -71,14 +84,14 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
             for (Integer dpIndex = 0; dpIndex < dataPoints.size(); dpIndex++) {
                 //Compute distance from current data point to each selected centroid
                 //And choose the minimum distance
-                Double minDistance = this.algRunner.calculateDistance(dataPoints[dpIndex].values, this.jobState.centroids[0].values);
+                Double minDistance = this.algRunner.calculateDPDistance(dataPoints[dpIndex], this.jobState.centroids[0]);
                 Boolean isCentroid = false;
                 for (Integer cIndex = 1; cIndex < this.jobState.centroids.size(); cIndex++){
                     if (this.jobState.centroids[cIndex].recordId == dataPoints[dpIndex].recordId) {
                         isCentroid = true;
                         break;
                     }
-                    Double distance = this.algRunner.calculateDistance(dataPoints[dpIndex].values, this.jobState.centroids[cIndex].values);
+                    Double distance = this.algRunner.calculateDPDistance(dataPoints[dpIndex], this.jobState.centroids[cIndex]);
                     minDistance = Math.min(minDistance, distance);
                 }
                 if (!isCentroid && (minDistance > maxDistance)) {
@@ -95,6 +108,7 @@ public with sharing class ClusterInitCentroidsStep implements ClusterAlgorithmSt
         if (this.cacheRecords) {
             //For K-Medoids we will cache records in memory
             //Since we are using CLARA algorithm the number of records should fit in 12M heap (async mode)
+            //For K-Means we will also cache because there are some heap issues in SilhouetteScore step with LongText when we initialize cache there
             this.jobState.dataPoints = dataPoints;
         }
         log.debug('Init centroids step finished');

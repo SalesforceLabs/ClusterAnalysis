@@ -32,12 +32,20 @@
     setPolling : function(component, event, helper) {
         let jobDetails = component.get("v.jobDetails");
         let isVisible = component.get('v.isVisible');
+        let pollingCount = component.get('v.pollingCount');
+        let MAX_POLLING_COUNT = 240; //we will poll for 1 hour max
         if (isVisible && ((jobDetails.status == "InProgress") || (jobDetails.status == "New"))) {
-            window.setTimeout(
-                $A.getCallback(function() {
-                    helper.loadJobDetails(component, event, helper, true);
-                }), 15000
-            );
+            component.set('v.pollingCount', pollingCount + 1);
+            if (pollingCount < MAX_POLLING_COUNT) {
+                window.setTimeout(
+                    $A.getCallback(function() {
+                        helper.loadJobDetails(component, event, helper, true);
+                    }), 15000
+                );
+            }
+            else if (pollingCount == MAX_POLLING_COUNT) {
+                helper.showNotification(component, "warning", "Automatic job state refresh stopped", "Please reload this page to get an updated state");
+            }
         }
     },
     cancelJob : function(component, event, helper){

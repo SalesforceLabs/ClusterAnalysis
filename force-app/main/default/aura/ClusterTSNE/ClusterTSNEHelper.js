@@ -10,39 +10,77 @@
         "#a964fb", "#92e460", "#a05787", "#9c87a0", "#20c773", "#8b696d", "#78762d", "#e154c6", "#40835f", "#d73656", "#1afd5c",
         "#c4f546", "#3d88d8", "#bd3896", "#1397a3", "#f940a5", "#66aeff", "#d097e7", "#fe6ef9", "#d86507", "#8b900a", "#d47270",
         "#e8ac48", "#cf7c97", "#cebb11", "#718a90", "#e78139", "#ff7463", "#bea1fd"],
-    
+
     init: function() {
     },
 
-    loadDataPoints: function (component) {
+    fireGraphDataPointHoverEvent: function(component, dataPoint) {
+        var graphDataPointHoverEvent = component.getEvent('graphDataPointHoverEvent');
+        graphDataPointHoverEvent.setParams({ "dataPoint" : dataPoint });
+        graphDataPointHoverEvent.fire();
+    },
+
+    loadDataPoints: function (component, offset) {
         let jobDetails = component.get('v.jobDetails');
         let action = component.get("c.getDataPointsJson");
-        action.setParams({ jobId: jobDetails.jobId });
+        let hasLongText = false;
+        for (let i = 0; i < jobDetails.model.fields.length; i++) {
+            if (jobDetails.model.fields[i].isLongText) {
+                hasLongText = true;
+                break;
+            }
+        }
+        //Setting smaller batch size for long text fields to avoid Apex heap limit
+        let count = hasLongText ? 100 : 500;
+        action.setParams({ jobId: jobDetails.jobId, maxCount: count, offset: offset });
         let helper = this;
-
+        console.log('Loading data points, offset: ' + offset);
         action.setCallback(this, helper.getServerCallbackFunction(component, helper,
             function (dataPointsJson) {
-                let dataPoints = JSON.parse(dataPointsJson);
-                if (jobDetails.model.algorithm == 'K-Means') {
-                    dataPoints = dataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
-                }
-                component.set("v.dataPoints", dataPoints);
-                try {
-                    //Sometimes d3 script is not fully loaded and initialized, so we give it some time
-                    window.setTimeout(
-                        $A.getCallback(function() {
-                            helper.runTSNE(component, dataPoints, jobDetails);
-                        }), 1000
-                    );                    
-                }
-                catch (ex) {
-                    console.error(ex);
-                }
+                helper.wrapTryCatch(component, () => {
+                    helper.loadDataPointsCallback(component, dataPointsJson, offset, count);
+                });
             },
             function (state, errors) {
             })
         );
         $A.enqueueAction(action);
+    },
+
+    loadDataPointsCallback: function(component, dataPointsJson, offset, maxCount) {
+        let dataPoints = JSON.parse(dataPointsJson);
+        for (let i=0; i<dataPoints.length; i++) {
+            dataPoints[i].values = JSON.parse(dataPoints[i].valuesJson);
+            dataPoints[i].valuesJson = null;
+        }
+        let allDataPoints = component.get('v.dataPoints');
+        let jobDetails = component.get('v.jobDetails');
+        let helper = this;
+        
+        allDataPoints = (allDataPoints == null) ? dataPoints : allDataPoints.concat(dataPoints);
+        if ((dataPoints.length < maxCount) || (offset > jobDetails.maxGraphDataPoints)) {
+            if (jobDetails.model.algorithm == 'K-Means') {
+                allDataPoints = allDataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
+            }
+            component.set("v.dataPoints", allDataPoints);
+            //Sometimes d3 script is not fully loaded and initialized, so we give it some time
+            window.setTimeout(
+                $A.getCallback(function() {
+                    try {
+                        helper.runTSNE(component, allDataPoints, jobDetails);
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }), 1000
+            );                    
+        }
+        else {
+            //Load next data points batch
+            component.set("v.dataPoints", allDataPoints);
+            offset += maxCount;
+            this.loadDataPoints(component, offset);
+        }
     },
 
     getNodeStrokeColor: function(dataPoint) {
@@ -64,7 +102,7 @@
         else {        
             helper.drawTSNE3(component, dataPoints, jobDetails, distances);
         }
-    },
+    },    
 
     drawTSNE3: function (component, dataPoints, jobDetails, distances) {
         if (this.d3simulation) {
@@ -128,28 +166,7 @@
         // tooltip mouseover event handler
         let tipMouseover = function(d,i) {
             d3.select(this).style("stroke", "black");
-            let color = helper.d3clusterColors[dataPoints[i].clusterIndex];
-            let html  = helper.encodeHtml(d.recordName) + "<br/>" +
-                "<span>Cluster: " + dataPoints[i].clusterIndex + "</span><div class='clusterbox' style='background-color:" + color + ";'></div><br/>";
-            let dl = "<div class='slds-region_narrow' style='width: " + width.toString() + "px'><dl class='slds-dl_horizontal'>";
-            for (let fi=0; fi<jobDetails.model.fields.length; fi++) {
-                if (d.values[fi] == d.recordName)
-                    continue;
-                let fieldValue = d.values[fi];
-                if (jobDetails.model.fields[fi].dataType == 'datetime' && fieldValue != null) {
-                    fieldValue = new Date(fieldValue);
-                }
-                dl += '<dt class="slds-dl_horizontal__label">' +
-                    '<p class="slds-truncate">' + helper.encodeHtml(jobDetails.model.fields[fi].name) + '</p></dt>' + 
-                '<dd class="slds-dl_horizontal__detail slds-tile__meta">' +
-                '<p class="slds-truncate">' + helper.encodeHtml(fieldValue) + '</p></dd>';
-            }
-            html += dl + "</dl></div>";
-            tooltip.html(html)
-                .transition()
-                .duration(200) // ms
-                .style("opacity", .9) // started as 0!
-
+            helper.fireGraphDataPointHoverEvent(component, dataPoints[i]);
         };
         // tooltip mouseout event handler
         let tipMouseout = function(d) {
@@ -269,13 +286,18 @@
 				for (let i = 0; i < numChunks; i++) {
     				p = p.then(_ => new Promise(resolve =>
         				setTimeout($A.getCallback(function () {
-                            console.log('Processing chunk ' + (i+1) + ' of ' + numChunks);
-                      		self.processBatch(i * chunkSize, chunkSize);            				
-                            if (i == numChunks - 1) {
-                                console.log('Distance calculations complete');
-                                callback(distanceMatrix);
+                            try {
+                                console.log('Processing chunk ' + (i+1) + ' of ' + numChunks);
+                                self.processBatch(i * chunkSize, chunkSize);            				
+                                if (i == numChunks - 1) {
+                                    console.log('Distance calculations complete');
+                                    callback(distanceMatrix);
+                                }
+                                resolve();
                             }
-                            resolve();
+                            catch(e) {
+                                console.error(e);
+                            }
         				}), 500)
                     ));
 				}
@@ -374,15 +396,64 @@
                 distance += model.fields[i].weight * this.calculateCategoryGowerDistance(String(currentObject[i]), String(centroid[i]));
                 weight += model.fields[i].weight;
             }
+            else if (model.fields[i].isLongText) {
+                let tf1 = currentObject[i];
+                let tf2 = centroid[i];
+                let idf = jobState.minMaxValues[i].maxValue;
+                distance += model.fields[i].weight * this.calculateCosineDistance(tf1, tf2, idf);
+                weight += model.fields[i].weight;
+            }
         }
         return distance / weight;
     },
 
+    calculateCosineDistance: function(vector1, vector2, idfVector) {
+        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
+        return 1.0 - this.calculateCosineSimilarity(vector1, vector2, idfVector);
+    },
+
+    calculateCosineSimilarity: function(vector1, vector2, idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little
+        let dotProduct = 0.0;
+        let magnitude1 = 0.0;
+        let magnitude2 = 0.0;
+        let zero = 0.0;
+        //Vector sizes might be different
+        let v1Size = vector1.length;
+        let v2Size = vector2.length;
+        let idfSize = idfVector.length;
+        let length = Math.max(v1Size, v2Size);
+        for (let i = 0; i < length; i++) {
+            let v1 = i < v1Size ? vector1[i] : zero;
+            let v2 = i < v2Size ? vector2[i] : zero;
+            if ((idfVector != null) && i < idfSize) {
+                v1 = v1 * idfVector[i];
+                v2 = v2 * idfVector[i];
+            }
+            dotProduct += v1 * v2;
+            magnitude1 += v1 * v1;
+            magnitude2 += v2 * v2;
+        }
+        magnitude1 = Math.sqrt(magnitude1);
+        magnitude2 = Math.sqrt(magnitude2);
+        let magnitude = magnitude1 * magnitude2;
+        if (this.doublesEqual(magnitude, zero)) {
+            return 1.0;
+        }
+        else {
+            return dotProduct / magnitude;
+        }
+    },
+
     encodeHtml: function(rawStr) {
         if (typeof rawStr !== 'string') return rawStr;
-        return rawStr.replace(/[\u00A0-\u9999<>\&]/gim, function(i) {
-            return '&#' + i.charCodeAt(0) + ';';
-        });
+        let p = document.createElement("p");
+        p.textContent = rawStr;
+        return p.innerHTML;
+    },
+
+    doublesEqual: function (a, b) {
+        return Math.abs(a-b) < 0.000001;
     },
 
 })
