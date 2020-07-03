@@ -6,10 +6,10 @@
         {
             "path": "force-app",
             "package": "Cluster Analysis",
-            "versionName": "v1.3",
-            "versionNumber": "1.3.0.NEXT",
+            "versionName": "v1.5",
+            "versionNumber": "1.5.0.NEXT",
             "postInstallScript": "ClusterPostInstallHandler",
-            "ancestorVersion": "1.2.0.1",
+            "ancestorId": "04t3h000003dzFEAAY",
             "default": true
         }
     ],
@@ -19,6 +19,10 @@
         "Cluster Analysis@1.1.0-1": "04t3h000002NeCBAA0",
         "Cluster Analysis@1.1.0-2": "04t3h000002NeCQAA0",
         "Cluster Analysis@1.2.0-1": "04t3h000002NeCpAAK",
-        "Cluster Analysis@1.3.0-1": "04t3h0000027ODGAA2"
+        "Cluster Analysis@1.3.0-1": "04t3h0000027ODGAA2",
+        "Cluster Analysis@1.4.0-1": "04t3h000003dfi8AAA",
+        "Cluster Analysis@1.4.0-2": "04t3h000003dzFEAAY",
+        "Cluster Analysis@1.5.0-1": "04t3h000003e0yfAAA",
+        "Cluster Analysis@1.5.0-2": "04t3h000003eBAjAAM"
     }
 }

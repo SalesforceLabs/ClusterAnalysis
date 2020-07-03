@@ -6,7 +6,7 @@ public with sharing class ClusterKMeansRunnerTest {
     }
 
     @isTest
-    public static void testKMeans() {        
+    public static void testKMeans() {
         ClusterModelWrapper model = ClusterTestData.createModel('{"algorithm":"K-Means","fields":[{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Name, NumberOfEmployees FROM Lead ORDER BY Id LIMIT 50"}');
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
@@ -193,6 +193,29 @@ public with sharing class ClusterKMeansRunnerTest {
             for (Lead lead:updatedLeads) {
                 System.assertEquals(true, Integer.valueOf(lead.Company) < 5 && Integer.valueOf(lead.Company) >= 0, 'Output field populated incorrectly');
             }
+        }
+    }
+
+    @isTest
+    public static void testKMeansNullValues() {
+        User adminUser = ClusterTestData.createAdminUser();
+        Boolean leadUpdated = false;
+        System.runas(adminUser) {
+            try {
+                Lead l = [SELECT AnnualRevenue, Id, Industry, Name, NumberOfEmployees FROM Lead LIMIT 1];
+                System.assertEquals(true, l != null, 'Lead record not loaded');
+                l.Industry = null;
+                l.AnnualRevenue = null;
+                l.NumberOfEmployees = null;
+                update l;
+                leadUpdated = true;
+            }
+            catch (Exception ex) {
+                leadUpdated = false;
+            }
+        }
+        if (leadUpdated) {
+            testKMeans();
         }
     }
 }

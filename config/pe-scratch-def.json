@@ -1,0 +1,9 @@
+{
+  "orgName": "Clustan Professional Org",
+  "edition": "Professional",
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    }
+  }
+}

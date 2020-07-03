@@ -350,7 +350,7 @@
         catch (ex) { 
             d = 1;
         }
-        return d;
+        return isNaN(d) ? 1.0 : d;
     },
 
     calculateTextGowerDistance: function (a, b, min, max) {
@@ -369,7 +369,7 @@
         catch (ex) { 
             d = 1;
         }
-        return d;
+        return isNaN(d) ? 1.0 : d;
     },
 
     calculateCategoryGowerDistance: function (a, b) {
@@ -408,6 +408,8 @@
     },
 
     calculateCosineDistance: function(vector1, vector2, idfVector) {
+        if (vector1 == null && vector2 == null) return 0.0;
+        if (vector1 == null || vector2 == null) return 1.0;
         // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
         return 1.0 - this.calculateCosineSimilarity(vector1, vector2, idfVector);
     },

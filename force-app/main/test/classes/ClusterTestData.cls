@@ -43,6 +43,18 @@ public with sharing class ClusterTestData {
         return standarduser;
     }
 
+    public static User createAdminUser() {
+        String uniqueUserName = 'adminuser' + DateTime.now().getTime() + '@testorg.com';
+        Profile p = [SELECT Id FROM Profile WHERE Name='System Administrator'];
+        User standarduser = new User(Alias = 'adminu', Email='adminuser@testorg.com',
+        EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US',
+        LocaleSidKey='en_US', ProfileId = p.Id,
+        TimeZoneSidKey='America/Los_Angeles',
+        UserName=uniqueUserName);
+        insert standarduser;
+        return standarduser;
+    }
+
     public static ClusterModelWrapper createModel(string modelJson) {
         User adminUser = createClusterAdmin();
         ClusterModelWrapper model;

@@ -306,5 +306,28 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
         }
     }
+
+    @isTest
+    public static void testKMedoidsNullValues() {
+        User adminUser = ClusterTestData.createAdminUser();
+        Boolean leadUpdated = false;
+        System.runas(adminUser) {
+            try {
+                Lead l = [SELECT AnnualRevenue, Id, Industry, Name, NumberOfEmployees FROM Lead LIMIT 1];
+                System.assertEquals(true, l != null, 'Lead record not loaded');
+                l.Industry = null;
+                l.AnnualRevenue = null;
+                l.NumberOfEmployees = null;
+                update l;
+                leadUpdated = true;
+            }
+            catch (Exception ex) {
+                leadUpdated = false;
+            }
+        }
+        if (leadUpdated) {
+            testKMedoids();
+        }
+    }
     
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ReportType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <baseObject>ClusterJobResult__c</baseObject>
+    <category>other</category>
+    <deployed>true</deployed>
+    <description>Display and export clustering results</description>
+    <label>Clustering Results</label>
+    <sections>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <displayNameOverride>Cluster Job Name</displayNameOverride>
+            <field>ClusterJob__c.JobName__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>ClusterNumber__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <displayNameOverride>Cluster Name</displayNameOverride>
+            <field>Cluster__c.ClusterName__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>RelatedRecordLink__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>true</checkedByDefault>
+            <field>RecordId__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>Name</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>Cluster__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <columns>
+            <checkedByDefault>false</checkedByDefault>
+            <field>ClusterJob__c</field>
+            <table>ClusterJobResult__c</table>
+        </columns>
+        <masterLabel>Cluster Job Results</masterLabel>
+    </sections>
+</ReportType>

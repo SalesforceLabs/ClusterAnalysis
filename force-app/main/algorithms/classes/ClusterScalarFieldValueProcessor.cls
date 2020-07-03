@@ -39,7 +39,7 @@ public with sharing class ClusterScalarFieldValueProcessor implements ClusterFie
     public void processTotals(ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue, Integer recordCount) {
         //precalculating delta (max-min)
         if (fieldDesc.distanceType == ClusterConstants.FIELDTYPE_NUMERIC) {
-            minMaxValue.delta = Double.valueOf(minMaxValue.maxValue) - Double.valueOf(minMaxValue.minValue);
+            minMaxValue.delta = ClusterDataHelper.asDouble(minMaxValue.maxValue) - ClusterDataHelper.asDouble(minMaxValue.minValue);
         }
     }
 

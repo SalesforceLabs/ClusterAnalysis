@@ -73,12 +73,24 @@ public with sharing abstract class ClusterBatchBase implements Database.Batchabl
         //TODO: some batches might fail due to governor limit errors, such exceptions can't be caught in Apex. We need to check the job status here
         try {
             if (bc != null) {
-                List<AsyncApexJob> jobs = [SELECT ApexClassId,CompletedDate,CreatedById,CreatedDate,ExtendedStatus,Id,JobItemsProcessed,JobType,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,ParentJobId,Status,TotalJobItems FROM AsyncApexJob WHERE Id=:bc.getJobId()];
-                if (jobs.size() == 1) {
-                    AsyncApexJob aajob = jobs.get(0);
-                    if (aajob.NumberOfErrors > 0) {
-                        throw new ClusterException('Some or all batches in batch job ' + aaJob.Id + ' failed with status: ' + aajob.ExtendedStatus + ', number of errors: ' + aajob.NumberOfErrors); 
+                try {
+                    List<SObject> jobs = Database.query('SELECT ApexClassId,CompletedDate,CreatedById,CreatedDate,ExtendedStatus,Id,JobItemsProcessed,JobType,LastProcessed,LastProcessedOffset,MethodName,NumberOfErrors,ParentJobId,Status,TotalJobItems FROM AsyncApexJob WHERE Id=\'' 
+                        + String.escapeSingleQuotes(bc.getJobId()) + '\'');
+                    if (jobs.size() == 1) {
+                        SObject aajob = jobs.get(0);
+                        if (Integer.valueOf(aajob.get('NumberOfErrors')) > 0) {
+                            throw new ClusterException('Some or all batches in batch job ' + aaJob.get('Id') + ' failed with status: ' + aajob.get('ExtendedStatus') + ', number of errors: ' + aajob.get('NumberOfErrors')); 
+                        }
                     }
+                }
+                catch (ClusterException ex) {
+                    //Re-throw ClusterException
+                    throw ex;
+                }
+                catch (Exception ex) {
+                    //AsyncApexJob might not be accessible for some reason (Professional org?)
+                    //Just log the error and continue
+                    log.error('Failed to get async job status', ex);
                 }
             }
             if (this.hadErrorsDuringProcessing) {

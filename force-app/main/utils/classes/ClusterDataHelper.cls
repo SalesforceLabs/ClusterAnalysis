@@ -240,6 +240,12 @@ public with sharing class ClusterDataHelper {
     }
 
     public static Double calculateCosineDistance(Double[] vector1, Double[] vector2, Double[] idfVector) {
+        if ((vector1 == null) && (vector2 == null)) {
+            return 0.0;
+        }
+        else if ((vector1 == null) || (vector2 == null)) {
+            return 1.0;
+        }
         // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
         return 1.0 - calculateCosineSimilarity(vector1, vector2, idfVector);
     }
@@ -309,5 +315,12 @@ public with sharing class ClusterDataHelper {
 
     public static Boolean doublesEqual(Double a, Double b) {
         return Math.abs(a-b) < DOUBLEEPSILON;
+    }
+
+    public static Double asDouble(Object value) {
+        if (value == null) {
+            return 0.0;
+        }
+        return Double.valueOf(value);
     }
 }
