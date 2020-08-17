@@ -38,7 +38,10 @@ public with sharing class ClusterKMeansRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
@@ -151,7 +154,10 @@ public with sharing class ClusterKMeansRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');

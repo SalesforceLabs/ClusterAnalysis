@@ -63,4 +63,17 @@ public with sharing class ClusterTestData {
         }
         return model;
     }
+
+    public static List<SObject> getBatchApexData(Database.Batchable<sObject> batchApexInstance) {
+        // Get a query locator
+        Database.QueryLocator ql = (Database.QueryLocator)batchApexInstance.start(null);
+        // Get an iterator
+        Database.QueryLocatorIterator it =  ql.iterator();
+        List<SObject> resultScope = new List<SObject>();
+        while (it.hasNext())
+        {
+            resultScope.add((SObject)it.next());
+        }
+        return resultScope;
+    }
 }

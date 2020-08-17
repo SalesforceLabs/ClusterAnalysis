@@ -44,11 +44,14 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, results[0].Random__c >= 0, 'Incorrect random seed value');
             System.assertEquals(true, results[0].Json__c != null && results[0].Json__c != '', 'Json data is not populated');
 
+            state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.finish(null);
             
-            state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
             System.assertEquals(ClusterConstants.getSampleRecordSize(state.model), state.dataPoints.size(), 'Sample records are not loaded');
 
@@ -186,7 +189,10 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.processNextSteps();
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.finish(null);
             ClusterJob__c job = ClusterJobManager.getJob(state.clusterJob.Id);
             System.assertEquals(ClusterConstants.JOBSTATUS_CANCELLED, job.JobStatus__c, 'Incorrect job status for max iterations');
             System.assertEquals('Maximum algorithm iterations reached, job was interrupted', job.JobStatusText__c, 'Incorrect job status text for max iterations');
@@ -223,7 +229,10 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
@@ -240,7 +249,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             pdaStep.execute(null, dataPoints);
             pdaStep.finish(null);
 
-            System.assertEquals(true, state.centroids[0].cost > 0, 'Centroid cost calculated incorrectly');
+            System.assertEquals(true, (state.centroids[0].cost > 0) || (state.centroids[1].cost > 0), 'Centroid cost calculated incorrectly');
             Boolean isCentroidFirst = false;
             for (ClusterDataPoint centroid:state.centroids){
                 if (state.dataPoints[0].recordId == centroid.recordId) {
