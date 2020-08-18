@@ -2,6 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>NumberOfClusters__c</fullName>
     <defaultValue>3</defaultValue>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <label>Default Number Of Clusters</label>
     <precision>18</precision>

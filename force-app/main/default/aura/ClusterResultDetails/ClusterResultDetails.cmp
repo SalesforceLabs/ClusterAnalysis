@@ -26,4 +26,4 @@
             </aura:iteration>
         </dl>
     </div>
-</aura:component>	
+</aura:component>

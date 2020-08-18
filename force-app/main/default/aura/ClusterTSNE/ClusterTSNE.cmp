@@ -27,4 +27,4 @@
     <div class="c-container slds-scope slds-container slds-panel">
         <div id="{!globalId + '_tsneplot'}" class="my_dataviz"></div>
     </div>
-</aura:component>	
+</aura:component>
