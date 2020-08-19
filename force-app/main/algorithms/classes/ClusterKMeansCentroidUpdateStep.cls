@@ -40,7 +40,7 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         //CRUD permissions on ClusterJobResult__c are checked in ClusterAccessCheck.checkCRUDPermission in ClusterAlgorithmRunner.start which is calling all ClusterAlgorithmStep implementors
         //exception is thrown there in case of no access
-        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
+        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
     }
 
     public override void processRecords(Database.BatchableContext bc, List<SObject> scope) {        

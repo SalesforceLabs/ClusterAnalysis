@@ -291,7 +291,7 @@ public with sharing class ClusterDataHelper {
     public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterKMeansJobState jobState) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
         
         return getDataPoints(randomRecordLocator, jobState);
     }
@@ -311,7 +311,101 @@ public with sharing class ClusterDataHelper {
             index++;
         }
         return dataPoints;
-    }    
+    }
+
+    public static void populateClusterJobResultJsonValues(ClusterJobResult__c result, String json) {
+        Integer fieldSize = ClusterConstants.getMaxJsonFieldSize();
+        populateClusterJobResultJsonValues(result, json, fieldSize);
+    }
+
+    public static void populateClusterJobResultJsonValues(ClusterJobResult__c result, String json, Integer fieldSize) {
+        clearClusterJobResultJsonValues(result);
+        if (json != null && json.length() > fieldSize) {
+            Integer startIndex = 0;
+            Integer fieldBank = 1;
+            while (startIndex < json.length()) {
+                String resultPart = json.mid(startIndex, fieldSize);
+                populateClusterJobResultJsonValueBank(result, fieldBank, resultPart);
+                fieldBank++;
+                startIndex += fieldSize;
+            }
+        }
+        else {
+            result.Json__c = json;
+        }
+    }
+
+    public static void clearClusterJobResultJsonValues(ClusterJobResult__c result) {
+        result.Json__c = null;
+        result.Json2__c = null;
+        result.Json3__c = null;
+        result.Json4__c = null;
+        result.Json5__c = null;
+    }
+
+    public static void populateClusterJobResultJsonValueBank(ClusterJobResult__c result, Integer fieldIndex, String json) {
+        //This looks lame but not sure how the namespace will be resolved if we use dynamic binding (via set)
+        switch on fieldIndex {
+            when 1 {
+                result.Json__c = json;
+            }
+            when 2 {
+                result.Json2__c = json;
+            }
+            when 3 {
+                result.Json3__c = json;
+            }
+            when 4 {
+                result.Json4__c = json;
+            }
+            when 5 {
+                result.Json5__c = json;
+            }
+            when else {
+                throw new ClusterException('Invalid json field bank index ' + fieldIndex);
+            }
+        }
+    }
+
+    public static String getClusterJobResultValues(ClusterJobResult__c jobResult) {
+        String result = jobResult.Json__c;
+        if (!stringIsNullOrEmpty(result)) {
+            //This looks lame but not sure how the namespace will be resolved if we use dynamic binding (via get)
+            String nextResult = jobResult.Json2__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json3__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json4__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json5__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+        }
+        return result;
+    }
+
+    public static Boolean stringIsNullOrEmpty(String s) {
+        return (s == null) || (s == '');
+    }
 
     public static Boolean doublesEqual(Double a, Double b) {
         return Math.abs(a-b) < DOUBLEEPSILON;

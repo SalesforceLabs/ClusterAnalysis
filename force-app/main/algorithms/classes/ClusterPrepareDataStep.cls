@@ -53,7 +53,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
             result.RecordId__c = dataPoint.externalId;
             result.RecordName__c = dataPoint.recordName;            
             result.ClusterJob__c = jobState.clusterJob.Id;
-            result.Json__c = JSON.serialize(dataPoint.values);
+            ClusterDataHelper.populateClusterJobResultJsonValues(result, JSON.serialize(dataPoint.values));
             result.Random__c = ClusterDataHelper.getRandomInt(0, RANDOM_SIZE); //Randomize record order
             results[sindex] = result;
         }

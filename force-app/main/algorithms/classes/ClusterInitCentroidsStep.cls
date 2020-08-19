@@ -32,7 +32,7 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
         Integer count = Math.min(ClusterConstants.getSampleRecordSize(jobState.model), jobState.numRecords);
         ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
     }
 
     public override void processRecords(Database.BatchableContext bc, List<SObject> scope) {
@@ -64,7 +64,7 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
         ClusterDataPoint dp = new ClusterDataPoint();
         dp.recordId = resultRecord.Id;
         dp.externalId = resultRecord.RecordId__c;
-        dp.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
+        dp.values = (Object[])objectProcessor.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
         return dp;
     }
 

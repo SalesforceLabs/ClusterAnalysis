@@ -38,10 +38,10 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         //CRUD permissions are checked in ClusterAccessCheck.checkCRUDPermission in the constructor above (for performance reasons), exception is thrown in case of no access
         if (this.useSampleIds && this.sampleResultsIds != null && this.sampleResultsIds.size() > 0) {
-            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE Id IN :sampleResultsIds]);
+            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE Id IN :sampleResultsIds]);
         }
         else {
-            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
+            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
         }
     }
 

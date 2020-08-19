@@ -23,6 +23,7 @@ public with sharing class ClusterConstants {
 
     public static final String LANGUAGE_NONE = 'none';
     public static final Integer MAX_TFIDF_WORDBAG_SIZE = 15000; //Max size of word list for tf-idf
+    public static final Integer MAX_JSON_FIELD_SIZE = 131072;
 
     public static final Integer TEST_BATCH_SIZE = 200;
 
@@ -106,6 +107,10 @@ public with sharing class ClusterConstants {
             return new Set<String>(languages.get(0).StopWords__c.split(','));
         }
         return emptySet;
+    }
+
+    public static Integer getMaxJsonFieldSize() {
+        return MAX_JSON_FIELD_SIZE;
     }
 
 }

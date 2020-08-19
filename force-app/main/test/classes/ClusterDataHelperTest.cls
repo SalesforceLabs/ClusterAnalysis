@@ -26,4 +26,36 @@ public with sharing class ClusterDataHelperTest {
         System.assertEquals(50, Integer.valueOf(d), 'Numeric distance test failed');
     }
 
+    @isTest
+    public static void testClusterJobResultJsonValues() {
+        ClusterJobResult__c result = new ClusterJobResult__c();
+        Integer[] values = new Integer[100];
+        for (Integer i=0; i<values.size(); i++) {
+            values[i] = i;
+        }
+        String json1 = JSON.serialize(values);
+        ClusterDataHelper.populateClusterJobResultJsonValues(result, json1, 100);
+        String json2 = ClusterDataHelper.getClusterJobResultValues(result);
+        System.assertEquals(json1, json2, 'ClusterJobResult json values comparisson failed');
+        Integer[] values2 = (Integer[])JSON.deserialize(json2, Integer[].class);
+        for (Integer i=0; i<values.size(); i++) {
+            System.assertEquals(values[i], values2[i], 'ClusterJobResult deserialized json values comparisson failed');
+        }
+        ClusterDataHelper.populateClusterJobResultJsonValues(result, json1);
+        json2 = ClusterDataHelper.getClusterJobResultValues(result);
+        System.assertEquals(json1, json2, 'ClusterJobResult json values comparisson 2 failed');
+        json1 = '012345678901234567890123456789';
+        ClusterDataHelper.populateClusterJobResultJsonValues(result, json1, 10);
+        json2 = ClusterDataHelper.getClusterJobResultValues(result);
+        System.assertEquals(json1, json2, 'ClusterJobResult json values comparisson 3 failed');
+        json1 = '';
+        ClusterDataHelper.populateClusterJobResultJsonValues(result, json1, 10);
+        json2 = ClusterDataHelper.getClusterJobResultValues(result);
+        System.assertEquals(json1, json2, 'ClusterJobResult json values comparisson 4 failed');
+        json1 = null;
+        ClusterDataHelper.populateClusterJobResultJsonValues(result, json1, 10);
+        json2 = ClusterDataHelper.getClusterJobResultValues(result);
+        System.assertEquals(true, json2 == null, 'ClusterJobResult json values comparisson 5 failed');
+    }
+
 }
