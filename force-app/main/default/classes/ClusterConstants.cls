@@ -22,7 +22,7 @@ public with sharing class ClusterConstants {
     public static final String DISTANCE_GOWER = 'Gower';
 
     public static final String LANGUAGE_NONE = 'none';
-    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 15000; //Max size of word list for tf-idf
+    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 50000; //Max size of word list for tf-idf
     public static final Integer MAX_JSON_FIELD_SIZE = 131072;
 
     public static final Integer TEST_BATCH_SIZE = 200;

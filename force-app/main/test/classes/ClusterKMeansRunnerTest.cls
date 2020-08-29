@@ -224,4 +224,47 @@ public with sharing class ClusterKMeansRunnerTest {
             testKMeans();
         }
     }
+
+    @isTest
+    public static void testKMeansObjectProcessor() {
+        ClusterModelWrapper model = ClusterTestData.createModel('{"algorithm":"K-Means","fields":[{"name":"Description","displayLabel":"Description","relationName":"","objectName":"Lead","distanceType":"LongText","weight":1},{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"LastName","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT Description, AnnualRevenue, Id, LastName, NumberOfEmployees FROM Lead ORDER BY Id LIMIT 50"}');
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            ClusterKMeansRunner runner = (ClusterKMeansRunner)ClusterAlgorithmFactory.getRunner(model);
+            model.parameters.put('numberOfClusters', 5);
+            model.parameters.put('distanceFunction', ClusterConstants.DISTANCE_EUCLIDEAN);
+
+            runner.init(model);
+
+            ClusterKMeansJobState state = (ClusterKMeansJobState)runner.getJobState();
+            state.minMaxValues = new ClusterMinMaxValue[state.model.fields.size()];
+            state.numRecords = 50;
+            for (Integer i = 0; i < state.minMaxValues.size(); i++) {
+                state.minMaxValues[i] = new ClusterMinMaxValue();
+            }
+    
+            ClusterSObjectProcessor sop = new ClusterSObjectProcessor(state);
+            Lead l = new Lead();
+            l.Description = 'There are places I remember all my life Though some have changed Some forever, not for better Some have gone and some remain';
+            l.AnnualRevenue = 1000000;
+            l.Id = null;
+            l.LastName = 'Mr Twister';
+            l.NumberOfEmployees = 100;
+            ClusterDataPoint dp = sop.processSObject(l);
+
+            String jsonValues = sop.serializeValuesToJson(dp.values);
+            Object[] values = sop.parseValuesFromJson(jsonValues);
+            Double[] tf1 = (Double[])dp.values[0];
+            Double[] tf2 = (Double[])values[0];
+            for (Integer i = 0; i < tf2.size(); i++) {
+                System.assertEquals(true, ClusterDataHelper.doublesEqual(tf1[i], tf2[i]), 'Description (TF) deserialization error');
+            }
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(Double.valueOf(dp.values[1]), Double.valueOf(values[1])), 'AnnualRevenue deserialization error');
+            System.assertEquals(true, values[2] == null, 'Lead id deserialization error');
+            System.assertEquals((String)dp.values[3], (String)values[3], 'Name deserialization error');
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(Double.valueOf(dp.values[4]), Double.valueOf(values[4])), 'NumberOfEmployees deserialization error');
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(Double.valueOf(100), Double.valueOf(values[4])), 'NumberOfEmployees deserialization error');
+
+        }
+    }
 }

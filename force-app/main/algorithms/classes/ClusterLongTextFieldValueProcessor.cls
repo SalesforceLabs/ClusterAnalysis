@@ -5,7 +5,7 @@
  */
 public with sharing class ClusterLongTextFieldValueProcessor implements ClusterFieldValueProcessor {
     public static final String WORD_SPLIT_REGEX = '\\s|\\n|\\r|\\?|\\!|\\.|\\,|\\*|\\||\\(|\\)|\\[|\\]|\\{|\\}|\\"|\\`|\\$|\\^|\\~|\\/|\\\\|\\;|\\:|\\=';
-    public static final Integer TFIDF_SCALE = 5;
+    public static final Integer TFIDF_SCALE = 7;
     private static Logger log = LogFactory.getLogger();
     ClusterJobState jobState;
     Map<String,ClusterWordPreprocessor> wordPreprocessors;
@@ -42,19 +42,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         }
         String language = fieldDesc.language != null ? fieldDesc.language.toLowerCase() : ClusterConstants.LANGUAGE_NONE;
         Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language));
-
-        //Converting to decimal and reducing scale to save on memory and storage size
-        //This array will be deserialized to json string and stored in results object
-        //TODO: ideally there should be a json serializer which could support double formatting
-        Decimal[] dtf = new Decimal[tf.size()];
-        for (Integer i = 0; i < tf.size(); i++) {
-            Decimal d = Decimal.valueOf(tf[i]);
-            if (d.scale() > TFIDF_SCALE) {
-                d.setScale(TFIDF_SCALE);
-            }
-            dtf[i] = d;
-        }
-        return dtf;
+        return tf;
     }
 
     private static String[] splitText(String text) {
@@ -175,5 +163,28 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             throw new ClusterException('Cannot parse long text value ' + parser.getText());
         }
         return value;
+    }
+
+    public void serializeValueToJson(JSONGenerator gen, Object value) {
+        gen.writeStartArray();        
+        if (value != null) {
+            Double[] values = (Double[])value;
+            for (Integer i=0; i<values.size(); i++) {
+                if (values[i] == null) {
+                    gen.writeNull();
+                }
+                else if (ClusterDataHelper.doublesEqual(values[i], ClusterDataHelper.DOUBLE_ZERO)) {
+                    gen.writeNumber(ClusterDataHelper.INT_ZERO);
+                }
+                else {
+                    Decimal d = Decimal.valueOf(values[i]);
+                    if (d.scale() > TFIDF_SCALE) {
+                        d = d.setScale(TFIDF_SCALE);
+                    }
+                    gen.writeNumber(d);
+                }
+            }
+        }
+        gen.writeEndArray();
     }
 }

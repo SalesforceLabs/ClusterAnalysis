@@ -67,4 +67,24 @@ public with sharing class ClusterSObjectProcessor {
         }
         return values;
     }
+
+    public String serializeValuesToJson(Object[] values) {
+        //And now we have our own json serializer (with blackjack :)). It is slightly faster and we can reduce double presicion to reduce string size
+        //The size of LongText TF-IDF Double vectors can easily be above 20K items
+        JSONGenerator gen = JSON.createGenerator(false);
+        gen.writeStartArray();
+        if (values != null) {
+            for (Integer i = 0; i < this.jobState.model.fields.size(); i++) {
+                ClusterModelFieldWrapper field = this.jobState.model.fields[i];
+                if (field.isLongText) {
+                    this.longTextProcessor.serializeValueToJson(gen, values[i]);
+                }
+                else {
+                    this.scalarProcessor.serializeValueToJson(gen, values[i]);
+                }
+            }
+        }
+        gen.writeEndArray();
+        return gen.getAsString();
+    }
 }

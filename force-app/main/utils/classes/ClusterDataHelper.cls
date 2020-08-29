@@ -56,6 +56,8 @@ public with sharing class ClusterDataHelper {
     private static final Map<String, ClusterFieldFunctions> fieldFunctionsMap;
     public static final Double DOUBLEEPSILON = 0.000001;
     public static final Double DOUBLE_MAX_VALUE = 9223372036854775807.0;
+    public static final Double DOUBLE_ZERO = 0.0;
+    public static final Integer INT_ZERO = 0;
 
     static {
         fieldFunctionsMap = new Map<String, ClusterFieldFunctions>();
