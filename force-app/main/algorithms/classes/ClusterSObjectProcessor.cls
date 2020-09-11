@@ -6,12 +6,16 @@
 public with sharing class ClusterSObjectProcessor {
     private ClusterJobState jobState;
     private ClusterFieldValueProcessor scalarProcessor;
-    private ClusterFieldValueProcessor longTextProcessor;
+    private ClusterLongTextFieldValueProcessor longTextProcessor;
 
     public ClusterSObjectProcessor(ClusterJobState state) {
         this.jobState = state;
         this.scalarProcessor = new ClusterScalarFieldValueProcessor(this.jobState);
         this.longTextProcessor = new ClusterLongTextFieldValueProcessor(this.jobState);
+    }
+
+    public void setCompression(Boolean compression) {
+        this.longTextProcessor.setCompression(compression);
     }
 
     public ClusterDataPoint processSObject(SObject record) {

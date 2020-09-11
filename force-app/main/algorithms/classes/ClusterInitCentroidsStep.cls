@@ -70,10 +70,11 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
 
     public override void done() {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
-        this.runner.initializeDistanceCache(jobState.dataPoints.size());
+        this.runner.initializeDistanceCache();
         log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());
         //k-means++ centroid initialization
         log.debug('Initializing centroids');
+        log.debug('Number of sample records: ' + jobState.dataPoints.size());
         //Select first centroid randomly
         Integer centroidIndex = ClusterDataHelper.getRandomInt(0, jobState.dataPoints.size() - 1);
         jobState.centroids.add(jobState.dataPoints[centroidIndex]);

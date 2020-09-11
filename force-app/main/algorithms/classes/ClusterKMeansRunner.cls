@@ -56,6 +56,10 @@
         super.init(model);
     }
 
+    public override void initializeDistanceCache() {
+        this.distanceCacheManager = new ClusterRecordIdDistanceCacheManager(ClusterConstants.KMEANS_CACHE_SIZE);
+    }
+
     public override ClusterJobState getJobState() {
         return this.state;
     }

@@ -21,9 +21,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
         this.steps = new List<ClusterAlgorithmStep>();
     }
 
-    public void initializeDistanceCache(Integer numberOfObjects) {
-        this.distanceCacheManager = new ClusterDistanceCacheManager(numberOfObjects);
-    }
+    public abstract void initializeDistanceCache();
 
     public virtual ClusterAlgorithmRunner.ModelValidationResult validateModel(ClusterModelWrapper model) {
         ModelValidationResult result = new ModelValidationResult();
@@ -171,10 +169,10 @@ public abstract with sharing class ClusterAlgorithmRunner {
     public virtual Double calculateDPDistance(ClusterDataPoint currentObject, ClusterDataPoint centroid) {
         //Check cache if both data points are loaded into sample array
         if (currentObject.index != null && centroid.index != null) {
-            double distance = this.distanceCacheManager.get(currentObject.index, centroid.index);
+            double distance = this.distanceCacheManager.get(currentObject, centroid);
             if (distance == null) {
                 distance = this.calculateDistance(currentObject.values, centroid.values);
-                this.distanceCacheManager.set(currentObject.index, centroid.index, distance);
+                this.distanceCacheManager.set(currentObject, centroid, distance);
             }
             return distance;
         }

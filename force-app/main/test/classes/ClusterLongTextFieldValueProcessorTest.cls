@@ -36,4 +36,61 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.assertEquals(true, cosineDistance > 0.0, 'Cosine distance calculated incorrectly');
         }
     }
+
+    private static void testCDAIterators(ClusterCompressedDoubleArray ccda, List<Double> da) {
+        //Testing hasNext/next
+        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator iterator = new ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator(ccda);
+        List<Double> da1 = new List<Double>();
+        while (iterator.hasNext()) {
+            Double d = iterator.next();
+            System.debug(d);
+            da1.add(d);
+        }
+        System.assertEquals(da.size(), da1.size(), 'Incorrect size of the compressed array');
+        for (Integer i=0; i<da.size(); i++) {
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(da[i], da1[i]), 'Double array values are not equal');
+        }
+
+        //Testing moveNext/getValue
+        iterator = new ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator(ccda);
+        da1 = new List<Double>();
+        while (iterator.moveNext()) {
+            da1.add(iterator.getValue());
+        }
+        System.assertEquals(da.size(), da1.size(), 'Incorrect size of the compressed array');
+        for (Integer i=0; i<da.size(); i++) {
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(da[i], da1[i]), 'Double array values are not equal');
+        }
+
+    }
+
+    @isTest
+    public static void testCompressedDoubleArray() {
+        List<Double> da = new List<Double>();
+        da.add(1.0);
+        da.add(2.0);
+        da.add(3.0);
+        da.add(3.0);
+        da.add(3.0);
+        da.add(2.1);
+        da.add(2.1);
+        da.add(1.0);
+        ClusterCompressedDoubleArray ccda = new ClusterCompressedDoubleArray();
+        for (Double d:da) {
+            ccda.add(d);
+        }
+        //Testing compression
+        System.assertEquals(true, ClusterDataHelper.doublesEqual((Double)ccda.values[0], (Double)1.0), 'Incorrect value in compressed array');
+        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = (ClusterCompressedDoubleArray.ClusterCompressedDouble)ccda.values[2];
+        System.assertEquals(3, ccd.count, 'Incorrect count in compressed array');
+        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccd.value, (Double)3.0), 'Incorrect value in compressed array');
+        
+        //Testing last double
+        testCDAIterators(ccda, da);
+
+        //Testing last compressed double
+        da.add(1.0);
+        ccda.add((Double)1.0);
+        testCDAIterators(ccda, da);
+    }
 }

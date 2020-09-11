@@ -59,6 +59,10 @@
         super.init(model);
     }
 
+    public override void initializeDistanceCache() {
+        this.distanceCacheManager = new ClusterIndexDistanceCacheManager(this.state.dataPoints.size());
+    }
+
     public override ClusterJobState getJobState() {
         return this.state;
     }

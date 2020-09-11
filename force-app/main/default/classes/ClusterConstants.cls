@@ -26,6 +26,7 @@ public with sharing class ClusterConstants {
     public static final Integer MAX_JSON_FIELD_SIZE = 131072;
 
     public static final Integer TEST_BATCH_SIZE = 200;
+    public static final Integer KMEANS_CACHE_SIZE = 10000;
 
     private static Integer getIntegerSettingValue(String name, Integer defaultValue) {
         Integer intValue = defaultValue;
