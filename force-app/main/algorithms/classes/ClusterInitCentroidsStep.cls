@@ -39,7 +39,7 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         ClusterModelWrapper model = jobState.model;
         log.debug('Initializing sample records');
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
 
         // Iterate over the records
         Integer index = 0;

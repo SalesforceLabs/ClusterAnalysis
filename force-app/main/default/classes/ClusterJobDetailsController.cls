@@ -53,7 +53,7 @@ public with sharing class ClusterJobDetailsController {
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         for (ClusterJobResult__c record:randomRecords) {
-            ClusterDataPoint dp = new ClusterDataPoint(record, null);
+            ClusterDataPoint dp = new ClusterDataPoint(record);
             //We will parse json in javascript to save apex CPU time
             dp.valuesJson = ClusterDataHelper.getClusterJobResultValues(record);
             dataPoints.add(dp);
@@ -108,8 +108,9 @@ public with sharing class ClusterJobDetailsController {
         ClusterJobState jobState = new ClusterJobState();
         jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
 
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
-        ClusterDataPoint dp = new ClusterDataPoint(result, objectProcessor);
+        ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+        ClusterSObjectProcessor objectProcessor = objectFactory.createSObjectProcessor(jobState, false); //No compression for javascript
+        ClusterDataPoint dp = objectProcessor.createDataPointFromResult(result);
 
         ClusterResultDetailsUiModel uiModel = new ClusterResultDetailsUiModel();
         uiModel.jobId = job.Id;

@@ -242,8 +242,9 @@ public with sharing class ClusterKMeansRunnerTest {
             for (Integer i = 0; i < state.minMaxValues.size(); i++) {
                 state.minMaxValues[i] = new ClusterMinMaxValue();
             }
-    
-            ClusterSObjectProcessor sop = new ClusterSObjectProcessor(state);
+            
+            ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+            ClusterSObjectProcessor sop = objectFactory.createSObjectProcessor(state, false);
 
             Lead l = new Lead();
             l.Description = 'There are places I remember all my life Though some have changed Some forever, not for better Some have gone and some remain';
@@ -288,8 +289,8 @@ public with sharing class ClusterKMeansRunnerTest {
                 state.minMaxValues[i] = new ClusterMinMaxValue();
             }
     
-            ClusterSObjectProcessor sop = new ClusterSObjectProcessor(state);
-            sop.setCompression(true);
+            ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+            ClusterSObjectProcessor sop = objectFactory.createSObjectProcessor(state, true);
 
             Lead l = new Lead();
             l.Description = 'There are places I remember all my life Though some have changed Some forever, not for better Some have gone and some remain';
@@ -317,10 +318,6 @@ public with sharing class ClusterKMeansRunnerTest {
             System.assertEquals(true, ClusterDataHelper.doublesEqual(Double.valueOf(100), Double.valueOf(values[4])), 'NumberOfEmployees deserialization error');
     
         }
-    }
-
-    private static void runSObjectProcessorTest(ClusterSObjectProcessor sop) {
-
     }
 
 }

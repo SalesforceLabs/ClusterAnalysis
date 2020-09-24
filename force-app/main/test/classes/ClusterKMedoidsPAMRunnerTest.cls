@@ -221,7 +221,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, state.clusterJob != null, 'Cluster job was not created');
             System.assertEquals(1, state.currentAlgorithmStep, 'Incorrect current step');
             System.assertEquals(state.model.fields.size(), state.minMaxValues.size(), 'MinMax values initialized incorrectly');
-            System.assertEquals(true, ((List<Double>)state.minMaxValues[0].maxValue).size() > 0, 'MinMax value calculated incorrectly');
+            System.assertEquals(true, ((ClusterCompressedDoubleArray)state.minMaxValues[0].maxValue).iterator().hasNext(), 'MinMax value calculated incorrectly');
             List<ClusterJobResult__c> results = [SELECT Id, Random__c, Json__c FROM ClusterJobResult__c WHERE ClusterJob__c = :state.clusterJob.Id LIMIT 1];
             System.assertEquals(true, results != null && results.size() > 0, 'Job results are not populated');
             System.assertEquals(true, results[0].Random__c >= 0, 'Incorrect random seed value');

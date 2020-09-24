@@ -198,10 +198,7 @@ public with sharing class ClusterDataHelper {
                 weight += modelField.weight;
             }
             else if (modelField.isLongText) {
-                Double[] tf1 = (Double[])currentObject[i];
-                Double[] tf2 = (Double[])centroid[i];
-                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
-                distance += modelField.weight * calculateCosineDistance(tf1, tf2, idf);
+                distance += modelField.weight * calculateCosineDistance(currentObject[i], centroid[i], jobState.minMaxValues[i].maxValue);
                 weight += modelField.weight;
             }
         }
@@ -226,9 +223,9 @@ public with sharing class ClusterDataHelper {
             else if (model.fields[i].isLongText) {
                 //For euclidean distance we will calculate cosine distance for long text and emulate dot product
                 //TODO: Consider throwing a model validation exception if Euclidean distance is used with LongText
-                Double[] tf1 = (Double[])currentObject[i];
-                Double[] tf2 = (Double[])centroid[i];
-                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
+                Object tf1 = currentObject[i];
+                Object tf2 = centroid[i];
+                Object idf = jobState.minMaxValues[i].maxValue;
                 Double distance = model.fields[i].weight * calculateCosineDistance(tf1, tf2, idf);
                 sumDistance += distance * distance;
             }
@@ -241,39 +238,52 @@ public with sharing class ClusterDataHelper {
         return calculateGowerDistance(currentObject, centroid, jobState);
     }
 
-    public static Double calculateCosineDistance(Double[] vector1, Double[] vector2, Double[] idfVector) {
+    public static Double calculateCosineDistance(Object vector1, Object vector2, Object idfVector) {
         if ((vector1 == null) && (vector2 == null)) {
             return 0.0;
         }
         else if ((vector1 == null) || (vector2 == null)) {
             return 1.0;
         }
+        Iterator<Double> tf1;
+        Iterator<Double> tf2;
+        Iterator<Double> idf;
+        if (vector1 instanceof ClusterCompressedDoubleArray) {
+            tf1 = ((ClusterCompressedDoubleArray)vector1).iterator();
+            tf2 = ((ClusterCompressedDoubleArray)vector2).iterator();
+            idf = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
+        }
+        else {
+            tf1 = ((Double[])vector1).iterator();
+            tf2 = ((Double[])vector2).iterator();
+            idf = idfVector == null ? null : ((Double[])idfVector).iterator();
+        }
         // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-        return 1.0 - calculateCosineSimilarity(vector1, vector2, idfVector);
-    }
+        return 1.0 - calculateCosineSimilarity(tf1, tf2, idf);
+    }   
 
-    public static Double calculateCosineSimilarity(Double[] vector1, Double[] vector2, Double[] idfVector) {
-        //We will also use idf vector in calculations to optimize loops a little
+    public static Double calculateCosineSimilarity(Iterator<Double> vector1, Iterator<Double> vector2, Iterator<Double> idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little        
         Double dotProduct = 0.0;
         Double magnitude1 = 0.0;
         Double magnitude2 = 0.0;
         Double zero = 0.0;
         //Vector sizes might be different
-        Integer v1Size = vector1.size();
-        Integer v2Size = vector2.size();
-        Integer idfSize = idfVector.size();
-        Integer length = Math.max(v1Size, v2Size);
-        for (Integer i = 0; i < length; i++) {
-            Double v1 = i < v1Size ? vector1[i] : zero;
-            Double v2 = i < v2Size ? vector2[i] : zero;
-            if ((idfVector != null) && i < idfSize) {
-                Double idf = idfVector[i];
+        Boolean v1hasNext = vector1.hasNext();
+        Boolean v2hasNext = vector2.hasNext();
+        while (v1hasNext || v2hasNext) {
+            Double v1 = v1hasNext ? vector1.next() : zero;
+            Double v2 = v2hasNext ? vector2.next() : zero;
+            if ((idfVector != null) && idfVector.hasNext()) {
+                Double idf = idfVector.next();
                 v1 = v1 * idf;
                 v2 = v2 * idf;
             }
             dotProduct += v1 * v2;
             magnitude1 += v1 * v1;
             magnitude2 += v2 * v2;
+            v1hasNext = vector1.hasNext();
+            v2hasNext = vector2.hasNext();
         }
         magnitude1 = Math.sqrt(magnitude1);
         magnitude2 = Math.sqrt(magnitude2);
@@ -301,14 +311,15 @@ public with sharing class ClusterDataHelper {
     public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterKMeansJobState jobState) {
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+        ClusterSObjectProcessor objectProcessor = objectFactory.createSObjectProcessor(jobState, false); //No compression for javascript
         Database.QueryLocatorIterator dpRecordIterator = dpLocator.iterator();
  
         // Iterate over the records
         while (dpRecordIterator.hasNext())
         {
             ClusterJobResult__c record = (ClusterJobResult__c)dpRecordIterator.next();
-            ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
+            ClusterDataPoint dp = objectProcessor.createDataPointFromResult(record);
             dataPoints.add(dp);
             index++;
         }

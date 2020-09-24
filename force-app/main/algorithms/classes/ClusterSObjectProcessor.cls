@@ -7,6 +7,7 @@ public with sharing class ClusterSObjectProcessor {
     private ClusterJobState jobState;
     private ClusterFieldValueProcessor scalarProcessor;
     private ClusterLongTextFieldValueProcessor longTextProcessor;
+    private static Logger log = LogFactory.getLogger();
 
     public ClusterSObjectProcessor(ClusterJobState state) {
         this.jobState = state;
@@ -50,8 +51,15 @@ public with sharing class ClusterSObjectProcessor {
         }
     }
 
+    public ClusterDataPoint createDataPointFromResult(ClusterJobResult__c resultRecord) {
+        ClusterDataPoint dp = new ClusterDataPoint(resultRecord);
+        dp.values = (Object[])this.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
+        return dp;
+    }
+
     public Object[] parseValuesFromJson(string jsonValues) {
         //We have to use our own json parser (with blackjack :)) because standard parser converts Double[] to Object[] which takes 3 times more Apex heap
+        log.debug(LoggingLevel.FINE, 'Parsing json: ' + jsonValues);
         JSONParser parser = JSON.createParser(jsonValues);
         JSONToken nextToken = parser.nextToken();
         Object[] values = null;
@@ -74,6 +82,7 @@ public with sharing class ClusterSObjectProcessor {
 
     public String serializeValuesToJson(Object[] values) {
         //And now we have our own json serializer (with blackjack :)). It is slightly faster and we can reduce double presicion to reduce string size
+        //Compressed arrays are serialized with less overhead
         //The size of LongText TF-IDF Double vectors can easily be above 20K items
         JSONGenerator gen = JSON.createGenerator(false);
         gen.writeStartArray();

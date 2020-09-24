@@ -21,13 +21,12 @@ public with sharing class ClusterDataPoint {
     public ClusterDataPoint() {
 
     }
-    public ClusterDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
+
+    public ClusterDataPoint(ClusterJobResult__c resultRecord) {
         this.recordId = resultRecord.Id;
         this.externalId = resultRecord.RecordId__c;
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
         this.recordName = resultRecord.RecordName__c;
-        if (objectProcessor != null) {
-            this.values = (Object[])objectProcessor.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
-        }
     }
+    
 }

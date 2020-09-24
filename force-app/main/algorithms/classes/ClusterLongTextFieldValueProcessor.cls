@@ -5,6 +5,7 @@
  */
 public with sharing class ClusterLongTextFieldValueProcessor implements ClusterFieldValueProcessor {
     public static final String WORD_SPLIT_REGEX = '\\s|\\n|\\r|\\?|\\!|\\.|\\,|\\*|\\||\\(|\\)|\\[|\\]|\\{|\\}|\\"|\\`|\\$|\\^|\\~|\\/|\\\\|\\;|\\:|\\=';
+    public static final String JSON_RLE_NAME = 'rle';
     public static final Integer TFIDF_SCALE = 7;
     private static Logger log = LogFactory.getLogger();
     ClusterJobState jobState;
@@ -152,7 +153,12 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         List<String> wordList = (List<String>)minMaxValue.minValue;
         //We will replace global word count with IDF vector
         //TODO: although this will release some memory for futher processing it would be good to store the global word count somewhere
-        minMaxValue.maxValue = calculateIDF(wordList, wordMap, recordCount);
+        if (this.useCompression) {
+            minMaxValue.maxValue = calculateCompressedIDF(wordList, wordMap, recordCount);
+        }
+        else {
+            minMaxValue.maxValue = calculateIDF(wordList, wordMap, recordCount);
+        }
     }
 
     public static Double[] calculateIDF(List<String> wordList, Map<String, Integer> wordMap, Integer documentCount) {
@@ -170,7 +176,24 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             }
         }
         return idf;
-    }    
+    }
+
+    public static ClusterCompressedDoubleArray calculateCompressedIDF(List<String> wordList, Map<String, Integer> wordMap, Integer documentCount) {
+        //Calculating idf for the set of documents
+        ClusterCompressedDoubleArray idf = new ClusterCompressedDoubleArray();
+        for (Integer i=0; i<wordList.size(); i++) {
+            String currentToken = wordList.get(i);
+            Integer wordCount = wordMap.get(currentToken);
+            if (wordCount != null && wordCount > 0) {
+                //We will use base10 log for calculation
+                idf.add(Math.log10(Double.valueOf(documentCount) / Double.valueOf(wordCount)));
+            }
+            else {
+                idf.add(ClusterDataHelper.DOUBLE_ZERO);
+            }
+        }
+        return idf;
+    }
 
     public Object parseValueFromJson(JSONParser parser) {
         JSONToken nextToken = parser.nextToken();
@@ -180,15 +203,49 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         }
         else if (nextToken == JSONToken.START_ARRAY) {
             nextToken = parser.nextToken();
-            if (this.useCompression) {
+            List<Double> tfList = new List<Double>();
+            while (nextToken != JSONToken.END_ARRAY && nextToken != null) {
+                if (nextToken == JSONToken.VALUE_NUMBER_FLOAT || nextToken == JSONToken.VALUE_NUMBER_INT || nextToken == JSONToken.VALUE_NULL) {
+                    tfList.add(parser.getDoubleValue());
+                }
+                else {
+                    throw new ClusterException('Cannot parse long text array item ' + parser.getText());
+                }
+                nextToken = parser.nextToken();
+            }
+            value = tfList;
+        }
+        else if (nextToken == JSONToken.START_OBJECT) {
+            value = this.parseCompressedValueFromJson(parser);
+        }
+        else {
+            throw new ClusterException('Cannot parse long text value ' + parser.getText());
+        }
+        return value;
+    }
+
+    private Object parseCompressedValueFromJson(JSONParser parser) {
+        Object value;
+        JSONToken nextToken = parser.nextValue();
+        if (parser.getCurrentName() == JSON_RLE_NAME) {
+            if (nextToken == JSONToken.START_ARRAY) {
+                nextToken = parser.nextValue();
                 ClusterCompressedDoubleArray ctfList = new ClusterCompressedDoubleArray();
                 while (nextToken != JSONToken.END_ARRAY && nextToken != null) {
                     if (nextToken == JSONToken.VALUE_NUMBER_FLOAT || nextToken == JSONToken.VALUE_NUMBER_INT || nextToken == JSONToken.VALUE_NULL) {
                         ctfList.add(parser.getDoubleValue());
                     }
-                    else if (nextToken == JSONToken.START_OBJECT) {
-                        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = (ClusterCompressedDoubleArray.ClusterCompressedDouble)parser.readValueAs(ClusterCompressedDoubleArray.ClusterCompressedDouble.class);
+                    else if (nextToken == JSONToken.START_ARRAY) {                        
+                        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = new ClusterCompressedDoubleArray.ClusterCompressedDouble();
+                        nextToken = parser.nextToken();
+                        ccd.count = parser.getIntegerValue();
+                        nextToken = parser.nextToken();
+                        ccd.value = parser.getDoubleValue();
                         ctfList.addCompressedValue(ccd);
+                        nextToken = parser.nextToken();
+                        if (nextToken != JSONToken.END_ARRAY) {
+                            throw new ClusterException('Cannot parse compressed value ' + parser.getText());
+                        }
                     }
                     else {
                         throw new ClusterException('Cannot parse compressed long text array item ' + parser.getText());
@@ -197,30 +254,29 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 }
                 value = ctfList;
             }
+            else if (nextToken == JSONToken.VALUE_NULL) {
+                value = null;
+            }
             else {
-                List<Double> tfList = new List<Double>();
-                while (nextToken != JSONToken.END_ARRAY && nextToken != null) {
-                    if (nextToken == JSONToken.VALUE_NUMBER_FLOAT || nextToken == JSONToken.VALUE_NUMBER_INT || nextToken == JSONToken.VALUE_NULL) {
-                        tfList.add(parser.getDoubleValue());
-                    }
-                    else {
-                        throw new ClusterException('Cannot parse long text array item ' + parser.getText());
-                    }
-                    nextToken = parser.nextToken();
-                }
-                value = tfList;
+                throw new ClusterException('Cannot compressed long text value ' + parser.getText());    
             }
         }
         else {
-            throw new ClusterException('Cannot parse long text value ' + parser.getText());
+            throw new ClusterException('Cannot compressed long text field name, expected: ' + JSON_RLE_NAME +' got: ' + parser.getCurrentName());    
+        }
+        nextToken = parser.nextToken();
+        if (nextToken != JSONToken.END_OBJECT) {
+            throw new ClusterException('Cannot parse compressed json object, expected: }, got: ' + parser.getText());
         }
         return value;
     }
 
     public void serializeValueToJson(JSONGenerator gen, Object value) {
         if (this.useCompression) {
-            gen.writeStartArray();
+            gen.writeStartObject();
             if (value != null) {
+                gen.writeFieldName(JSON_RLE_NAME);
+                gen.writeStartArray();
                 ClusterCompressedDoubleArray ctfList = (ClusterCompressedDoubleArray)value;
                 List<Object> compressedList = ctfList.getCompressedList();
                 for (Integer i=0; i<compressedList.size(); i++) {
@@ -228,14 +284,22 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                         this.serializeDouble(gen, (Double)compressedList[i]);
                     }
                     else if (compressedList[i] instanceof ClusterCompressedDoubleArray.ClusterCompressedDouble) {
-                        gen.writeObject(compressedList[i]);
+                        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = (ClusterCompressedDoubleArray.ClusterCompressedDouble)compressedList[i];
+                        gen.writeStartArray();
+                        gen.writeNumber(ccd.count);
+                        this.serializeDouble(gen, ccd.value);
+                        gen.writeEndArray();
                     }
                     else {
                         throw new ClusterException('Cannot serialize value ' + compressedList[i]);
                     }
                 }
+                gen.writeEndArray();
             }
-            gen.writeEndArray();
+            else {
+                gen.writeNullField(JSON_RLE_NAME);
+            }
+            gen.writeEndObject();
         }
         else {
             gen.writeStartArray();

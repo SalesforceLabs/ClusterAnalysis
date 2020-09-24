@@ -33,7 +33,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         Object[] values = new Object[length];
         Integer scopeSize = scope.size();
         ClusterJobResult__c[] results = new ClusterJobResult__c[scopeSize];
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
 
         if (scopeSize > 0) {
             //Checking the access of the real object returned from the soql query. 
@@ -71,7 +71,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         if (jobState.numRecords == 0) {
             throw new ClusterException('Model SOQL query returned 0 records, interrupting the cluster job');
         }
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
         objectProcessor.processTotals();        
         super.done();
     }

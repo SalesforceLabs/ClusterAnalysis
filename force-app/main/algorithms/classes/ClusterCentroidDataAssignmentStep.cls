@@ -54,11 +54,11 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         List<ClusterDataPoint> centroids = jobState.centroids;
         Integer centroidSize = centroids.size();
         Object[] currentObject;
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
         List<ClusterJobResult__c> updatedResults = new List<ClusterJobResult__c>();
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
-            ClusterDataPoint currentDataPoint = new ClusterDataPoint(currentRecord, objectProcessor);
+            ClusterDataPoint currentDataPoint = objectProcessor.createDataPointFromResult(currentRecord);
             //ClusterDataHelper.normalizeObject(currentObject, jobState);
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;

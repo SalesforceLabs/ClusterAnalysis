@@ -150,4 +150,8 @@ public with sharing class ClusterCompressedDoubleArray {
         }
         return decompressed;
     }
+
+    public ClusterCompressedDoubleArrayIterator iterator() {
+        return new ClusterCompressedDoubleArrayIterator(this);
+    }
 }

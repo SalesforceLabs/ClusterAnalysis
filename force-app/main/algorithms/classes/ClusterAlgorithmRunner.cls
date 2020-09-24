@@ -19,6 +19,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     public ClusterDistanceCacheManager distanceCacheManager;
     public ClusterAlgorithmRunner() {
         this.steps = new List<ClusterAlgorithmStep>();
+        this.objectFactory = new ClusterObjectFactory();
     }
 
     public abstract void initializeDistanceCache();
@@ -87,6 +88,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
     public abstract ClusterJobState getJobState();
     public abstract void setJobState(ClusterJobState state);
+    private ClusterObjectFactory objectFactory{ get; set; }
 
     public virtual void start() {
         try {
@@ -177,6 +179,10 @@ public abstract with sharing class ClusterAlgorithmRunner {
             return distance;
         }
         return this.calculateDistance(currentObject.values, centroid.values);
+    }
+
+    public ClusterSObjectProcessor getSObjectProcessor() {
+        return this.objectFactory.createSObjectProcessor(this.getJobState());
     }
 
     protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
