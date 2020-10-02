@@ -3,7 +3,7 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
+public with sharing class ClusterInitCentroidsStep extends ClusterIterableBase {
     Boolean cacheRecords;
     public static Logger log = LogFactory.getLogger();
 
@@ -20,30 +20,36 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
         super.init(runner);
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
 
+        this.batchSize = jobState.model.hasLongTextFields() ? 1 : 5;
+
         jobState.sampleResultsIds = new List<Id>();
         jobState.centroids = new List<ClusterDataPoint>();
         jobState.dataPoints = new List<ClusterDataPoint>();
         jobState.dataPointsIdMap = new Map<String, Integer>();
+        this.initSampleRecords();
+        this.runner.initializeDistanceCache();
+        log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());
+
+        //Select first centroid randomly
+        Integer centroidIndex = ClusterDataHelper.getRandomInt(0, jobState.dataPoints.size() - 1);
+        jobState.centroids.add(jobState.dataPoints[centroidIndex]);        
     }
 
-    protected override Database.QueryLocator getBatchQueryLocator() {
+    private void initSampleRecords() {
         log.debug('Retrieving random records from db');
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         Integer count = Math.min(ClusterConstants.getSampleRecordSize(jobState.model), jobState.numRecords);
         ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
-    }
-
-    public override void processRecords(Database.BatchableContext bc, List<SObject> scope) {
-        ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
+        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count];
         ClusterModelWrapper model = jobState.model;
-        log.debug('Initializing sample records');
+
+        log.debug('Initializing ' + randomRecords.size() + ' sample records');
         ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
 
         // Iterate over the records
         Integer index = 0;
-        for (SObject record:scope)
+        for (SObject record:randomRecords)
         {
             jobState.sampleResultsIds.add(record.Id);
             ClusterDataPoint dp = this.createDataPoint((ClusterJobResult__c)record, objectProcessor);
@@ -53,36 +59,32 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
                 jobState.dataPointsIdMap.put(dp.recordId, index);
             }
             index++;
-            log.debug('Processed record ' + index + ', heap size: ' + Limits.getHeapSize());
         }
 
         log.debug('Finished initializing sample records, current heap size: ' + Limits.getHeapSize());
 
     }
 
-    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
-        ClusterDataPoint dp = new ClusterDataPoint();
-        dp.recordId = resultRecord.Id;
-        dp.externalId = resultRecord.RecordId__c;
-        dp.values = (Object[])objectProcessor.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
-        return dp;
+    protected override Object[] getRecords() {
+        ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
+        //First centroid was initialized randomly, this selects remaining n-1 centroids
+        Integer[] clusterIndices = new Integer[jobState.model.numberOfClusters - 1];
+        for (Integer i=0; i<jobState.model.numberOfClusters - 1; i++) {
+            clusterIndices[i] = i + 1;
+        }
+        return clusterIndices;        
     }
 
-    public override void done() {
+    public override void processRecords(Database.BatchableContext bc, Object[] scope) {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
-        this.runner.initializeDistanceCache();
-        log.debug('Finished initializing cache, current heap size: ' + Limits.getHeapSize());
-        //k-means++ centroid initialization
-        log.debug('Initializing centroids');
-        log.debug('Number of sample records: ' + jobState.dataPoints.size());
-        //Select first centroid randomly
-        Integer centroidIndex = ClusterDataHelper.getRandomInt(0, jobState.dataPoints.size() - 1);
-        jobState.centroids.add(jobState.dataPoints[centroidIndex]);
-        //Select remaining centroids
-        for (centroidIndex=0; centroidIndex < jobState.model.numberOfClusters - 1; centroidIndex++) {
+        ClusterModelWrapper model = jobState.model;
+        for (Integer i = 0; i<scope.size(); i++) {
+            Integer centroidIndex = (Integer)scope[i];
+            log.debug('Initializing centroid ' + centroidIndex);
             Double maxDistance = 0;
             Integer maxCentroid = 0;
             for (Integer dpIndex = 0; dpIndex < jobState.dataPoints.size(); dpIndex++) {
+                log.debug('Processing datapoint ' + dpIndex);
                 //Compute distance from current data point to each selected centroid
                 //And choose the minimum distance
                 Double minDistance = this.runner.calculateDPDistance(jobState.dataPoints[dpIndex], jobState.centroids[0]);
@@ -105,6 +107,21 @@ public with sharing class ClusterInitCentroidsStep extends ClusterBatchBase {
             //dp with maximum distance has more chances to become a centroid anyways
             jobState.centroids.add(jobState.dataPoints[maxCentroid]);
         }
+
+        log.debug('Finished initializing centroids, current heap size: ' + Limits.getHeapSize());
+
+    }
+
+    private ClusterDataPoint createDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
+        ClusterDataPoint dp = new ClusterDataPoint();
+        dp.recordId = resultRecord.Id;
+        dp.externalId = resultRecord.RecordId__c;
+        dp.values = (Object[])objectProcessor.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
+        return dp;
+    }
+
+    public override void done() {
+        ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
 
         if (!this.cacheRecords) {
             //Clear the data point cache

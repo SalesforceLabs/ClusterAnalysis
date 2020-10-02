@@ -1,6 +1,6 @@
 public with sharing abstract class ClusterIterableBase implements Database.Batchable<Object>, Database.Stateful, ClusterAlgorithmStep {
     public ClusterAlgorithmRunner runner;
-    private Integer batchSize;
+    protected Integer batchSize;
     private Boolean hadErrorsDuringProcessing = false;
     private String lastProcessingError;
 

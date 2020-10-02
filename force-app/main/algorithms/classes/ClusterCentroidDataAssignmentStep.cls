@@ -57,6 +57,7 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
         List<ClusterJobResult__c> updatedResults = new List<ClusterJobResult__c>();
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
+            ClusterBatchBase.log.debug('Processing record ' + sindex);
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
             ClusterDataPoint currentDataPoint = objectProcessor.createDataPointFromResult(currentRecord);
             //ClusterDataHelper.normalizeObject(currentObject, jobState);

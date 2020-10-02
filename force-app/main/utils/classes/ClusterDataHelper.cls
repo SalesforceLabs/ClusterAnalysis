@@ -245,45 +245,83 @@ public with sharing class ClusterDataHelper {
         else if ((vector1 == null) || (vector2 == null)) {
             return 1.0;
         }
-        Iterator<Double> tf1;
-        Iterator<Double> tf2;
-        Iterator<Double> idf;
         if (vector1 instanceof ClusterCompressedDoubleArray) {
-            tf1 = ((ClusterCompressedDoubleArray)vector1).iterator();
-            tf2 = ((ClusterCompressedDoubleArray)vector2).iterator();
-            idf = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
+            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf1i;
+            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf2i;
+            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfi;
+            tf1i = ((ClusterCompressedDoubleArray)vector1).iterator();
+            tf2i = ((ClusterCompressedDoubleArray)vector2).iterator();
+            idfi = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
+            return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
         }
         else {
-            tf1 = ((Double[])vector1).iterator();
-            tf2 = ((Double[])vector2).iterator();
-            idf = idfVector == null ? null : ((Double[])idfVector).iterator();
+            Double[] tf1 = (Double[])vector1;
+            Double[] tf2 = (Double[])vector2;
+            Double[] idf = idfVector == null ? null : (Double[])idfVector;
+            // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
+            return 1.0 - calculateCosineSimilarity(tf1, tf2, idf);
         }
-        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-        return 1.0 - calculateCosineSimilarity(tf1, tf2, idf);
     }   
 
-    public static Double calculateCosineSimilarity(Iterator<Double> vector1, Iterator<Double> vector2, Iterator<Double> idfVector) {
+    public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector1, ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector2, 
+        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfVector) {
         //We will also use idf vector in calculations to optimize loops a little        
         Double dotProduct = 0.0;
         Double magnitude1 = 0.0;
         Double magnitude2 = 0.0;
         Double zero = 0.0;
         //Vector sizes might be different
-        Boolean v1hasNext = vector1.hasNext();
-        Boolean v2hasNext = vector2.hasNext();
+        Boolean v1hasNext = vector1.moveNext();
+        Boolean v2hasNext = vector2.moveNext();
         while (v1hasNext || v2hasNext) {
-            Double v1 = v1hasNext ? vector1.next() : zero;
-            Double v2 = v2hasNext ? vector2.next() : zero;
-            if ((idfVector != null) && idfVector.hasNext()) {
-                Double idf = idfVector.next();
+            Double v1 = v1hasNext ? vector1.getValue() : zero;
+            Double v2 = v2hasNext ? vector2.getValue() : zero;
+            if ((idfVector != null) && idfVector.moveNext()) {
+                Double idf = idfVector.getValue();
                 v1 = v1 * idf;
                 v2 = v2 * idf;
             }
             dotProduct += v1 * v2;
             magnitude1 += v1 * v1;
             magnitude2 += v2 * v2;
-            v1hasNext = vector1.hasNext();
-            v2hasNext = vector2.hasNext();
+            if (v1hasNext) {
+                v1hasNext = vector1.moveNext();
+            }
+            if (v2hasNext) {
+                v2hasNext = vector2.moveNext();
+            }
+        }
+        Double magnitude = magnitude1 * magnitude2;
+        if (doublesEqual(magnitude, zero)) {
+            return 1.0;
+        }
+        else {
+            return dotProduct / Math.sqrt(magnitude);
+        }
+    }
+
+    public static Double calculateCosineSimilarity(Double[] vector1, Double[] vector2, Double[] idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little
+        Double dotProduct = 0.0;
+        Double magnitude1 = 0.0;
+        Double magnitude2 = 0.0;
+        Double zero = 0.0;
+        //Vector sizes might be different
+        Integer v1Size = vector1.size();
+        Integer v2Size = vector2.size();
+        Integer idfSize = idfVector.size();
+        Integer length = Math.max(v1Size, v2Size);
+        for (Integer i = 0; i < length; i++) {
+            Double v1 = i < v1Size ? vector1[i] : zero;
+            Double v2 = i < v2Size ? vector2[i] : zero;
+            if ((idfVector != null) && i < idfSize) {
+                Double idf = idfVector[i];
+                v1 = v1 * idf;
+                v2 = v2 * idf;
+            }
+            dotProduct += v1 * v2;
+            magnitude1 += v1 * v1;
+            magnitude2 += v2 * v2;
         }
         magnitude1 = Math.sqrt(magnitude1);
         magnitude2 = Math.sqrt(magnitude2);

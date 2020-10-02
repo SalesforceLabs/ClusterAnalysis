@@ -14,34 +14,56 @@ public with sharing class ClusterCompressedDoubleArray {
         private Integer currentArrayIndex;
         private Integer currentValueIndex;
         private ClusterCompressedDouble currentCompressedValue;
+        private Integer nextArrayIndex;
+        private Integer nextValueIndex;
+        private ClusterCompressedDouble nextCompressedValue;
         private Double currentValue;
+        private Integer iterableArraySize;
 
         public ClusterCompressedDoubleArrayIterator(ClusterCompressedDoubleArray value) {
             this.iterableArray = value;
+            this.iterableArraySize = value.size();
             this.currentArrayIndex = -1;
             this.currentValueIndex = -1;
             this.currentCompressedValue = null;
+            this.nextArrayIndex = -1;
+            this.nextValueIndex = -1;
+            this.nextCompressedValue = null;
         }
 
         public Boolean hasNext() {
-            Integer currentArrayIndexSave = this.currentArrayIndex;
+            this.nextArrayIndex = this.currentArrayIndex;
             if (this.currentCompressedValue != null) {
                 if (this.currentValueIndex + 1 < this.currentCompressedValue.count) {
+                    this.nextValueIndex = this.currentValueIndex + 1;
+                    this.nextCompressedValue = this.currentCompressedValue;
                     return true;
                 }
                 else {
-                    currentArrayIndexSave++;
+                    this.nextValueIndex = -1;
+                    this.nextCompressedValue = null;
+                    this.nextArrayIndex++;
                 }
             }
             else {
-                currentArrayIndexSave++;
+                this.nextArrayIndex++;
             }
-            return currentArrayIndexSave < this.iterableArray.size();            
+            return this.nextArrayIndex < this.iterableArraySize;            
         }
 
         public Double next() {
-            this.moveNext();
-            return this.getValue();
+            if (this.nextArrayIndex > -1) {
+                this.currentArrayIndex = this.nextArrayIndex;
+                this.currentValueIndex = this.nextValueIndex;
+                this.currentCompressedValue = this.nextCompressedValue;
+                this.nextArrayIndex = -1;
+                Boolean result = this.currentArrayIndex < this.iterableArraySize;
+                this.currentValue = result ? this.getValueInternal() : null;
+            }
+            else {
+                this.moveNext();
+            }
+            return this.currentValue;
         }
 
         public Boolean moveNext() {
@@ -58,7 +80,7 @@ public with sharing class ClusterCompressedDoubleArray {
             else {
                 this.currentArrayIndex++;
             }
-            Boolean result = this.currentArrayIndex < this.iterableArray.size();
+            Boolean result = this.currentArrayIndex < this.iterableArraySize;
             this.currentValue = result ? this.getValueInternal() : null;
             return result;
         }
@@ -71,7 +93,8 @@ public with sharing class ClusterCompressedDoubleArray {
             if (this.currentCompressedValue != null) {
                 return this.currentCompressedValue.value;
             }
-            Object value = this.iterableArray.get(this.currentArrayIndex);
+            //Object value = this.iterableArray.get(this.currentArrayIndex);
+            Object value = this.iterableArray.values[this.currentArrayIndex];
             if (value instanceof ClusterCompressedDouble) {
                 this.currentCompressedValue = (ClusterCompressedDouble)value;
                 this.currentValueIndex = 0;
@@ -115,7 +138,7 @@ public with sharing class ClusterCompressedDoubleArray {
                 this.values.add(value);
                 this.prevValue = value;    
             }
-        }        
+        }
     }
 
     public void addCompressedValue(Double value, Integer count) {

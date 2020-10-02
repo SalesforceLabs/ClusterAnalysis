@@ -40,7 +40,7 @@ public with sharing class ClusterKMeansRunnerTest {
             runner.setJobState(state);
             ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
             initCentroidsStep.init(runner);
-            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
             initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
@@ -156,7 +156,7 @@ public with sharing class ClusterKMeansRunnerTest {
             runner.setJobState(state);
             ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
             initCentroidsStep.init(runner);
-            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
             initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;

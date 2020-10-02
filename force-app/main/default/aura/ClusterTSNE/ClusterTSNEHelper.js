@@ -48,13 +48,14 @@
     },
 
     loadDataPointsCallback: function(component, dataPointsJson, offset, maxCount) {
+        let jobDetails = component.get('v.jobDetails');
         let dataPoints = JSON.parse(dataPointsJson);
         for (let i=0; i<dataPoints.length; i++) {
             dataPoints[i].values = JSON.parse(dataPoints[i].valuesJson);
+            this.processDataPointValues(jobDetails.state, dataPoints[i].values);
             dataPoints[i].valuesJson = null;
         }
         let allDataPoints = component.get('v.dataPoints');
-        let jobDetails = component.get('v.jobDetails');
         let helper = this;
         
         allDataPoints = (allDataPoints == null) ? dataPoints : allDataPoints.concat(dataPoints);
@@ -457,5 +458,33 @@
     doublesEqual: function (a, b) {
         return Math.abs(a-b) < 0.000001;
     },
+
+    processDataPointValues: function(jobState, values) {
+        let model = jobState.model;
+        for (let i = 0; i < model.fields.length; i++) {
+            if (model.fields[i].isLongText) {
+                values[i] = this.decompressRLEArray(values[i]);
+            }
+        }        
+    },
+
+    decompressRLEArray: function(rleArray) {
+        if (rleArray && rleArray.length > 0) {
+            let values = [];
+            for (let i=0; i<rleArray.length; i++) {
+                let rleValue = rleArray[i];
+                if (rleValue && Array.isArray(rleValue)) {
+                    let count = rleValue[0];
+                    let value = rleValue[1];
+                    for (let cIndex = 0; cIndex < count; cIndex++) {
+                        values.push(value);
+                    }
+                }
+                else {
+                    values.push(rleValue);
+                }
+            }
+        }
+    }
 
 })

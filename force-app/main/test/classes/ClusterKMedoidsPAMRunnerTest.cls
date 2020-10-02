@@ -6,15 +6,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
         List<sObject> leads = Test.loadData(Lead.sObjectType, 'ClustanLeadsMock');
     }
 
-    /*
-    public static void debugUntruncated(String sMsg) {
-        for (Integer i = 0; i < sMsg.length(); i=i+300) {
-            Integer iEffectiveEnd = (i+300 > (sMsg.length()-1) ? sMsg.length()-1 : i+300);
-            System.debug(sMsg.substring(i,iEffectiveEnd));
-        }
-    }
-    */
-    
     @isTest
     public static void testKMedoids() {        
         String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Rating","displayLabel":"Rating","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Industry, Name, NumberOfEmployees, Rating, Title FROM Lead LIMIT 50"}';
@@ -32,7 +23,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             String stateJson = ClusterJobManager.loadJobState(state.clusterJob.Id);
             System.assertEquals(true, stateJson != null, 'Cluster saved job state is null');
             System.assertEquals(state.model.numberOfClusters, state.jobClusters.size(), 'Incorrect number of clusters created for the job');
-            //state = (ClusterKMeansJobState)JSON.deserialize(stateJson, ClusterKMeansJobState.class);
 
             System.assertEquals(true, state.clusterJob != null, 'Cluster job was not created');
             System.assertEquals(1, state.currentAlgorithmStep, 'Incorrect current step');
@@ -49,14 +39,13 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             runner.setJobState(state);
             ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
             initCentroidsStep.init(runner);
-            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
             initCentroidsStep.finish(null);
             
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
             System.assertEquals(ClusterConstants.getSampleRecordSize(state.model), state.dataPoints.size(), 'Sample records are not loaded');
 
             stateJson = JSON.serialize(state);
-            //debugUntruncated('State json: ' + stateJson);
 
             //ClusterPAMDataAssignmentStep
             runner.setJobState(state);
@@ -191,7 +180,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             runner.setJobState(state);
             ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
             initCentroidsStep.init(runner);
-            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
             initCentroidsStep.finish(null);
             ClusterJob__c job = ClusterJobManager.getJob(state.clusterJob.Id);
             System.assertEquals(ClusterConstants.JOBSTATUS_CANCELLED, job.JobStatus__c, 'Incorrect job status for max iterations');
@@ -231,7 +220,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             runner.setJobState(state);
             ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
             initCentroidsStep.init(runner);
-            initCentroidsStep.execute(null, ClusterTestData.getBatchApexData(initCentroidsStep));
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
             initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
