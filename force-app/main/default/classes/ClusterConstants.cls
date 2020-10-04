@@ -66,6 +66,10 @@ public with sharing class ClusterConstants {
         return getIntegerSettingValue('KMedoidsSwapBatchSize', 200);
     }
 
+    public static Integer getInitCentroidStepBatchSize() {
+        return 1;
+    }
+
     public static Integer getAttachmentMaxSize() {
         return 4*1024*1024; //TODO: move this to settings
     }

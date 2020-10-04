@@ -245,22 +245,13 @@ public with sharing class ClusterDataHelper {
         else if ((vector1 == null) || (vector2 == null)) {
             return 1.0;
         }
-        if (vector1 instanceof ClusterCompressedDoubleArray) {
-            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf1i;
-            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf2i;
-            ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfi;
-            tf1i = ((ClusterCompressedDoubleArray)vector1).iterator();
-            tf2i = ((ClusterCompressedDoubleArray)vector2).iterator();
-            idfi = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
-            return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
-        }
-        else {
-            Double[] tf1 = (Double[])vector1;
-            Double[] tf2 = (Double[])vector2;
-            Double[] idf = idfVector == null ? null : (Double[])idfVector;
-            // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-            return 1.0 - calculateCosineSimilarity(tf1, tf2, idf);
-        }
+        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf1i;
+        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf2i;
+        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfi;
+        tf1i = ((ClusterCompressedDoubleArray)vector1).iterator();
+        tf2i = ((ClusterCompressedDoubleArray)vector2).iterator();
+        idfi = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
+        return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
     }   
 
     public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector1, ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector2, 

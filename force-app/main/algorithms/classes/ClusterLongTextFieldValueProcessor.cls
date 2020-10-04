@@ -278,20 +278,17 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 gen.writeFieldName(JSON_RLE_NAME);
                 gen.writeStartArray();
                 ClusterCompressedDoubleArray ctfList = (ClusterCompressedDoubleArray)value;
-                List<Object> compressedList = ctfList.getCompressedList();
+                List<ClusterCompressedDoubleArray.ClusterCompressedDouble> compressedList = ctfList.getCompressedList();
                 for (Integer i=0; i<compressedList.size(); i++) {
-                    if (compressedList[i] instanceof Double) {
-                        this.serializeDouble(gen, (Double)compressedList[i]);
+                    if (compressedList[i].count == 1) {
+                        this.serializeDouble(gen, compressedList[i].value);
                     }
-                    else if (compressedList[i] instanceof ClusterCompressedDoubleArray.ClusterCompressedDouble) {
+                    else {
                         ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = (ClusterCompressedDoubleArray.ClusterCompressedDouble)compressedList[i];
                         gen.writeStartArray();
                         gen.writeNumber(ccd.count);
                         this.serializeDouble(gen, ccd.value);
                         gen.writeEndArray();
-                    }
-                    else {
-                        throw new ClusterException('Cannot serialize value ' + compressedList[i]);
                     }
                 }
                 gen.writeEndArray();

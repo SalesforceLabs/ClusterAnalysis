@@ -31,6 +31,10 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
                     centroids[cindex].recordId = null; 
                     centroids[cindex].values[i] = String.valueOf(cindex); //Update real id to cluster index, same as above
                 }
+                else if (model.fields[i].isLongText) {
+                    centroids[cindex].values[i] = new List<Double>(); //Initialize with Double[], this will be converted to ClusterCompressedDoubleArray in the end
+                }
+                
             }
             this.clusterSizes[cindex] = 0;
         }
@@ -62,19 +66,19 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
                 }
                 else if (model.fields[findex].isLongText) {
                     Double[] tf1 = (Double[])currentCentroid.values[findex];
-                    Double[] tf2 = (Double[])currentDataPoint.values[findex];
+                    ClusterCompressedDoubleArray tf2 = (ClusterCompressedDoubleArray)currentDataPoint.values[findex];
                     if ((tf1 != null) && (tf2 != null)) {
+                        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf2iterator = tf2.iterator();
+                        Integer tf1Index = 0;
                         Integer tf1Size = tf1.size();
-                        Integer tf2Size = tf2.size();
-                        if (tf1Size < tf2Size) {
-                            //Resizing centroid array
-                            for (Integer sizeIndex = 0; sizeIndex < tf2Size - tf1Size; sizeIndex++) {
-                                tf1.add(0.0);
+                        while (tf2iterator.moveNext()) {
+                            if (tf1Size <= tf1Index) {
+                                tf1.add(ClusterDataHelper.DOUBLE_ZERO);
+                                tf1Size++;
                             }
-                        }
-                        for (Integer tfIndex = 0; tfIndex < tf1Size; tfIndex++) {
-                            Double v2 = tfIndex < tf2Size ? tf2[tfIndex] : 0.0;
-                            tf1[tfIndex] = tf1[tfIndex] + v2;
+                            Double v2 = tf2iterator.getValue();
+                            tf1[tf1Index] = tf1[tf1Index] + v2;
+                            tf1Index++;
                         }
                     }
                 }
@@ -95,12 +99,13 @@ public with sharing class ClusterKMeansCentroidUpdateStep extends ClusterBatchBa
                         centroids[cindex].values[i] = ClusterDataHelper.asDouble(centroids[cindex].values[i]) / this.clusterSizes[cindex];
                     }
                     else if (model.fields[i].isLongText) {
-                        Object[] tf = (Object[])centroids[cindex].values[i];
+                        Double[] tf = (Double[])centroids[cindex].values[i];
                         if (tf != null) {
                             for (Integer tfIndex = 0; tfIndex < tf.size(); tfIndex++) {
-                                tf[tfIndex] = Double.valueOf(tf[tfIndex]) / this.clusterSizes[cindex];
+                                tf[tfIndex] = tf[tfIndex] / this.clusterSizes[cindex];
                             }
                         }
+                        centroids[cindex].values[i] = new ClusterCompressedDoubleArray(tf);
                     }    
                 }
             }

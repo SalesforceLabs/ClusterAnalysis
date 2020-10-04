@@ -7,6 +7,15 @@ public with sharing class ClusterCompressedDoubleArray {
     public class ClusterCompressedDouble {
         public Integer count;
         public Double value;
+
+        public ClusterCompressedDouble() {
+
+        }
+
+        public ClusterCompressedDouble(Double doubleValue) {
+            this.value = doubleValue;
+            this.count = 1;
+        }
     }
 
     public class ClusterCompressedDoubleArrayIterator implements Iterator<Double> {
@@ -93,50 +102,43 @@ public with sharing class ClusterCompressedDoubleArray {
             if (this.currentCompressedValue != null) {
                 return this.currentCompressedValue.value;
             }
-            //Object value = this.iterableArray.get(this.currentArrayIndex);
-            Object value = this.iterableArray.values[this.currentArrayIndex];
-            if (value instanceof ClusterCompressedDouble) {
-                this.currentCompressedValue = (ClusterCompressedDouble)value;
-                this.currentValueIndex = 0;
-                return this.currentCompressedValue.value;
-            }
-            else {
-                return (Double)value;
-            }
+            this.currentCompressedValue = this.iterableArray.values[this.currentArrayIndex];
+            this.currentValueIndex = 0;
+            return this.currentCompressedValue.value;
         }
     }
 
     @TestVisible
-    private List<Object> values;
+    private List<ClusterCompressedDouble> values;
     private transient Double prevValue;
 
     public ClusterCompressedDoubleArray() {
-        this.values = new List<Object>();
+        this.values = new List<ClusterCompressedDouble>();
         this.prevValue = null;
+    }
+
+    public ClusterCompressedDoubleArray(List<Double> doubleArray) {
+        this();
+        for (Double d:doubleArray) {
+            this.add(d);
+        }
     }
 
     public void add(Double value) {
         Integer size = this.values.size();
         if (size == 0 || this.prevValue == null) {
-            this.values.add(value);
+            this.values.add(new ClusterCompressedDouble(value));
             this.prevValue = value;
         }
         else {
             if (ClusterDataHelper.doublesEqual(this.prevValue, value)) {
-                Object prevItem = this.values.get(size - 1);
-                if (prevItem instanceOf ClusterCompressedDouble) {
-                    ((ClusterCompressedDouble)prevItem).count++;
-                }
-                else {
-                    ClusterCompressedDouble ccd = new ClusterCompressedDouble();
-                    ccd.value = value;
-                    ccd.count = 2;
-                    this.values.set(size - 1, ccd);
-                }
+                ClusterCompressedDouble prevItem = this.values.get(size - 1);
+                prevItem.count++;
             }
             else {
-                this.values.add(value);
-                this.prevValue = value;    
+                ClusterCompressedDouble ccd = new ClusterCompressedDouble(value);
+                this.values.add(ccd);
+                this.prevValue = ccd.value;
             }
         }
     }
@@ -157,11 +159,11 @@ public with sharing class ClusterCompressedDoubleArray {
         return this.values.size();
     }
 
-    public Object get(Integer index) {
+    public ClusterCompressedDouble get(Integer index) {
         return this.values.get(index);
     }
 
-    public List<Object> getCompressedList() {
+    public List<ClusterCompressedDouble> getCompressedList() {
         return this.values;
     }
 

@@ -30,9 +30,13 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
 
             Double[] tf3 = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor);
             
-            Double cosineDistance = ClusterDataHelper.calculateCosineDistance(tf, tf3, idf);
+            ClusterCompressedDoubleArray ctf = new ClusterCompressedDoubleArray(tf);
+            ClusterCompressedDoubleArray ctf2 = new ClusterCompressedDoubleArray(tf2);
+            ClusterCompressedDoubleArray ctf3 = new ClusterCompressedDoubleArray(tf3);
+            ClusterCompressedDoubleArray cidf = new ClusterCompressedDoubleArray(idf);
+            Double cosineDistance = ClusterDataHelper.calculateCosineDistance(ctf, ctf3, cidf);
             System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, Double.valueOf(0.0)), 'Cosine distance calculated incorrectly');
-            cosineDistance = ClusterDataHelper.calculateCosineDistance(tf, tf2, idf);
+            cosineDistance = ClusterDataHelper.calculateCosineDistance(ctf, ctf2, cidf);
             System.assertEquals(true, cosineDistance > 0.0, 'Cosine distance calculated incorrectly');
         }
     }
@@ -80,8 +84,8 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             ccda.add(d);
         }
         //Testing compression
-        System.assertEquals(true, ClusterDataHelper.doublesEqual((Double)ccda.values[0], (Double)1.0), 'Incorrect value in compressed array');
-        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = (ClusterCompressedDoubleArray.ClusterCompressedDouble)ccda.values[2];
+        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccda.values[0].value, (Double)1.0), 'Incorrect value in compressed array');
+        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = ccda.values[2];
         System.assertEquals(3, ccd.count, 'Incorrect count in compressed array');
         System.assertEquals(true, ClusterDataHelper.doublesEqual(ccd.value, (Double)3.0), 'Incorrect value in compressed array');
         

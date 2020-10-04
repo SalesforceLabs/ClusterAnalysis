@@ -173,7 +173,6 @@ public abstract with sharing class ClusterAlgorithmRunner {
         if (currentObject.index != null && centroid.index != null) {
             double distance = this.distanceCacheManager.get(currentObject, centroid);
             if (distance == null) {
-                log.debug('Cache miss, putting distance into cache');
                 distance = this.calculateDistance(currentObject.values, centroid.values);
                 this.distanceCacheManager.set(currentObject, centroid, distance);
             }
