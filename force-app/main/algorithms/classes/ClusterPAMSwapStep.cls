@@ -16,6 +16,15 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
         super(batchSize);
     }
 
+    public override Integer getBatchSize() {
+        ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
+        Integer bs = super.getBatchSize();
+        if (jobState.iterationsCount < 2) {
+            bs = bs / 2; //Reducing batch size for initial swap operation, distance cache is mostly empty at this stage
+        }
+        return bs;
+    }
+
     public override void init(ClusterAlgorithmRunner runner) {
         ClusterIterableBase.log.debug('Starting PAM swap step');
         super.init(runner);

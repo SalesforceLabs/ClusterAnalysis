@@ -61,6 +61,7 @@
         allDataPoints = (allDataPoints == null) ? dataPoints : allDataPoints.concat(dataPoints);
         if ((dataPoints.length < maxCount) || (offset > jobDetails.maxGraphDataPoints)) {
             if (jobDetails.model.algorithm == 'K-Means') {
+                //jobDetails.state.centroids.forEach(c => helper.processDataPointValues(jobDetails.state, c.values));
                 allDataPoints = allDataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
             }
             component.set("v.dataPoints", allDataPoints);
@@ -308,144 +309,8 @@
         chunker.processMatrix(callback, distanceMatrix);
     },
 
-    // code from https://github.com/trekhleb/javascript-algorithms/tree/master/src/algorithms/string/levenshtein-distance
-    levenshteinDistance: function (a, b) {
-        // Create empty edit distance matrix for all possible modifications of
-        // substrings of a to substrings of b.
-        const distanceMatrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-
-        // Fill the first row of the matrix.
-        // If this is first row then we're transforming empty string to a.
-        // In this case the number of transformations equals to size of a substring.
-        for (let i = 0; i <= a.length; i += 1) {
-            distanceMatrix[0][i] = i;
-        }
-
-        // Fill the first column of the matrix.
-        // If this is first column then we're transforming empty string to b.
-        // In this case the number of transformations equals to size of b substring.
-        for (let j = 0; j <= b.length; j += 1) {
-            distanceMatrix[j][0] = j;
-        }
-
-        for (let j = 1; j <= b.length; j += 1) {
-            for (let i = 1; i <= a.length; i += 1) {
-                const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-                distanceMatrix[j][i] = Math.min(
-                    distanceMatrix[j][i - 1] + 1, // deletion
-                    distanceMatrix[j - 1][i] + 1, // insertion
-                    distanceMatrix[j - 1][i - 1] + indicator // substitution
-                );
-            }
-        }
-
-        return distanceMatrix[b.length][a.length];
-    },
-
-    calculateNumericGowerDistance: function (a, b, delta) {
-        if (a == null && b == null) return 0;
-        let d = 0;
-        try {
-            d = Math.abs(a - b) / delta;
-        }
-        catch (ex) { 
-            d = 1;
-        }
-        return isNaN(d) ? 1.0 : d;
-    },
-
-    calculateTextGowerDistance: function (a, b, min, max) {
-        if (a == null && b == null) return 0;
-        let r = max;
-        let d = 0;
-        try {
-            if (a == null) {
-                d = Number(b.length()) / r;
-            }
-            else if (b == null) {
-                d = Number(a.length()) / r;
-            }
-            else d = this.levenshteinDistance(a, b) / r;
-        }
-        catch (ex) { 
-            d = 1;
-        }
-        return isNaN(d) ? 1.0 : d;
-    },
-
-    calculateCategoryGowerDistance: function (a, b) {
-        if (a == null && b == null) return 0;
-        return (a == b) ? 0 : 1;
-    },
-
     gowerDistance: function (currentObject, centroid, jobState) {
-        let distance = 0;
-        let weight = 0;
-        let model = jobState.model;
-        for (let i = 0; i < model.fields.length; i++) {
-            if (model.fields[i].isNumeric) {
-                distance += model.fields[i].weight * this.calculateNumericGowerDistance(Number(currentObject[i]), Number(centroid[i]),
-                    Number(jobState.minMaxValues[i].delta));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isText) {
-                distance += model.fields[i].weight * this.calculateTextGowerDistance(String(currentObject[i]), String(centroid[i]),
-                    Number(jobState.minMaxValues[i].minValue), Number(jobState.minMaxValues[i].maxValue));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isCategory) {
-                distance += model.fields[i].weight * this.calculateCategoryGowerDistance(String(currentObject[i]), String(centroid[i]));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isLongText) {
-                let tf1 = currentObject[i];
-                let tf2 = centroid[i];
-                let idf = jobState.minMaxValues[i].maxValue;
-                distance += model.fields[i].weight * this.calculateCosineDistance(tf1, tf2, idf);
-                weight += model.fields[i].weight;
-            }
-        }
-        return distance / weight;
-    },
-
-    calculateCosineDistance: function(vector1, vector2, idfVector) {
-        if (vector1 == null && vector2 == null) return 0.0;
-        if (vector1 == null || vector2 == null) return 1.0;
-        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-        return 1.0 - this.calculateCosineSimilarity(vector1, vector2, idfVector);
-    },
-
-    calculateCosineSimilarity: function(vector1, vector2, idfVector) {
-        //We will also use idf vector in calculations to optimize loops a little
-        let dotProduct = 0.0;
-        let magnitude1 = 0.0;
-        let magnitude2 = 0.0;
-        let zero = 0.0;
-        //Vector sizes might be different
-        let v1Size = vector1.length;
-        let v2Size = vector2.length;
-        let idfSize = idfVector.length;
-        let length = Math.max(v1Size, v2Size);
-        for (let i = 0; i < length; i++) {
-            let v1 = i < v1Size ? vector1[i] : zero;
-            let v2 = i < v2Size ? vector2[i] : zero;
-            if ((idfVector != null) && i < idfSize) {
-                v1 = v1 * idfVector[i];
-                v2 = v2 * idfVector[i];
-            }
-            dotProduct += v1 * v2;
-            magnitude1 += v1 * v1;
-            magnitude2 += v2 * v2;
-        }
-        magnitude1 = Math.sqrt(magnitude1);
-        magnitude2 = Math.sqrt(magnitude2);
-        let magnitude = magnitude1 * magnitude2;
-        if (this.doublesEqual(magnitude, zero)) {
-            return 1.0;
-        }
-        else {
-            return dotProduct / magnitude;
-        }
+        return clustanUtils.gowerDistance(currentObject, centroid, jobState);
     },
 
     encodeHtml: function(rawStr) {
@@ -455,36 +320,8 @@
         return p.innerHTML;
     },
 
-    doublesEqual: function (a, b) {
-        return Math.abs(a-b) < 0.000001;
-    },
-
     processDataPointValues: function(jobState, values) {
-        let model = jobState.model;
-        for (let i = 0; i < model.fields.length; i++) {
-            if (model.fields[i].isLongText) {
-                values[i] = this.decompressRLEArray(values[i]);
-            }
-        }        
+        clustanUtils.decompressDataPointValues(jobState, values);
     },
-
-    decompressRLEArray: function(rleArray) {
-        if (rleArray && rleArray.length > 0) {
-            let values = [];
-            for (let i=0; i<rleArray.length; i++) {
-                let rleValue = rleArray[i];
-                if (rleValue && Array.isArray(rleValue)) {
-                    let count = rleValue[0];
-                    let value = rleValue[1];
-                    for (let cIndex = 0; cIndex < count; cIndex++) {
-                        values.push(value);
-                    }
-                }
-                else {
-                    values.push(rleValue);
-                }
-            }
-        }
-    }
 
 })

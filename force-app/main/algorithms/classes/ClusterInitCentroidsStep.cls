@@ -20,7 +20,8 @@ public with sharing class ClusterInitCentroidsStep extends ClusterIterableBase {
         super.init(runner);
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
 
-        this.batchSize = ClusterConstants.getInitCentroidStepBatchSize();
+        this.batchSize = jobState.model.hasLongTextFields() ? ClusterConstants.getInitCentroidStepLongTextBatchSize() : ClusterConstants.getInitCentroidStepBatchSize();
+        log.debug('ClusterInitCentroidsStep batch size is ' + this.batchSize);
 
         jobState.sampleResultsIds = new List<Id>();
         jobState.centroids = new List<ClusterDataPoint>();

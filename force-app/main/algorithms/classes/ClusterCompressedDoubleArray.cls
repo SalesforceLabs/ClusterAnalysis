@@ -168,7 +168,7 @@ public with sharing class ClusterCompressedDoubleArray {
     }
 
     public List<Double> toList() {
-        ClusterCompressedDoubleArrayIterator ci = new ClusterCompressedDoubleArrayIterator(this);
+        ClusterCompressedDoubleArrayIterator ci = this.iterator();
         List<Double> decompressed = new List<Double>();
         while (ci.moveNext()) {
             decompressed.add(ci.getValue());

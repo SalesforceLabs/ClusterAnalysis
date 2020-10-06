@@ -14,7 +14,10 @@
     <aura:handler name="destroy" value="{!this}" action="{!c.handleDestroy}"/>
     <aura:handler event="aura:locationChange" action="{!c.handleDestroy}"/>
 
-    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <ltng:require scripts="{!join(',', 
+        $Resource.clustanUtils + '/clustanUtils.js')}" afterScriptsLoaded="{!c.onInit}"  />
+
+    <!--<aura:handler name="init" value="{!this}" action="{!c.onInit}" />-->
     <lightning:notificationsLibrary aura:id="notifLib" />
     <div class="c-container slds-scope slds-container slds-panel">
         <lightning:layout multipleRows="true" verticalAlign="start">

@@ -245,45 +245,131 @@ public with sharing class ClusterDataHelper {
         else if ((vector1 == null) || (vector2 == null)) {
             return 1.0;
         }
-        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf1i;
-        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator tf2i;
-        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfi;
-        tf1i = ((ClusterCompressedDoubleArray)vector1).iterator();
-        tf2i = ((ClusterCompressedDoubleArray)vector2).iterator();
-        idfi = idfVector == null ? null : ((ClusterCompressedDoubleArray)idfVector).iterator();
+        ClusterCompressedDoubleArray tf1i = (ClusterCompressedDoubleArray)vector1;
+        ClusterCompressedDoubleArray tf2i = (ClusterCompressedDoubleArray)vector2;
+        ClusterCompressedDoubleArray idfi = idfVector == null ? null : (ClusterCompressedDoubleArray)idfVector;
         return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
     }   
 
-    public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector1, ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator vector2, 
-        ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator idfVector) {
+    public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray vector1, ClusterCompressedDoubleArray vector2, ClusterCompressedDoubleArray idfVector) {
         //We will also use idf vector in calculations to optimize loops a little        
         Double dotProduct = 0.0;
         Double magnitude1 = 0.0;
         Double magnitude2 = 0.0;
         Double zero = 0.0;
         //Vector sizes might be different
-        Boolean v1hasNext = vector1.moveNext();
-        Boolean v2hasNext = vector2.moveNext();
+        //The code below is extracted from ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator code and copy/pasted 3 times
+        //This is proven to be about 3 times faster than using custom iterators hasNext/next or moveNext/getValue
+        //Apparently apex method calls are very expensive, therefore they were replaced by this ugly code
+        Integer v1ArrayIndex = 0, v1ValueIndex = 0, v2ArrayIndex = 0, v2ValueIndex = 0, idfArrayIndex = 0, idfValueIndex = 0;
+        Integer v1Size = vector1.size(), v2Size = vector2.size(), idfSize = idfVector == null ? 0 : idfVector.size();
+        ClusterCompressedDoubleArray.ClusterCompressedDouble v1Value = null, v2Value = null, idfValue = null;
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> v1List = vector1.getCompressedList();
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> v2List = vector2.getCompressedList(); 
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> idfList = idfVector == null ? null : idfVector.getCompressedList();
+        Boolean v1hasNext = v1Size > 0;
+        Boolean v2hasNext = v2Size > 0;
+        Boolean idfHasNext = idfSize > 0;
         while (v1hasNext || v2hasNext) {
-            Double v1 = v1hasNext ? vector1.getValue() : zero;
-            Double v2 = v2hasNext ? vector2.getValue() : zero;
-            if ((idfVector != null) && idfVector.moveNext()) {
-                Double idf = idfVector.getValue();
+            Double v1;
+            if (v1Value != null) {
+                v1 = v1Value.value;
+            }
+            else if (v1hasNext) {
+                v1Value = v1List[v1ArrayIndex];
+                v1ValueIndex = 0;
+                v1 = v1Value.value;
+            }
+            else {
+                v1 = zero;
+            }
+
+            Double v2;
+            if (v2Value != null) {
+                v2 = v2Value.value;
+            }
+            else if (v2hasNext) {
+                v2Value = v2List[v2ArrayIndex];
+                v2ValueIndex = 0;
+                v2 = v2Value.value;
+            }
+            else {
+                v2 = zero;
+            }
+
+            if (idfHasNext) {
+                Double idf;
+                //Getting current idf value
+                if (idfValue != null) {
+                    idf = idfValue.value;
+                }
+                else if (idfHasNext) {
+                    idfValue = idfList[idfArrayIndex];
+                    idfValueIndex = 0;
+                    idf = idfValue.value;
+                }
+                else {
+                    idf = zero;
+                }
+                //Actual calculations
                 v1 = v1 * idf;
                 v2 = v2 * idf;
+                //Moving to the next idf value
+                if (idfValue != null) {
+                    if (idfValueIndex < idfValue.count - 1) {
+                        idfValueIndex++;
+                    }
+                    else {
+                        idfValue = null;
+                        idfValueIndex = -1;
+                        idfArrayIndex++;
+                    }
+                }
+                else {
+                    idfArrayIndex++;
+                }
+                idfHasNext = idfArrayIndex < idfSize;
             }
             dotProduct += v1 * v2;
             magnitude1 += v1 * v1;
             magnitude2 += v2 * v2;
+            //Moving to the next v1
             if (v1hasNext) {
-                v1hasNext = vector1.moveNext();
+                if (v1Value != null) {
+                    if (v1ValueIndex < v1Value.count - 1) {
+                        v1ValueIndex++;
+                    }
+                    else {
+                        v1Value = null;
+                        v1ValueIndex = -1;
+                        v1ArrayIndex++;
+                    }
+                }
+                else {
+                    v1ArrayIndex++;
+                }
+                v1HasNext = v1ArrayIndex < v1Size;
             }
+            //Moving to the next v2
             if (v2hasNext) {
-                v2hasNext = vector2.moveNext();
+                if (v2Value != null) {
+                    if (v2ValueIndex < v2Value.count - 1) {
+                        v2ValueIndex++;
+                    }
+                    else {
+                        v2Value = null;
+                        v2ValueIndex = -1;
+                        v2ArrayIndex++;
+                    }
+                }
+                else {
+                    v2ArrayIndex++;
+                }
+                v2HasNext = v2ArrayIndex < v2Size;
             }
         }
         Double magnitude = magnitude1 * magnitude2;
-        if (doublesEqual(magnitude, zero)) {
+        if (Math.abs(magnitude - zero) < DOUBLEEPSILON) {
             return 1.0;
         }
         else {

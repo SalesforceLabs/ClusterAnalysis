@@ -67,6 +67,10 @@ public with sharing class ClusterConstants {
     }
 
     public static Integer getInitCentroidStepBatchSize() {
+        return 5;
+    }
+
+    public static Integer getInitCentroidStepLongTextBatchSize() {
         return 1;
     }
 
