@@ -28,5 +28,28 @@ public with sharing class ClusterDataPoint {
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
         this.recordName = resultRecord.RecordName__c;
     }
+
+    public void loadFromMap(Map<String, Object> values) {
+        this.recordId = Id.valueOf((String)values.get('recordId'));
+        this.externalId = (String)values.get('externalId');
+        this.recordName = (String)values.get('recordName');
+        this.valuesJson = (String)values.get('valuesJson');
+        this.clusterIndex = (Integer)values.get('clusterIndex');
+        this.index = (Integer)values.get('index');
+        this.cost = Double.valueOf(values.get('cost'));
+        Object[] dpValues = (Object[])values.get('values');
+        this.values = new List<Object>();
+        if (dpValues != null) {
+            for (Object dpValue:dpValues) {
+                if ((dpValue instanceof String) || (dpValue instanceof Integer) || (dpValue instanceof Long) ||
+                (dpValue instanceof Double) || (dpValue instanceof Decimal)) {
+                    this.values.add(dpValue);
+                }                
+                else if (dpValue instanceof Map<String, Object>) {
+                    this.values.add(ClusterCompressedDoubleArray.createFromJsonMap((Map<String, Object>)dpValue));
+                }
+            }
+        }
+    }
     
 }

@@ -89,7 +89,7 @@ public with sharing class ClusterDataHelper {
         else {
             ClusterFieldFunctions fieldFunctions = fieldFunctionsMap.get(field.distanceType);
             if (fieldFunctions != null) result = fieldFunctions.compare(compare, compareTo);
-            else result = 0;
+            else result = 0;  //TODO: implement Id field comparisson
         }
         return result;
     }
@@ -421,6 +421,12 @@ public with sharing class ClusterDataHelper {
         Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
         
         return getDataPoints(randomRecordLocator, jobState);
+    }
+
+    public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterKMeansJobState jobState) {
+        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c 
+                WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
+        return ClusterDataHelper.getDataPoints(resultLocator, jobState);
     }
 
     public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterKMeansJobState jobState) {

@@ -58,9 +58,7 @@ public with sharing class ClusterSilhouetteScoreStep extends ClusterIterableBase
             //This happens if we store heavy long text data points in the jobState
             //Update: Apparently this is not helping so we cache data points in ClusterInitCentroidsStep
             //This condition is not called now
-            Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c 
-                WHERE Id IN :this.sampleIds]);    
-            sampleDataPoints = ClusterDataHelper.getDataPoints(randomRecordLocator, jobState);
+            sampleDataPoints = ClusterDataHelper.getDataPoints(this.sampleIds, jobState);
         }
         else { 
             sampleDataPoints = jobState.dataPoints;

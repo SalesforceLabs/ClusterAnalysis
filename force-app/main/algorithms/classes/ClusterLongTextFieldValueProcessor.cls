@@ -258,11 +258,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 value = null;
             }
             else {
-                throw new ClusterException('Cannot compressed long text value ' + parser.getText());    
+                throw new ClusterException('Cannot parse compressed long text value ' + parser.getText());    
             }
         }
         else {
-            throw new ClusterException('Cannot compressed long text field name, expected: ' + JSON_RLE_NAME +' got: ' + parser.getCurrentName());    
+            throw new ClusterException('Cannot parse compressed long text field name, expected: ' + JSON_RLE_NAME +' got: ' + parser.getCurrentName());    
         }
         nextToken = parser.nextToken();
         if (nextToken != JSONToken.END_OBJECT) {

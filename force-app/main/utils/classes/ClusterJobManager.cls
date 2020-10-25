@@ -44,6 +44,11 @@ public with sharing class ClusterJobManager {
             FROM ClusterJob__c WHERE Id = :jobId WITH SECURITY_ENFORCED];
     }
 
+    public static List<ClusterJobCluster__c> getJobClusters(Id jobId) {
+        List<ClusterJobCluster__c> clusters = [SELECT Id, Name, ClusterJob__c, ClusterNumber__c, ClusterName__c  FROM ClusterJobCluster__c WHERE ClusterJob__c=:jobId WITH SECURITY_ENFORCED];
+        return clusters;
+    }
+
     public static void saveJobState(ClusterJobState state, String status, String statusText) {
         //Checking CRUD permissions on ClusterJob__c and Attachment
         ClusterAccessCheck.checkUpdatePermission(Schema.SObjectType.ClusterJob__c);

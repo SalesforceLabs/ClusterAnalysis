@@ -179,4 +179,21 @@ public with sharing class ClusterCompressedDoubleArray {
     public ClusterCompressedDoubleArrayIterator iterator() {
         return new ClusterCompressedDoubleArrayIterator(this);
     }
+
+    public static ClusterCompressedDoubleArray createFromJsonMap(Map<String, Object> arrayValues) {
+        ClusterCompressedDoubleArray ccda = new ClusterCompressedDoubleArray();
+        if (arrayValues != null) {
+            Object[] compressedValues = (Object[])arrayValues.get('values');
+            if (compressedValues != null) {
+                for (Object arrayValue:compressedValues) {
+                    Map<String,Object> ccdValues = (Map<String,Object>)arrayValue;
+                    ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = new ClusterCompressedDoubleArray.ClusterCompressedDouble();
+                    ccd.count = (Integer)ccdValues.get('count');
+                    ccd.value = Double.valueOf(ccdValues.get('value'));
+                    ccda.addCompressedValue(ccd);
+                }
+            }
+        }
+        return ccda;
+    }
 }

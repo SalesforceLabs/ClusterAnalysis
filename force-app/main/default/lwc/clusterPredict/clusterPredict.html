@@ -1,0 +1,21 @@
+<template>
+    <header class="slds-modal__header">
+        <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Predict Record Cluster</h2>
+    </header>
+    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+        <template if:true={modelLoaded}>
+            <lightning-vertical-navigation>
+                <lightning-vertical-navigation-section label="Select model">
+                    <template for:each={uiModel.models} for:item="model">
+                        <lightning-vertical-navigation-item key={model.modelId} label={model.name} name={model.name}></lightning-vertical-navigation-item>
+                    </template>
+                </lightning-vertical-navigation-section>
+            </lightning-vertical-navigation>
+        </template>
+        {displayMessage}
+    </div>
+    <footer class="slds-modal__footer">
+        <button class="slds-button slds-button_neutral" onclick={cancel}>Cancel</button>
+        <button class="slds-button slds-button_brand" onclick={predict}>Predict</button>
+    </footer>
+</template>
