@@ -190,8 +190,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
     @isTest
     public static void testKMedoidsLongText() {        
-        String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"Description","displayLabel":"Description","relationName":"","objectName":"Lead","distanceType":"LongText","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead LIMIT 20"}';
-        ClusterModelWrapper model = ClusterTestData.createModel(modelJson);
+        ClusterModelWrapper model = ClusterTestData.createLongTextModel();
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
             ClusterKMedoidsPAMRunner runner = (ClusterKMedoidsPAMRunner)ClusterAlgorithmFactory.getRunner(model);
@@ -228,7 +227,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(20, state.dataPoints.size(), 'Sample records are not loaded');
 
             stateJson = JSON.serialize(state);
-            //debugUntruncated('State json: ' + stateJson);
 
             //ClusterPAMDataAssignmentStep
             runner.setJobState(state);
@@ -302,6 +300,10 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             
             List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
+
+            ClusterPredictUiModel.PredictJobCluster predictResult = ClusterPredictController.predict(clusterDataPoints.get(0).externalId, model.modelId);
+            System.assertEquals(clusterDataPoints.get(0).clusterIndex, predictResult.clusterIndex, 'Cluster predicted incorrectly');
+
         }
     }
 

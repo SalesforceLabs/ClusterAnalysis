@@ -86,7 +86,8 @@ public abstract with sharing class ClusterAlgorithmRunner {
             this.steps.add(jobOutputStep);
         }
     }
-    public abstract ClusterJobState getJobState();
+    public abstract ClusterJobState getJobState();    
+    public abstract ClusterJobState createJobState();
     public abstract void setJobState(ClusterJobState state);
     private ClusterObjectFactory objectFactory{ get; set; }
 
@@ -185,6 +186,45 @@ public abstract with sharing class ClusterAlgorithmRunner {
         return this.objectFactory.createSObjectProcessor(this.getJobState());
     }
 
+    public void setJobState(String jobStateJson) {
+        Map<String, Object> jobStateValues = (Map<String, Object>)JSON.deserializeUntyped(jobStateJson);
+        ClusterJobState newJobState = this.createJobState();
+        newJobState.loadFromMap(jobStateValues);
+        this.setJobState(newJobState);
+    }
+
+    public Integer predict(Id recordId, String jobStateJson) {        
+        this.setJobState(jobStateJson);
+        return this.predict(recordId);
+    }
+
+    public Integer predict(Id dpRecordId) {
+        ClusterDataPoint dataPoint = this.getDataPoint(dpRecordId);
+        return this.predict(dataPoint);
+    }
+
+    public ClusterDataPoint getDataPoint(Id recordId) {
+        ClusterModelWrapper model = this.getJobState().model;
+        String modelSoql = model.generateSoqlSelect();
+        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(recordId)) + '\'';
+        ClusterAlgorithmRunner.ModelValidationResult vr = this.validateModel(model);
+        if (!vr.isValid) {
+            ClusterException ex = new ClusterException();
+            ex.setMessage('Model validation failed. Error message(s): ' + String.join(vr.messages,'\n'));
+            throw ex;
+        }
+        List<SObject> predictRecords = Database.query(modelSoql);
+        if (predictRecords.size() != 1) {
+            throw new ClusterException('Record with id ' + recordId + ' was not found');            
+        }
+        ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
+        return objectProcessor.processSObject(predictRecords.get(0));
+    }
+
+    public abstract Integer predict(ClusterDataPoint dataPoint);
+
     protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
+
     public abstract ClusterAlgorithmParameter[] getParameters(ClusterModelWrapper model);
+    
 }

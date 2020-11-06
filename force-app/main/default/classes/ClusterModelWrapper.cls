@@ -124,6 +124,23 @@ public class ClusterModelWrapper {
         this.prepare();
     }
 
+    public String generateSoqlSelect() {
+        String soql = 'SELECT ';
+        Integer fieldSize = this.fields.size();
+        for (Integer i=0; i<fieldSize; i++) {
+            ClusterModelFieldWrapper field = this.fields[i];
+            if (field.relationName != '' && field.relationName != null) {
+                soql += String.escapeSingleQuotes(field.relationName) + '.';
+            }
+            soql += String.escapeSingleQuotes(field.name);
+            if (i < fieldSize - 1) {
+                soql +=',';
+            }
+        }
+        soql += ' FROM ' + this.objectName;
+        return soql;
+    }
+
     @AuraEnabled
     public Id modelId;
     @AuraEnabled

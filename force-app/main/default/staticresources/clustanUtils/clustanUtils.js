@@ -7,6 +7,7 @@
         // only CommonJS-like environments that support module.exports,
         // like Node.
         module.exports = factory();
+        Object.defineProperty(module.exports, '__esModule', { value: true });
     } else {
         // Browser globals (root is window)
         root.clustanUtils = factory();
@@ -170,6 +171,36 @@
                 }
             }
             return distance / weight;
+        },
+
+        calculateSimilarity: function (currentObject, centroid, jobState) {
+            let distance = 0;
+            let weight = 0;
+            let model = jobState.model;
+            let similarityValues = [];
+            for (let i = 0; i < model.fields.length; i++) {
+                if (model.fields[i].isNumeric) {
+                    similarityValues.push(1.0 - this.calculateNumericGowerDistance(Number(currentObject[i]), Number(centroid[i]),
+                        Number(jobState.minMaxValues[i].delta)));
+                }
+                else if (model.fields[i].isText) {
+                    similarityValues.push(1.0 - this.calculateTextGowerDistance(String(currentObject[i]), String(centroid[i]),
+                        Number(jobState.minMaxValues[i].minValue), Number(jobState.minMaxValues[i].maxValue)));
+                }
+                else if (model.fields[i].isCategory) {
+                    similarityValues.push(1.0 - this.calculateCategoryGowerDistance(String(currentObject[i]), String(centroid[i])));
+                }
+                else if (model.fields[i].isLongText) {
+                    let tf1 = currentObject[i];
+                    let tf2 = centroid[i];
+                    let idf = jobState.minMaxValues[i].maxValue;
+                    similarityValues.push(1.0 - model.fields[i].weight * this.calculateCosineDistance(tf1, tf2, idf));
+                }
+                else {
+                    similarityValues.push(null); //Return null for non-data fields
+                }
+            }
+            return similarityValues;
         },
     
         calculateCosineDistance: function(vector1, vector2, idfVector) {

@@ -114,6 +114,10 @@ public with sharing class ClusterKMeansRunnerTest {
             
             List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
+
+            Integer clusterIndex = runner.predict(clusterDataPoints.get(0).externalId);
+            System.assertEquals(clusterDataPoints.get(0).clusterIndex, clusterIndex, 'Cluster predicted incorrectly');
+            
         }
     }
 

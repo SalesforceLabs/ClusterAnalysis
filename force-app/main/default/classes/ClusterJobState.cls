@@ -21,7 +21,7 @@ public virtual class ClusterJobState {
         this.totalIterationsCount = (Integer)stateValues.get('totalIterationsCount');
         this.currentAlgorithmStep = (Integer)stateValues.get('currentAlgorithmStep');
         this.model = new ClusterModelWrapper();
-        this.model.loadFromMap((Map<String, Object>)stateValues.get('currentAlgorithmStep'));
+        this.model.loadFromMap((Map<String, Object>)stateValues.get('model'));
         Object[] minMaxList = (Object[])stateValues.get('minMaxValues');
         this.minMaxValues = new List<ClusterMinMaxValue>();
         if (minMaxList != null) {
@@ -33,6 +33,8 @@ public virtual class ClusterJobState {
         }
         Map<String, Object> clusterJobValues = (Map<String, Object>)stateValues.get('clusterJob');
         this.clusterJob = ClusterJobManager.getJob(Id.valueOf((String)clusterJobValues.get('Id')));
-        this.jobClusters = ClusterJobManager.getJobClusters(this.clusterJob.Id);
+        if (this.clusterJob != null) {
+            this.jobClusters = ClusterJobManager.getJobClusters(this.clusterJob.Id);
+        }
     }
 }

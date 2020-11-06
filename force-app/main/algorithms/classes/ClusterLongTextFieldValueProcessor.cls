@@ -28,10 +28,18 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
 
     public Object processFieldValue(SObject record, ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue) {
         //Initializing word counter map and word list if needed
-        Map<String, Integer> wordMap = (Map<String, Integer>)minMaxValue.maxValue;
-        if (wordMap == null) {
+        Map<String, Integer> wordMap;
+        try {
+            wordMap = (Map<String, Integer>)minMaxValue.maxValue;
+            if (wordMap == null) {
+                wordMap = new Map<String, Integer>();
+                minMaxValue.maxValue =wordMap;
+            }
+        }
+        catch (System.TypeException ex) {
+            //TODO: This is an ugly workaround for "System.TypeException: Invalid conversion from runtime type clustan.ClusterCompressedDoubleArray to Map<String,Integer>"
+            //in predict code flow
             wordMap = new Map<String, Integer>();
-            minMaxValue.maxValue =wordMap;
         }
         List<String> wordList = (List<String>)minMaxValue.minValue;
         if (wordList == null) {
