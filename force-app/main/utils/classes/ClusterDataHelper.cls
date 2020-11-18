@@ -8,22 +8,26 @@ public with sharing class ClusterDataHelper {
         public Integer compare(Object compare, Object compareTo) {
             Integer result = 0;
             if (compare instanceof Integer) {
-                if ((Integer)compare == (Integer)compareTo) result = 0;
-                else if ((Integer)compare > (Integer)compareTo) result = 1;
+                Integer compareToInt = Integer.valueOf(compareTo);
+                if ((Integer)compare == compareToInt) result = 0;
+                else if ((Integer)compare > compareToInt) result = 1;
                 else result = -1;
             } else if (compare instanceof Long) {
-                if ((Long)compare == (Long)compareTo) result = 0;
-                else if ((Long)compare > (Long)compareTo) result = 1;
+                Long compareToLong = (Long)compareTo;
+                if ((Long)compare == compareToLong) result = 0;
+                else if ((Long)compare > compareToLong) result = 1;
                 else result = -1;
                 
             } else if (compare instanceof Decimal) {
-                if ((Decimal)compare == (Decimal)compareTo) result = 0;
-                else if ((Decimal)compare > (Decimal)compareTo) result = 1;
+                Decimal compareToDec = (Decimal)compareTo;
+                if ((Decimal)compare == compareToDec) result = 0;
+                else if ((Decimal)compare > compareToDec) result = 1;
                 else result = -1;
                 
             } else if (compare instanceof Double) {
-                if (Math.abs((Double)compare - (Double)compareTo) < DOUBLEEPSILON) result = 0;
-                else if ((Double)compare > (Double)compareTo) result = 1;
+                Double compareToDouble = Double.valueOf(compareTo);
+                if (Math.abs((Double)compare - compareToDouble) < DOUBLEEPSILON) result = 0;
+                else if ((Double)compare > compareToDouble) result = 1;
                 else result = -1;
                 
             } else {

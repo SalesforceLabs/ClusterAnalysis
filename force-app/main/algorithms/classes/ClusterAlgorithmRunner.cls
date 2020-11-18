@@ -87,8 +87,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
         }
     }
     public abstract ClusterJobState getJobState();    
-    public abstract ClusterJobState createJobState();
-    public abstract void setJobState(ClusterJobState state);
+    public abstract ClusterJobState createJobState();    
     private ClusterObjectFactory objectFactory{ get; set; }
 
     public virtual void start() {
@@ -190,10 +189,13 @@ public abstract with sharing class ClusterAlgorithmRunner {
         Map<String, Object> jobStateValues = (Map<String, Object>)JSON.deserializeUntyped(jobStateJson);
         ClusterJobState newJobState = this.createJobState();
         newJobState.loadFromMap(jobStateValues);
+        this.init(newJobState.model);
         this.setJobState(newJobState);
     }
 
-    public Integer predict(Id recordId, String jobStateJson) {        
+    public abstract void setJobState(ClusterJobState state);
+
+    public Integer predict(Id recordId, String jobStateJson) {
         this.setJobState(jobStateJson);
         return this.predict(recordId);
     }
@@ -205,6 +207,11 @@ public abstract with sharing class ClusterAlgorithmRunner {
 
     public ClusterDataPoint getDataPoint(Id recordId) {
         ClusterModelWrapper model = this.getJobState().model;
+        String keyCode = String.valueOf(recordId).subString(0,3);
+        Schema.DescribeSObjectResult objectDescribe = ClusterUtils.findObjectDescByKeyCode(keyCode);
+        if (objectDescribe.getName().toLowerCase() != model.objectName.toLowerCase()) {
+            throw new ClusterException('Model object (' + model.objectName +') does not match with the record id object (' + objectDescribe.getName() + ')');
+        }
         String modelSoql = model.generateSoqlSelect();
         modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(recordId)) + '\'';
         ClusterAlgorithmRunner.ModelValidationResult vr = this.validateModel(model);
@@ -215,7 +222,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
         }
         List<SObject> predictRecords = Database.query(modelSoql);
         if (predictRecords.size() != 1) {
-            throw new ClusterException('Record with id ' + recordId + ' was not found');            
+            throw new ClusterException('Record with id ' + recordId + ' was not found');
         }
         ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
         return objectProcessor.processSObject(predictRecords.get(0));

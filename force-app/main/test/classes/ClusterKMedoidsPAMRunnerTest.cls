@@ -224,7 +224,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
-            System.assertEquals(20, state.dataPoints.size(), 'Sample records are not loaded');
+            System.assertEquals(10, state.dataPoints.size(), 'Sample records are not loaded');
 
             stateJson = JSON.serialize(state);
 

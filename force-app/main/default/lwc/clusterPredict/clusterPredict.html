@@ -4,8 +4,13 @@
             <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">Predict Record Cluster</h2>
         </header>
         <div class="slds-modal__content slds-p-around_medium predict-container__content">
+            <template if:true={spinnerVisible}>
+                <div class="spinnerDiv">
+                    <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                </div>
+            </template>
             <template if:true={modelPickerVisible}>
-                <lightning-vertical-navigation selected-item={selectedModelId}>
+                <lightning-vertical-navigation selected-item={selectedModelId} onselect={handleModelSelect}>
                     <lightning-vertical-navigation-section label="Select model">
                         <template for:each={uiModel.models} for:item="model">
                             <lightning-vertical-navigation-item key={model.modelId} label={model.name} name={model.modelId}></lightning-vertical-navigation-item>
@@ -13,30 +18,18 @@
                     </lightning-vertical-navigation-section>
                 </lightning-vertical-navigation>
             </template>
-            <template if:true={predictResultsVisible}>
-                <div class="slds-region_narrow">
-                    <dl class="slds-dl_horizontal">
-                    <dt class="slds-dl_horizontal__label">Record name:</dt>
-                    <dd class="slds-dl_horizontal__detail">{predictCluster.dataPoint.recordName}</dd>
-                    <dt class="slds-dl_horizontal__label">Model:</dt>
-                    <dd class="slds-dl_horizontal__detail">{predictModel.name}</dd>
-                    <dt class="slds-dl_horizontal__label slds-text-heading_small">Cluster:</dt>
-                    <dd class="slds-dl_horizontal__detail slds-text-heading_small">{predictCluster.clusterName}</dd>
-                    </dl>
-                </div>
-                <div class="slds-text-heading_small slds-m-top_small">Similarity with cluster centroid: <strong>{similarityValue}%</strong></div>
-                <lightning-datatable
-                    key-field="name"
-                    columns={similarityColumns}
-                    data={similarityData}
-                    hide-checkbox-column
-                    default-sort-direction={defaultSortDirection}
-                    sorted-direction={sortDirection}
-                    sorted-by={sortedBy}
-                    onsort={onHandleSort}>
-                </lightning-datatable>
+            <template if:true={recordLookupVisible}>
+                <c-lookup selection={lookupSelection}
+                    onsearch={handleLookupSearch}
+                    onselectionchange={handleLookupSelectionChange}
+                    label="Search record"
+                    placeholder="Type record name or Id"
+                    required></c-lookup>
             </template>
-            {displayMessage}
+            <template if:true={predictResultsVisible}>
+                <c-cluster-predict-result record-id={dpRecordId} job-or-model-id={jobOrModelId} hide-header=true></c-cluster-predict-result>                
+            </template>
+            <div class="slds-text-color_destructive">{errorMessage}</div>
         </div>
         <footer class="slds-modal__footer predict-container__footer">
             <template if:false={predictResultsVisible}>

@@ -9,7 +9,7 @@
         window.setTimeout(
             $A.getCallback(function() {
                 let div = component.find('clusterBox').getElement();
-                div.style.backgroundColor = helper.d3clusterColors[clusterIndex];
+                div.style.backgroundColor = jobDetails.clusterColors[clusterIndex];
             }), 1000
         );
     },

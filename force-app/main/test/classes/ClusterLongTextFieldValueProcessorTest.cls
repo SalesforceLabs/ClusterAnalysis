@@ -38,6 +38,11 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, Double.valueOf(0.0)), 'Cosine distance calculated incorrectly');
             cosineDistance = ClusterDataHelper.calculateCosineDistance(ctf, ctf2, cidf);
             System.assertEquals(true, cosineDistance > 0.0, 'Cosine distance calculated incorrectly');
+
+            cosineDistance = 1.0 - ClusterDataHelper.calculateCosineSimilarity(tf, tf3, idf);
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, Double.valueOf(0.0)), 'Cosine distance calculated incorrectly');
+            cosineDistance = 1.0 - ClusterDataHelper.calculateCosineSimilarity(tf, tf2, idf);
+            System.assertEquals(true, cosineDistance > 0.0, 'Cosine distance calculated incorrectly');
         }
     }
 

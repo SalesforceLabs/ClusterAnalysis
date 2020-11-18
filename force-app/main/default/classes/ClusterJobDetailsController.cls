@@ -33,6 +33,7 @@ public with sharing class ClusterJobDetailsController {
             }
         }
         jobModel.maxGraphDataPoints = ClusterConstants.getTSNEPlotLimit();
+        jobModel.clusterColors = ClusterConstants.getDefaultClusterColors();
         return jobModel;
     }
 
@@ -119,6 +120,12 @@ public with sharing class ClusterJobDetailsController {
         uiModel.dataPoint = dp;
         uiModel.resultName = result.Name;
         uiModel.clusterId = result.Cluster__c;
+        if (result.ClusterNumber__c != null) {
+            uiModel.clusterColor = ClusterConstants.getDefaultClusterColors()[Integer.valueOf(result.ClusterNumber__c)];
+        }
+        else {
+            uiModel.clusterColor = 'black';
+        }
         if (result.Cluster__r != null) {
             uiModel.clusterName = result.Cluster__r.ClusterName__c;
         }

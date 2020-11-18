@@ -21,4 +21,6 @@ public with sharing class ClusterResultDetailsUiModel {
     public Id clusterId;
     @AuraEnabled
     public String clusterName;
+    @AuraEnabled
+    public String clusterColor;
 }

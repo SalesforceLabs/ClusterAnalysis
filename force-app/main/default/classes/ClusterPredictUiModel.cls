@@ -12,6 +12,8 @@ public with sharing class ClusterPredictUiModel {
         public ClusterDataPoint dataPoint;
         @AuraEnabled
         public String jobState;
+        @AuraEnabled
+        public String clusterColor;
     }
     public ClusterPredictUiModel() {
         models = new List<ClusterModelWrapper>();

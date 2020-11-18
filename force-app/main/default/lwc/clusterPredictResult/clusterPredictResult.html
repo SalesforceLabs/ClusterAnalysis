@@ -1,0 +1,53 @@
+<template>
+    <div class="slds-panel">        
+        <template if:false={hideHeader}>
+            <div class="slds-card__header slds-grid">
+                <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="standard:data_model" size="small"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                    <a class="slds-card__header-link slds-truncate" title="Cluster Prediction">
+                        <span>Cluster Prediction</span>
+                    </a>
+                    </h2>
+                </div>
+                </header>
+            </div>
+        </template>
+        <template if:true={spinnerVisible}>
+            <div class="spinnerDiv">
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </div>
+        </template>
+        <div class="slds-panel slds-p-around_x-small">        
+            <template if:true={predictionLoaded}>            
+                <div class="slds-region_narrow">
+                    <dl class="slds-dl_horizontal">
+                        <dt class="slds-dl_horizontal__label">Record name:</dt>
+                        <dd class="slds-dl_horizontal__detail">{predictCluster.dataPoint.recordName}</dd>
+                        <dt class="slds-dl_horizontal__label">Model:</dt>
+                        <dd class="slds-dl_horizontal__detail">{predictModel.name}</dd>
+                        <dt class="slds-dl_horizontal__label slds-text-heading_small prClusterResult"><strong>Cluster:</strong></dt>
+                        <dd class="slds-dl_horizontal__detail slds-text-heading_small prClusterResult">
+                            <a href={clusterPageUrl} onclick={handleClusterLinkClick}>{predictCluster.clusterName}<div class="clusterbox" id="pr_clusterBox"></div></a>
+                        </dd>
+                    </dl>
+                </div>
+                <div class="slds-text-heading_small slds-m-top_small">Similarity with cluster centroid: <strong>{similarityValue}%</strong></div>
+                <lightning-datatable
+                    key-field="name"
+                    columns={similarityColumns}
+                    data={similarityData}
+                    hide-checkbox-column
+                    default-sort-direction={defaultSortDirection}
+                    sorted-direction={sortDirection}
+                    sorted-by={sortedBy}
+                    onsort={onHandleSort}>
+                </lightning-datatable>
+            </template>
+            <div class="slds-text-color_destructive">{errorMessage}</div>
+        </div>
+    </div>
+</template>

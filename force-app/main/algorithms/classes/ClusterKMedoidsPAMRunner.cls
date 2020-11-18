@@ -22,6 +22,7 @@
     }
 
     public override void init(ClusterModelWrapper model) {
+        this.steps.clear();
         this.state = (ClusterKMeansJobState)this.createJobState();
         this.state.model = model;
         model.numberOfClusters = Integer.valueOf(model.parameters.get('numberOfClusters'));

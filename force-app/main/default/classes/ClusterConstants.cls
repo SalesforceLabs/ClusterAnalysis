@@ -46,6 +46,24 @@ public with sharing class ClusterConstants {
         return intValue;
     }
 
+    private static String getLongTextSettingValue(String name, String defaultValue) {
+        String textValue = defaultValue;
+        try {
+            ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterSetting__mdt);
+            //Read permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
+            List<ClusterSetting__mdt> settings = [SELECT DeveloperName, LongTextValue__c FROM ClusterSetting__mdt WHERE DeveloperName = :name];
+            if (settings.size() > 0) {
+                if (settings[0].LongTextValue__c != null && settings[0].LongTextValue__c != '') {
+                    textValue = settings[0].LongTextValue__c;
+                }
+            }
+        }
+        catch (Exception ex) {
+            LogFactory.getLogger().error('Error getting custom setting ' + name, ex);            
+        }
+        return textValue;
+    }
+
     public static Integer getBatchSize() {
         return getIntegerSettingValue('BatchSize', 1000); 
     }
@@ -120,6 +138,10 @@ public with sharing class ClusterConstants {
 
     public static Integer getMaxJsonFieldSize() {
         return MAX_JSON_FIELD_SIZE;
+    }
+
+    public static String[] getDefaultClusterColors() {
+        return (String[])JSON.deserialize(getLongTextSettingValue('DefaultClusterColors','[]'), String[].class);
     }
 
 }

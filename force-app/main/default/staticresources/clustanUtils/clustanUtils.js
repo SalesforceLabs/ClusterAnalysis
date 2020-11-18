@@ -174,8 +174,6 @@
         },
 
         calculateSimilarity: function (currentObject, centroid, jobState) {
-            let distance = 0;
-            let weight = 0;
             let model = jobState.model;
             let similarityValues = [];
             for (let i = 0; i < model.fields.length; i++) {

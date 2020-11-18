@@ -47,6 +47,8 @@
         let tsneDetails = component.find('tsneDetails');
         let dataPoint = event.getParam("dataPoint");
         tsneDetails.set('v.dataPoint', dataPoint);
+        let jobDetails = component.get("v.jobDetails");
+        tsneDetails.set('v.clusterColor', jobDetails.clusterColors[dataPoint.clusterIndex]);
         tsneDetails.rebind();
     },
     handleDestroy : function (component, event, helper) {

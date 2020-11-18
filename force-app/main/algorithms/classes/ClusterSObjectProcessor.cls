@@ -39,6 +39,7 @@ public with sharing class ClusterSObjectProcessor {
         if ((dp.recordName == null) || (dp.recordName == '')) {
             dp.recordName = dp.externalId;
         }
+        dp.recordId = record.Id;
         return dp;
     }
 

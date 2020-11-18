@@ -30,7 +30,8 @@ public with sharing class ClusterDataPoint {
     }
 
     public void loadFromMap(Map<String, Object> values) {
-        this.recordId = Id.valueOf((String)values.get('recordId'));
+        String recordIdStr = (String)values.get('recordId');
+        this.recordId = ClusterDataHelper.stringIsNullOrEmpty(recordIdStr) ? null : Id.valueOf(recordIdStr);
         this.externalId = (String)values.get('externalId');
         this.recordName = (String)values.get('recordName');
         this.valuesJson = (String)values.get('valuesJson');
