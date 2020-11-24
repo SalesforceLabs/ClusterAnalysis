@@ -16,6 +16,7 @@ public with sharing class ClusterPredictControllerTest {
             fixedSearchResults[0] = leads.get(0).Id;
             Test.setFixedSearchResults(fixedSearchResults);
             List<ClusterLookupSearchResult> results = ClusterPredictController.search('Barrat', null, model.modelId);
+            System.assertEquals(0, results.get(0).compareTo(results.get(0)), 'Search results comparison failed');
             System.assertEquals(true, results.size() > 0, 'Incorrect search result count');
             System.assertEquals('Lead', results[0].getSObjectType(), 'Incorrect search result type');
             Test.stopTest();
@@ -35,6 +36,33 @@ public with sharing class ClusterPredictControllerTest {
             ClusterPredictUiModel.PredictJobCluster predictCluster = ClusterPredictController.predict(leads[0].Id, uiModel.jobId);
             System.assertEquals(true, predictCluster.clusterIndex >= 0, 'Incorrect predict cluster index');
             System.assertEquals(String.valueOf(leads[0].Id), predictCluster.dataPoint.externalId, 'Incorrect predict datapoint id');
+        }
+    }
+
+    @isTest
+    public static void testGetModelNoJobs() {
+        ClusterModelWrapper model = ClusterTestData.createLongTextModel();
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            Test.startTest();
+            List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
+            Boolean hadError = false;
+            try {
+                ClusterPredictUiModel uiModel = ClusterPredictController.getPredictUiModel(model.modelId);
+            }
+            catch (ClusterException ex) {
+                hadError = true;
+            }
+            System.assertEquals(true, hadError, 'Incorrect handling of models without jobs (getPredictUiModel)');
+            hadError = false;
+            try {
+                ClusterPredictUiModel.PredictJobCluster predictCluster = ClusterPredictController.predict(leads[0].Id, model.modelId);
+            }
+            catch (ClusterException ex) {
+                hadError = true;
+            }
+            System.assertEquals(true, hadError, 'Incorrect handling of models without jobs (predict)');
+            Test.stopTest();
         }
     }
 }

@@ -5,7 +5,9 @@
  */
 public with sharing class ClusterCompressedDoubleArray {
     public class ClusterCompressedDouble {
+        @AuraEnabled        
         public Integer count;
+        @AuraEnabled
         public Double value;
 
         public ClusterCompressedDouble() {
@@ -108,8 +110,8 @@ public with sharing class ClusterCompressedDoubleArray {
         }
     }
 
-    @TestVisible
-    private List<ClusterCompressedDouble> values;
+    @AuraEnabled
+    public List<ClusterCompressedDouble> values;
     private transient Double prevValue;
 
     public ClusterCompressedDoubleArray() {

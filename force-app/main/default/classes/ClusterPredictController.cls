@@ -1,3 +1,8 @@
+/*
+ * Controller for clusterPredict and clusterPredictResult (LWC)
+ *
+ * @author: Iskander Mukhamedgaliyev
+ */
 public with sharing class ClusterPredictController {
 
     public static final Integer SOSL_SEARCH_LIMIT = 50;
@@ -27,6 +32,7 @@ public with sharing class ClusterPredictController {
                     WITH SECURITY_ENFORCED ORDER BY CreatedDate DESC LIMIT 1];
                 if (jobs.size() == 1) {
                     uiModel.jobId = jobs[0].Id;
+                    uiModel.models.add(ClusterModelBuilderController.loadModel(jobs[0].ClusterModel__c));
                 }
                 else {
                     throw new ClusterException('This job is not completed. Predict can only be used on completed jobs');
@@ -46,6 +52,12 @@ public with sharing class ClusterPredictController {
                     uiModel.jobId = getLastCompletedJobId(modelId);
                 }
                 uiModel.recordIdNeeded = false;
+            }
+            if (uiModel.models.size() > 0) {
+                Schema.DescribeSObjectResult modelObjectDesc = ClusterUtils.findObjectDescByName(uiModel.models[0].objectName);
+                if (modelObjectDesc != null) {
+                    uiModel.modelObjectLabel = modelObjectDesc.getLabel();
+                }
             }
         }
         return uiModel;
@@ -127,13 +139,13 @@ public with sharing class ClusterPredictController {
             }
 
             // Extract records & convert them into LookupSearchResult
-            String accountIcon = 'standard:account';
+            String objectIcon = ClusterUtils.getObjectIconName(model.objectName);
             for (SObject resultObject : resultList) {
                 results.add(
                     new ClusterLookupSearchResult(
                         (Id)resultObject.get('Id'),
                         model.objectName,
-                        accountIcon,
+                        objectIcon,
                         String.valueOf(resultObject.get(nameField)),
                         model.objectName
                     )

@@ -108,7 +108,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             currentStep = state.currentAlgorithmStep;
             ClusterSilhouetteScoreStep scoreStep = (ClusterSilhouetteScoreStep)runner.steps[state.currentAlgorithmStep];
             scoreStep.init(runner);
-            scoreStep.execute(null, state.dataPoints);
+            scoreStep.execute(null, ClusterDataHelper.getRandomDataPoints(10, state));
             scoreStep.finish(null);
             System.assertEquals(true, state.clusterJob.Score__c != null, 'Silhouette score calculated incorrectly');
 
@@ -302,7 +302,9 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
 
             ClusterPredictUiModel.PredictJobCluster predictResult = ClusterPredictController.predict(clusterDataPoints.get(0).externalId, model.modelId);
-            System.assertEquals(clusterDataPoints.get(0).clusterIndex, predictResult.clusterIndex, 'Cluster predicted incorrectly');
+            // Expected is clusterDataPoints.get(0).clusterIndex, but it can't be guaranteed because we only ran 1 iteration
+            // So we only check if predicted cluster index is less than the number of clusters
+            System.assertEquals(true, predictResult.clusterIndex < 5, 'Cluster predicted incorrectly');
 
         }
     }

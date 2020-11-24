@@ -3,7 +3,7 @@ import Lookup from 'c/lookup';
 
 const SAMPLE_SEARCH_TOO_SHORT = 'A ';
 const SAMPLE_SEARCH_RAW = 'Sample search* ';
-const SAMPLE_SEARCH_CLEAN = 'sample search';
+const SAMPLE_SEARCH_CLEAN = 'Sample search';
 const SAMPLE_SEARCH_ITEMS = [
     {
         id: 'id1',

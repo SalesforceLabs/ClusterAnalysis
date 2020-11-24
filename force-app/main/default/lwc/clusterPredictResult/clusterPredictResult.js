@@ -1,7 +1,6 @@
 import { LightningElement, track, api } from 'lwc';
 import predict from '@salesforce/apex/ClusterPredictController.predict';
-import clustanUtilsUrl from '@salesforce/resourceUrl/clustanUtils';
-import { loadScript } from 'lightning/platformResourceLoader';
+import clustanUtils from 'c/clustanUtils';
 import { NavigationMixin } from 'lightning/navigation';
 
 const columns = [
@@ -10,6 +9,7 @@ const columns = [
         label: 'Similarity',
         fieldName: 'similarity',
         type: 'percent',
+        typeAttributes: { maximumFractionDigits: 2 },
         sortable: true,
         cellAttributes: { alignment: 'left' },
     },
@@ -17,6 +17,7 @@ const columns = [
         label: 'Weight',
         fieldName: 'weight',
         type: 'percent',
+        typeAttributes: { maximumFractionDigits: 2 },
         sortable: true,
         cellAttributes: { alignment: 'left' },
     },
@@ -41,14 +42,12 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
 
     connectedCallback() {
         if (this.recordId && this.jobOrModelId) {
-            Promise.all([
-                predict({
+            predict({
                     recordId: this.recordId,
                     jobOrModelId: this.jobOrModelId
-                }),
-                loadScript(this, clustanUtilsUrl + '/clustanUtils.js')
-            ]).then(result => {
-                this.predictCallback(result[0]);
+                })
+            .then(result => {
+                this.predictCallback(result);
             })
             .catch((error) => {
                 this.handleError(error);
@@ -68,18 +67,28 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     }
 
     @api
+    getPrediction() {
+        return this.predictCluster;
+    }
+
+    @api
     predict() {
-        this.spinnerVisible = true;
-        predict({
-            recordId: this.recordId,
-            jobOrModelId: this.jobOrModelId
-        })
-        .then(result => {
-            this.predictCallback(result);
-        })
-        .catch((error) => {
-            this.handleError(error);
-        });
+        if (this.recordId && this.jobOrModelId) {
+            this.spinnerVisible = true;
+            return predict({
+                recordId: this.recordId,
+                jobOrModelId: this.jobOrModelId
+            })
+            .then(result => {
+                this.predictCallback(result);
+            })
+            .catch((error) => {
+                this.handleError(error);
+            });
+        }
+        else {
+            return null;
+        }
     }
 
     predictCallback(result) {
@@ -87,7 +96,7 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
         this.predictCluster = result;
         this.predictCluster.jobState = JSON.parse(this.predictCluster.jobState);
         this.predictModel = this.predictCluster.jobState.model;
-        clustanUtils.decompressDataPointValues(this.predictCluster.jobState, this.predictCluster.dataPoint);
+        clustanUtils.decompressDataPointValues(this.predictCluster.jobState, this.predictCluster.dataPoint.values);
         clustanUtils.decompressJobState(this.predictCluster.jobState);
         this.similarityValue = (100.0 - 100.0 * clustanUtils.gowerDistance(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState)).toFixed(2);
         let similarities = clustanUtils.calculateSimilarity(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState);
@@ -95,26 +104,24 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
             .map((value, index) =>({ name: this.predictCluster.jobState.model.fields[index].name, similarity: value, weight: this.predictCluster.jobState.model.fields[index].weight}))
             .filter(item => item.similarity != null);        
         this.predictionLoaded = true;
-        this[NavigationMixin.GenerateUrl]({
-            type: 'standard__recordPage',
-            attributes: {
-                recordId: this.predictCluster.clusterId,
-                actionName: 'view',
-            },
-        }).then(url => {
+        this[NavigationMixin.GenerateUrl](this.getClusterPageNavigationDetails(this.predictCluster.clusterId)).then(url => {
             this.clusterPageUrl = url;
         });
     }
 
     handleClusterLinkClick(event) {
         event.preventDefault();
-        this[NavigationMixin.Navigate]({
+        this[NavigationMixin.Navigate](this.getClusterPageNavigationDetails(this.predictCluster.clusterId));
+    }
+
+    getClusterPageNavigationDetails(clusterId) {
+        return {
             type: 'standard__recordPage',
             attributes: {
-                recordId: this.predictCluster.clusterId,
+                recordId: clusterId,
                 actionName: 'view',
-            },
-        });
+            }
+        }
     }
 
     handleError(error) {

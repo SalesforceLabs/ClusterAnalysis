@@ -1,3 +1,8 @@
+/*
+ * Models for clusterPredict and clusterPredictResult (LWC)
+ *
+ * @author: Iskander Mukhamedgaliyev
+ */
 public with sharing class ClusterPredictUiModel {
     public class PredictJobCluster {
         @AuraEnabled
@@ -26,5 +31,7 @@ public with sharing class ClusterPredictUiModel {
     public ClusterDataPoint dataPoint;
     @AuraEnabled
     public Boolean recordIdNeeded;
+    @AuraEnabled
+    public String modelObjectLabel;
 
 }

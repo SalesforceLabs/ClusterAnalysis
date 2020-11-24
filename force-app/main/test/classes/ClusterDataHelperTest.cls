@@ -10,6 +10,11 @@ public with sharing class ClusterDataHelperTest {
         System.assertEquals(1, result, 'Failed number compare to null');
         result = ClusterDataHelper.compareFieldValueAbs(2, 1, field);
         System.assertEquals(1, result, 'Failed number compare');
+        result = ClusterDataHelper.compareFieldValueAbs((Long)2, (Long)(1), field);
+        System.assertEquals(1, result, 'Failed long compare');
+        result = ClusterDataHelper.compareFieldValueAbs(Double.valueOf(1), Double.valueOf(2), field);
+        System.assertEquals(-1, result, 'Failed double compare');
+
     }
 
     @isTest

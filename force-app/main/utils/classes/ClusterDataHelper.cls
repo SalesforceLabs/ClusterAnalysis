@@ -58,6 +58,7 @@ public with sharing class ClusterDataHelper {
 
     private static Logger log = LogFactory.getLogger();
     private static final Map<String, ClusterFieldFunctions> fieldFunctionsMap;
+    private static final ClusterFieldFunctions textFieldComparer;
     public static final Double DOUBLEEPSILON = 0.000001;
     public static final Double DOUBLE_MAX_VALUE = 9223372036854775807.0;
     public static final Double DOUBLE_ZERO = 0.0;
@@ -65,8 +66,9 @@ public with sharing class ClusterDataHelper {
 
     static {
         fieldFunctionsMap = new Map<String, ClusterFieldFunctions>();
+        textFieldComparer = new TextFieldFunctions();
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_NUMERIC, new NumericFieldFunctions());
-        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_TEXT, new TextFieldFunctions());
+        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_TEXT, textFieldComparer);
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_CATEGORY, new CategoryFieldFunctions());
     }
 
@@ -93,7 +95,10 @@ public with sharing class ClusterDataHelper {
         else {
             ClusterFieldFunctions fieldFunctions = fieldFunctionsMap.get(field.distanceType);
             if (fieldFunctions != null) result = fieldFunctions.compare(compare, compareTo);
-            else result = 0;  //TODO: implement Id field comparisson
+            else if (field.isIdField) {
+                return textFieldComparer.compare(String.valueOf(compare), String.valueOf(compareTo));
+            }
+            else result = 0;
         }
         return result;
     }

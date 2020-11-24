@@ -31,6 +31,7 @@ export default class ClusterPredict extends LightningElement {
     @track selectedModelId;
     @track lookupRecordId;
     @track lookupSelection = [];
+    @track recordSearchLabel;
     @track spinnerVisible = true;
 
     get modelPickerVisible() {
@@ -53,6 +54,7 @@ export default class ClusterPredict extends LightningElement {
             this.uiModel = result;
             if (this.uiModel.models && this.uiModel.models.length > 0) {
                 this.selectedModelId = this.uiModel.models[0].modelId;
+                this.recordSearchLabel = `Search ${this.uiModel.modelObjectLabel}`;
             }
             this.modelLoaded = true;
         })
@@ -96,7 +98,12 @@ export default class ClusterPredict extends LightningElement {
             this.jobOrModelId = this.uiModel.jobId ? this.uiModel.jobId : this.selectedModelId;
             this.dpRecordId = this.recordId;
         }
-        this.predictionLoaded = true;        
+        if (this.jobOrModelId && this.dpRecordId) {
+            this.predictionLoaded = true;
+        }
+        else {
+            this.handleError('Model or record id are required for prediction');
+        }
     }
 
     cancel() {
