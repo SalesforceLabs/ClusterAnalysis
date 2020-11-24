@@ -1,11 +1,12 @@
 # SFDC Cluster Analysis Package
 Performs [cluster analysis](https://en.wikipedia.org/wiki/Cluster_analysis) on Salesforce standard and custom objects, breaks records into groups (clusters) using K-Means and K-Medoids (CLARA) algorithms.<br/>
 Supports clustering objects with mixed data types (numeric, category/picklist, text) using Gower distance function.<br/>
-Visualizes the clustering result using t-SNE dimensionality reduction technique.<br/>
+Supports clustering of free text (LongTextArea) values using [TD-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) NLP technique.<br/>
+Visualizes the clustering result using [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) dimensionality reduction technique.<br/>
 Click [here](../../wiki/Cluster-Analysis-in-Salesforce) to get more information about the methodology and algorithms used in this app.
 
 ## Installation
-Install the application from Salesforce AppExchange
+Install the application from [Salesforce AppExchange](https://appexchange.salesforce.com/appxListingDetail?listingId=a0N3A00000G11fzUAB)
 
 ## Dev, Build and Test
 
@@ -62,7 +63,6 @@ sfdx force:package:version:promote --package "Cluster Analysis@1.0.0-1"
 * **force-app/main/algorithms**: Directory that contains algorithm classes.
 * **force-app/main/utils**: Directory that contains utility classes.
 * **force-app/main/test**: Directory that contains Apex test classes.
-* **.project**:  Required by the Eclipse IDE.  Describes the Eclipse project. 
 * **.gitignore**:  Optional Git file. Specifies intentionally untracked files that you want Git (or in this case GitHub) to ignore.
 
 ## Resources
@@ -92,6 +92,8 @@ https://d3js.org/
 Building Machine Learning Systems with Apex (Presented on DF14 by Jen Wyher and Paul Battisson)
 https://www.slideshare.net/pbattisson/df14-building-machine-learning-systems-with-apex
 
+Salesforce Lookup Component
+https://github.com/pozil/sfdc-ui-lookup-lwc
 
 ## Issues
-To report an bug or suggest an enhancement create an issue on "Issues" tab.
+To report a bug or suggest an enhancement create an issue on "Issues" tab.
