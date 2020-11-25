@@ -8,22 +8,26 @@ public with sharing class ClusterDataHelper {
         public Integer compare(Object compare, Object compareTo) {
             Integer result = 0;
             if (compare instanceof Integer) {
-                if ((Integer)compare == (Integer)compareTo) result = 0;
-                else if ((Integer)compare > (Integer)compareTo) result = 1;
+                Integer compareToInt = Integer.valueOf(compareTo);
+                if ((Integer)compare == compareToInt) result = 0;
+                else if ((Integer)compare > compareToInt) result = 1;
                 else result = -1;
             } else if (compare instanceof Long) {
-                if ((Long)compare == (Long)compareTo) result = 0;
-                else if ((Long)compare > (Long)compareTo) result = 1;
+                Long compareToLong = (Long)compareTo;
+                if ((Long)compare == compareToLong) result = 0;
+                else if ((Long)compare > compareToLong) result = 1;
                 else result = -1;
                 
             } else if (compare instanceof Decimal) {
-                if ((Decimal)compare == (Decimal)compareTo) result = 0;
-                else if ((Decimal)compare > (Decimal)compareTo) result = 1;
+                Decimal compareToDec = (Decimal)compareTo;
+                if ((Decimal)compare == compareToDec) result = 0;
+                else if ((Decimal)compare > compareToDec) result = 1;
                 else result = -1;
                 
             } else if (compare instanceof Double) {
-                if (Math.abs((Double)compare - (Double)compareTo) < DOUBLEEPSILON) result = 0;
-                else if ((Double)compare > (Double)compareTo) result = 1;
+                Double compareToDouble = Double.valueOf(compareTo);
+                if (Math.abs((Double)compare - compareToDouble) < DOUBLEEPSILON) result = 0;
+                else if ((Double)compare > compareToDouble) result = 1;
                 else result = -1;
                 
             } else {
@@ -54,13 +58,17 @@ public with sharing class ClusterDataHelper {
 
     private static Logger log = LogFactory.getLogger();
     private static final Map<String, ClusterFieldFunctions> fieldFunctionsMap;
+    private static final ClusterFieldFunctions textFieldComparer;
     public static final Double DOUBLEEPSILON = 0.000001;
     public static final Double DOUBLE_MAX_VALUE = 9223372036854775807.0;
+    public static final Double DOUBLE_ZERO = 0.0;
+    public static final Integer INT_ZERO = 0;
 
     static {
         fieldFunctionsMap = new Map<String, ClusterFieldFunctions>();
+        textFieldComparer = new TextFieldFunctions();
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_NUMERIC, new NumericFieldFunctions());
-        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_TEXT, new TextFieldFunctions());
+        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_TEXT, textFieldComparer);
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_CATEGORY, new CategoryFieldFunctions());
     }
 
@@ -87,6 +95,9 @@ public with sharing class ClusterDataHelper {
         else {
             ClusterFieldFunctions fieldFunctions = fieldFunctionsMap.get(field.distanceType);
             if (fieldFunctions != null) result = fieldFunctions.compare(compare, compareTo);
+            else if (field.isIdField) {
+                return textFieldComparer.compare(String.valueOf(compare), String.valueOf(compareTo));
+            }
             else result = 0;
         }
         return result;
@@ -196,10 +207,7 @@ public with sharing class ClusterDataHelper {
                 weight += modelField.weight;
             }
             else if (modelField.isLongText) {
-                Double[] tf1 = (Double[])currentObject[i];
-                Double[] tf2 = (Double[])centroid[i];
-                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
-                distance += modelField.weight * calculateCosineDistance(tf1, tf2, idf);
+                distance += modelField.weight * calculateCosineDistance(currentObject[i], centroid[i], jobState.minMaxValues[i].maxValue);
                 weight += modelField.weight;
             }
         }
@@ -224,9 +232,9 @@ public with sharing class ClusterDataHelper {
             else if (model.fields[i].isLongText) {
                 //For euclidean distance we will calculate cosine distance for long text and emulate dot product
                 //TODO: Consider throwing a model validation exception if Euclidean distance is used with LongText
-                Double[] tf1 = (Double[])currentObject[i];
-                Double[] tf2 = (Double[])centroid[i];
-                Double[] idf = (Double[])jobState.minMaxValues[i].maxValue;
+                Object tf1 = currentObject[i];
+                Object tf2 = centroid[i];
+                Object idf = jobState.minMaxValues[i].maxValue;
                 Double distance = model.fields[i].weight * calculateCosineDistance(tf1, tf2, idf);
                 sumDistance += distance * distance;
             }
@@ -239,15 +247,143 @@ public with sharing class ClusterDataHelper {
         return calculateGowerDistance(currentObject, centroid, jobState);
     }
 
-    public static Double calculateCosineDistance(Double[] vector1, Double[] vector2, Double[] idfVector) {
+    public static Double calculateCosineDistance(Object vector1, Object vector2, Object idfVector) {
         if ((vector1 == null) && (vector2 == null)) {
             return 0.0;
         }
         else if ((vector1 == null) || (vector2 == null)) {
             return 1.0;
         }
-        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-        return 1.0 - calculateCosineSimilarity(vector1, vector2, idfVector);
+        ClusterCompressedDoubleArray tf1i = (ClusterCompressedDoubleArray)vector1;
+        ClusterCompressedDoubleArray tf2i = (ClusterCompressedDoubleArray)vector2;
+        ClusterCompressedDoubleArray idfi = idfVector == null ? null : (ClusterCompressedDoubleArray)idfVector;
+        return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
+    }   
+
+    public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray vector1, ClusterCompressedDoubleArray vector2, ClusterCompressedDoubleArray idfVector) {
+        //We will also use idf vector in calculations to optimize loops a little        
+        Double dotProduct = 0.0;
+        Double magnitude1 = 0.0;
+        Double magnitude2 = 0.0;
+        Double zero = 0.0;
+        //Vector sizes might be different
+        //The code below is extracted from ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator code and copy/pasted 3 times
+        //This is proven to be about 3 times faster than using custom iterators hasNext/next or moveNext/getValue
+        //Apparently apex method calls are very expensive, therefore they were replaced by this ugly code
+        Integer v1ArrayIndex = 0, v1ValueIndex = 0, v2ArrayIndex = 0, v2ValueIndex = 0, idfArrayIndex = 0, idfValueIndex = 0;
+        Integer v1Size = vector1.size(), v2Size = vector2.size(), idfSize = idfVector == null ? 0 : idfVector.size();
+        ClusterCompressedDoubleArray.ClusterCompressedDouble v1Value = null, v2Value = null, idfValue = null;
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> v1List = vector1.getCompressedList();
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> v2List = vector2.getCompressedList(); 
+        List<ClusterCompressedDoubleArray.ClusterCompressedDouble> idfList = idfVector == null ? null : idfVector.getCompressedList();
+        Boolean v1hasNext = v1Size > 0;
+        Boolean v2hasNext = v2Size > 0;
+        Boolean idfHasNext = idfSize > 0;
+        while (v1hasNext || v2hasNext) {
+            Double v1;
+            if (v1Value != null) {
+                v1 = v1Value.value;
+            }
+            else if (v1hasNext) {
+                v1Value = v1List[v1ArrayIndex];
+                v1ValueIndex = 0;
+                v1 = v1Value.value;
+            }
+            else {
+                v1 = zero;
+            }
+
+            Double v2;
+            if (v2Value != null) {
+                v2 = v2Value.value;
+            }
+            else if (v2hasNext) {
+                v2Value = v2List[v2ArrayIndex];
+                v2ValueIndex = 0;
+                v2 = v2Value.value;
+            }
+            else {
+                v2 = zero;
+            }
+
+            if (idfHasNext) {
+                Double idf;
+                //Getting current idf value
+                if (idfValue != null) {
+                    idf = idfValue.value;
+                }
+                else if (idfHasNext) {
+                    idfValue = idfList[idfArrayIndex];
+                    idfValueIndex = 0;
+                    idf = idfValue.value;
+                }
+                else {
+                    idf = zero;
+                }
+                //Actual calculations
+                v1 = v1 * idf;
+                v2 = v2 * idf;
+                //Moving to the next idf value
+                if (idfValue != null) {
+                    if (idfValueIndex < idfValue.count - 1) {
+                        idfValueIndex++;
+                    }
+                    else {
+                        idfValue = null;
+                        idfValueIndex = -1;
+                        idfArrayIndex++;
+                    }
+                }
+                else {
+                    idfArrayIndex++;
+                }
+                idfHasNext = idfArrayIndex < idfSize;
+            }
+            dotProduct += v1 * v2;
+            magnitude1 += v1 * v1;
+            magnitude2 += v2 * v2;
+            //Moving to the next v1
+            if (v1hasNext) {
+                if (v1Value != null) {
+                    if (v1ValueIndex < v1Value.count - 1) {
+                        v1ValueIndex++;
+                    }
+                    else {
+                        v1Value = null;
+                        v1ValueIndex = -1;
+                        v1ArrayIndex++;
+                    }
+                }
+                else {
+                    v1ArrayIndex++;
+                }
+                v1HasNext = v1ArrayIndex < v1Size;
+            }
+            //Moving to the next v2
+            if (v2hasNext) {
+                if (v2Value != null) {
+                    if (v2ValueIndex < v2Value.count - 1) {
+                        v2ValueIndex++;
+                    }
+                    else {
+                        v2Value = null;
+                        v2ValueIndex = -1;
+                        v2ArrayIndex++;
+                    }
+                }
+                else {
+                    v2ArrayIndex++;
+                }
+                v2HasNext = v2ArrayIndex < v2Size;
+            }
+        }
+        Double magnitude = magnitude1 * magnitude2;
+        if (Math.abs(magnitude - zero) < DOUBLEEPSILON) {
+            return 1.0;
+        }
+        else {
+            return dotProduct / Math.sqrt(magnitude);
+        }
     }
 
     public static Double calculateCosineSimilarity(Double[] vector1, Double[] vector2, Double[] idfVector) {
@@ -291,27 +427,128 @@ public with sharing class ClusterDataHelper {
     public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterKMeansJobState jobState) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
         
         return getDataPoints(randomRecordLocator, jobState);
+    }
+
+    public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterKMeansJobState jobState) {
+        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c 
+                WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
+        return ClusterDataHelper.getDataPoints(resultLocator, jobState);
     }
 
     public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterKMeansJobState jobState) {
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+        ClusterSObjectProcessor objectProcessor = objectFactory.createSObjectProcessor(jobState, false); //No compression for javascript
         Database.QueryLocatorIterator dpRecordIterator = dpLocator.iterator();
  
         // Iterate over the records
         while (dpRecordIterator.hasNext())
         {
             ClusterJobResult__c record = (ClusterJobResult__c)dpRecordIterator.next();
-            ClusterDataPoint dp = new ClusterDataPoint(record, objectProcessor);
+            ClusterDataPoint dp = objectProcessor.createDataPointFromResult(record);
             dataPoints.add(dp);
             index++;
         }
         return dataPoints;
-    }    
+    }
+
+    public static void populateClusterJobResultJsonValues(ClusterJobResult__c result, String json) {
+        Integer fieldSize = ClusterConstants.getMaxJsonFieldSize();
+        populateClusterJobResultJsonValues(result, json, fieldSize);
+    }
+
+    public static void populateClusterJobResultJsonValues(ClusterJobResult__c result, String json, Integer fieldSize) {
+        clearClusterJobResultJsonValues(result);
+        if (json != null && json.length() > fieldSize) {
+            Integer startIndex = 0;
+            Integer fieldBank = 1;
+            while (startIndex < json.length()) {
+                String resultPart = json.mid(startIndex, fieldSize);
+                populateClusterJobResultJsonValueBank(result, fieldBank, resultPart);
+                fieldBank++;
+                startIndex += fieldSize;
+            }
+        }
+        else {
+            result.Json__c = json;
+        }
+    }
+
+    public static void clearClusterJobResultJsonValues(ClusterJobResult__c result) {
+        result.Json__c = null;
+        result.Json2__c = null;
+        result.Json3__c = null;
+        result.Json4__c = null;
+        result.Json5__c = null;
+    }
+
+    public static void populateClusterJobResultJsonValueBank(ClusterJobResult__c result, Integer fieldIndex, String json) {
+        //This looks lame but not sure how the namespace will be resolved if we use dynamic binding (via set)
+        switch on fieldIndex {
+            when 1 {
+                result.Json__c = json;
+            }
+            when 2 {
+                result.Json2__c = json;
+            }
+            when 3 {
+                result.Json3__c = json;
+            }
+            when 4 {
+                result.Json4__c = json;
+            }
+            when 5 {
+                result.Json5__c = json;
+            }
+            when else {
+                throw new ClusterException('Invalid json field bank index ' + fieldIndex);
+            }
+        }
+    }
+
+    public static String getClusterJobResultValues(ClusterJobResult__c jobResult) {
+        String result = jobResult.Json__c;
+        if (!stringIsNullOrEmpty(result)) {
+            //This looks lame but not sure how the namespace will be resolved if we use dynamic binding (via get)
+            String nextResult = jobResult.Json2__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json3__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json4__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+            nextResult = jobResult.Json5__c;
+            if (!stringIsNullOrEmpty(nextResult)) {
+                result += nextResult;
+            }
+            else {
+                return result;
+            }
+        }
+        return result;
+    }
+
+    public static Boolean stringIsNullOrEmpty(String s) {
+        return (s == null) || (s == '');
+    }
 
     public static Boolean doublesEqual(Double a, Double b) {
         return Math.abs(a-b) < DOUBLEEPSILON;

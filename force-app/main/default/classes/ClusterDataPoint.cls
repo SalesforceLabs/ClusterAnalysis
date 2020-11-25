@@ -21,13 +21,36 @@ public with sharing class ClusterDataPoint {
     public ClusterDataPoint() {
 
     }
-    public ClusterDataPoint(ClusterJobResult__c resultRecord, ClusterSObjectProcessor objectProcessor) {
+
+    public ClusterDataPoint(ClusterJobResult__c resultRecord) {
         this.recordId = resultRecord.Id;
         this.externalId = resultRecord.RecordId__c;
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
         this.recordName = resultRecord.RecordName__c;
-        if (objectProcessor != null) {
-            this.values = (Object[])objectProcessor.parseValuesFromJson(resultRecord.Json__c);
+    }
+
+    public void loadFromMap(Map<String, Object> values) {
+        String recordIdStr = (String)values.get('recordId');
+        this.recordId = ClusterDataHelper.stringIsNullOrEmpty(recordIdStr) ? null : Id.valueOf(recordIdStr);
+        this.externalId = (String)values.get('externalId');
+        this.recordName = (String)values.get('recordName');
+        this.valuesJson = (String)values.get('valuesJson');
+        this.clusterIndex = (Integer)values.get('clusterIndex');
+        this.index = (Integer)values.get('index');
+        this.cost = Double.valueOf(values.get('cost'));
+        Object[] dpValues = (Object[])values.get('values');
+        this.values = new List<Object>();
+        if (dpValues != null) {
+            for (Object dpValue:dpValues) {
+                if ((dpValue instanceof String) || (dpValue instanceof Integer) || (dpValue instanceof Long) ||
+                (dpValue instanceof Double) || (dpValue instanceof Decimal)) {
+                    this.values.add(dpValue);
+                }                
+                else if (dpValue instanceof Map<String, Object>) {
+                    this.values.add(ClusterCompressedDoubleArray.createFromJsonMap((Map<String, Object>)dpValue));
+                }
+            }
         }
     }
+    
 }

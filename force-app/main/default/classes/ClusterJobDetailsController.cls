@@ -33,6 +33,7 @@ public with sharing class ClusterJobDetailsController {
             }
         }
         jobModel.maxGraphDataPoints = ClusterConstants.getTSNEPlotLimit();
+        jobModel.clusterColors = ClusterConstants.getDefaultClusterColors();
         return jobModel;
     }
 
@@ -49,13 +50,13 @@ public with sharing class ClusterJobDetailsController {
         }
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission above, exception is thrown in case of no access
-        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         for (ClusterJobResult__c record:randomRecords) {
-            ClusterDataPoint dp = new ClusterDataPoint(record, null);
+            ClusterDataPoint dp = new ClusterDataPoint(record);
             //We will parse json in javascript to save apex CPU time
-            dp.valuesJson = record.Json__c;
+            dp.valuesJson = ClusterDataHelper.getClusterJobResultValues(record);
             dataPoints.add(dp);
         }
         return dataPoints; 
@@ -99,7 +100,7 @@ public with sharing class ClusterJobDetailsController {
     @AuraEnabled
     public static ClusterResultDetailsUiModel getJobResultModel(Id jobResultId){
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
-        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
             FROM ClusterJobResult__c WHERE Id = :jobResultId WITH SECURITY_ENFORCED];
         
         ClusterJobResult__c result = results.get(0);
@@ -108,8 +109,9 @@ public with sharing class ClusterJobDetailsController {
         ClusterJobState jobState = new ClusterJobState();
         jobState.model = ClusterModelBuilderController.loadModel(job.ClusterModel__c);
 
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
-        ClusterDataPoint dp = new ClusterDataPoint(result, objectProcessor);
+        ClusterObjectFactory objectFactory = new ClusterObjectFactory();
+        ClusterSObjectProcessor objectProcessor = objectFactory.createSObjectProcessor(jobState, false); //No compression for javascript
+        ClusterDataPoint dp = objectProcessor.createDataPointFromResult(result);
 
         ClusterResultDetailsUiModel uiModel = new ClusterResultDetailsUiModel();
         uiModel.jobId = job.Id;
@@ -118,6 +120,12 @@ public with sharing class ClusterJobDetailsController {
         uiModel.dataPoint = dp;
         uiModel.resultName = result.Name;
         uiModel.clusterId = result.Cluster__c;
+        if (result.ClusterNumber__c != null) {
+            uiModel.clusterColor = ClusterConstants.getDefaultClusterColors()[Integer.valueOf(result.ClusterNumber__c)];
+        }
+        else {
+            uiModel.clusterColor = 'black';
+        }
         if (result.Cluster__r != null) {
             uiModel.clusterName = result.Cluster__r.ClusterName__c;
         }

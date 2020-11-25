@@ -1,18 +1,6 @@
 ({
-    clusterColors: ["#1b70fc", "#faff16", "#d50527", "#158940", "#f898fd", "#24c9d7", "#cb9b64", "#866888", "#22e67a",
-        "#e509ae", "#9dabfa", "#437e8a", "#b21bff", "#ff7b91", "#94aa05", "#ac5906", "#82a68d", "#fe6616", "#7a7352", "#f9bc0f",
-        "#b65d66", "#07a2e6", "#c091ae", "#8a91a7", "#88fc07", "#ea42fe", "#9e8010", "#10b437", "#c281fe", "#f92b75", "#07c99d",
-        "#a946aa", "#bfd544", "#16977e", "#ff6ac8", "#a88178", "#5776a9", "#678007", "#fa9316", "#85c070", "#6aa2a9", "#989e5d",
-        "#fe9169", "#cd714a", "#6ed014", "#c5639c", "#c23271", "#698ffc", "#678275", "#c5a121", "#a978ba", "#ee534e", "#d24506",
-        "#59c3fa", "#ca7b0a", "#6f7385", "#9a634a", "#48aa6f", "#ad9ad0", "#d7908c", "#6a8a53", "#8c46fc", "#8f5ab8", "#fd1105",
-        "#7ea7cf", "#d77cd1", "#a9804b", "#0688b4", "#6a9f3e", "#ee8fba", "#a67389", "#9e8cfe", "#bd443c", "#6d63ff", "#d110d5",
-        "#798cc3", "#df5f83", "#b1b853", "#bb59d8", "#1d960c", "#867ba8", "#18acc9", "#25b3a7", "#f3db1d", "#938c6d", "#936a24",
-        "#a964fb", "#92e460", "#a05787", "#9c87a0", "#20c773", "#8b696d", "#78762d", "#e154c6", "#40835f", "#d73656", "#1afd5c",
-        "#c4f546", "#3d88d8", "#bd3896", "#1397a3", "#f940a5", "#66aeff", "#d097e7", "#fe6ef9", "#d86507", "#8b900a", "#d47270",
-        "#e8ac48", "#cf7c97", "#cebb11", "#718a90", "#e78139", "#ff7463", "#bea1fd"],
-    
-    getClusterColor: function(clusterIndex) {
-        return this.clusterColors[clusterIndex];
+    getClusterColor: function(component) {
+        return component.get('v.clusterColor');
     },
 
     convertDataPointValue : function(fieldIndex, fieldValue, jobState) {
@@ -82,7 +70,7 @@
             name: model.fields[index].name, value: helper.convertDataPointValue(index, cv, jobState)
         } });
         component.set('v.objectValues', objectValues);
-        let color = helper.getClusterColor(dataPoint.clusterIndex);
+        let color = helper.getClusterColor(component);
         component.set('v.clusterColorCss', 'background-color: ' + color);
         let clusterDivComponent = component.find("clusterBox");        
         if (clusterDivComponent) {

@@ -2,6 +2,7 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>isCustomSoql__c</fullName>
     <defaultValue>false</defaultValue>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <label>Is Custom Soql</label>
     <trackTrending>false</trackTrending>

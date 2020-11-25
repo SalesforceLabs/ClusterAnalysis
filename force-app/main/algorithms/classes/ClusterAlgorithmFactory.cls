@@ -18,7 +18,7 @@ public with sharing class ClusterAlgorithmFactory {
 
     public static ClusterAlgorithmRunner getRunner(String algorithm) {
         if (algorithm == ClusterConstants.ALGORITHM_KMEDOIDS) {
-                return new ClusterKMedoidsPAMRunner();
+            return new ClusterKMedoidsPAMRunner();
         }
         else if (algorithm == ClusterConstants.ALGORITHM_KMEANS) {
             return new ClusterKMeansRunner();

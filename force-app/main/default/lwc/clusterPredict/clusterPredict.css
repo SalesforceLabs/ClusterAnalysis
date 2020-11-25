@@ -1,0 +1,21 @@
+.predict-container__header {
+    height: 60px;
+}
+.predict-container__footer {
+    height: 60px;
+}
+.predict-container__content {
+    height: -moz-calc(100% - 120px);
+    height: -webkit-calc(100% - 120px);
+    height: calc(100% - 120px);
+    width: 100%;
+}
+.predict-container {
+    height: 100%;
+    width: 100%;
+}
+.spinnerDiv {
+    height: 50px;
+    width: 50px;
+    position: relative;
+}

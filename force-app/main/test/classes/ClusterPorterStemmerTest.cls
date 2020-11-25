@@ -8,5 +8,8 @@ public with sharing class ClusterPorterStemmerTest {
         System.assertEquals(stemmer.stem('diversity'), 'divers', 'Stemmer test failed' );
         System.assertEquals(stemmer.stem('divers'), 'diver', 'Stemmer test failed' );
         System.assertEquals(stemmer.stem('dental'), 'dental', 'Stemmer test failed' );
+        System.assertEquals(stemmer.stem('righteousness'), 'righteous', 'Stemmer test failed' );
+        System.assertEquals(stemmer.stem('rigorously'), 'rigor', 'Stemmer test failed' );       
+        
     }
 }

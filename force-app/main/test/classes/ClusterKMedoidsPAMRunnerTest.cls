@@ -6,15 +6,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
         List<sObject> leads = Test.loadData(Lead.sObjectType, 'ClustanLeadsMock');
     }
 
-    /*
-    public static void debugUntruncated(String sMsg) {
-        for (Integer i = 0; i < sMsg.length(); i=i+300) {
-            Integer iEffectiveEnd = (i+300 > (sMsg.length()-1) ? sMsg.length()-1 : i+300);
-            System.debug(sMsg.substring(i,iEffectiveEnd));
-        }
-    }
-    */
-    
     @isTest
     public static void testKMedoids() {        
         String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Rating","displayLabel":"Rating","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Industry, Name, NumberOfEmployees, Rating, Title FROM Lead LIMIT 50"}';
@@ -32,7 +23,6 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             String stateJson = ClusterJobManager.loadJobState(state.clusterJob.Id);
             System.assertEquals(true, stateJson != null, 'Cluster saved job state is null');
             System.assertEquals(state.model.numberOfClusters, state.jobClusters.size(), 'Incorrect number of clusters created for the job');
-            //state = (ClusterKMeansJobState)JSON.deserialize(stateJson, ClusterKMeansJobState.class);
 
             System.assertEquals(true, state.clusterJob != null, 'Cluster job was not created');
             System.assertEquals(1, state.currentAlgorithmStep, 'Incorrect current step');
@@ -44,16 +34,18 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, results[0].Random__c >= 0, 'Incorrect random seed value');
             System.assertEquals(true, results[0].Json__c != null && results[0].Json__c != '', 'Json data is not populated');
 
+            state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
+            initCentroidsStep.finish(null);
             
-            state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
             System.assertEquals(ClusterConstants.getSampleRecordSize(state.model), state.dataPoints.size(), 'Sample records are not loaded');
 
             stateJson = JSON.serialize(state);
-            //debugUntruncated('State json: ' + stateJson);
 
             //ClusterPAMDataAssignmentStep
             runner.setJobState(state);
@@ -116,7 +108,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             currentStep = state.currentAlgorithmStep;
             ClusterSilhouetteScoreStep scoreStep = (ClusterSilhouetteScoreStep)runner.steps[state.currentAlgorithmStep];
             scoreStep.init(runner);
-            scoreStep.execute(null, state.dataPoints);
+            scoreStep.execute(null, ClusterDataHelper.getRandomDataPoints(10, state));
             scoreStep.finish(null);
             System.assertEquals(true, state.clusterJob.Score__c != null, 'Silhouette score calculated incorrectly');
 
@@ -186,7 +178,10 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.processNextSteps();
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
+            initCentroidsStep.finish(null);
             ClusterJob__c job = ClusterJobManager.getJob(state.clusterJob.Id);
             System.assertEquals(ClusterConstants.JOBSTATUS_CANCELLED, job.JobStatus__c, 'Incorrect job status for max iterations');
             System.assertEquals('Maximum algorithm iterations reached, job was interrupted', job.JobStatusText__c, 'Incorrect job status text for max iterations');
@@ -195,8 +190,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
     @isTest
     public static void testKMedoidsLongText() {        
-        String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"Description","displayLabel":"Description","relationName":"","objectName":"Lead","distanceType":"LongText","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead LIMIT 20"}';
-        ClusterModelWrapper model = ClusterTestData.createModel(modelJson);
+        ClusterModelWrapper model = ClusterTestData.createLongTextModel();
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
             ClusterKMedoidsPAMRunner runner = (ClusterKMedoidsPAMRunner)ClusterAlgorithmFactory.getRunner(model);
@@ -215,7 +209,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             System.assertEquals(true, state.clusterJob != null, 'Cluster job was not created');
             System.assertEquals(1, state.currentAlgorithmStep, 'Incorrect current step');
             System.assertEquals(state.model.fields.size(), state.minMaxValues.size(), 'MinMax values initialized incorrectly');
-            System.assertEquals(true, ((List<Double>)state.minMaxValues[0].maxValue).size() > 0, 'MinMax value calculated incorrectly');
+            System.assertEquals(true, ((ClusterCompressedDoubleArray)state.minMaxValues[0].maxValue).iterator().hasNext(), 'MinMax value calculated incorrectly');
             List<ClusterJobResult__c> results = [SELECT Id, Random__c, Json__c FROM ClusterJobResult__c WHERE ClusterJob__c = :state.clusterJob.Id LIMIT 1];
             System.assertEquals(true, results != null && results.size() > 0, 'Job results are not populated');
             System.assertEquals(true, results[0].Random__c >= 0, 'Incorrect random seed value');
@@ -223,14 +217,16 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
 
             //ClusterInitCentroidsStep
             runner.setJobState(state);
-            runner.runCurrentStep();        
+            ClusterInitCentroidsStep initCentroidsStep = (ClusterInitCentroidsStep)runner.steps[state.currentAlgorithmStep];
+            initCentroidsStep.init(runner);
+            initCentroidsStep.execute(null, initCentroidsStep.start(null));
+            initCentroidsStep.finish(null);
             
             state = (ClusterKMeansJobState)ClusterAlgorithmRunner.jobState;
             System.assertEquals(state.model.numberOfClusters, state.centroids.size(), 'Centroids initialized incorrectly');
-            System.assertEquals(20, state.dataPoints.size(), 'Sample records are not loaded');
+            System.assertEquals(10, state.dataPoints.size(), 'Sample records are not loaded');
 
             stateJson = JSON.serialize(state);
-            //debugUntruncated('State json: ' + stateJson);
 
             //ClusterPAMDataAssignmentStep
             runner.setJobState(state);
@@ -240,7 +236,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             pdaStep.execute(null, dataPoints);
             pdaStep.finish(null);
 
-            System.assertEquals(true, state.centroids[0].cost > 0, 'Centroid cost calculated incorrectly');
+            System.assertEquals(true, (state.centroids[0].cost > 0) || (state.centroids[1].cost > 0), 'Centroid cost calculated incorrectly');
             Boolean isCentroidFirst = false;
             for (ClusterDataPoint centroid:state.centroids){
                 if (state.dataPoints[0].recordId == centroid.recordId) {
@@ -304,6 +300,12 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             
             List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
+
+            ClusterPredictUiModel.PredictJobCluster predictResult = ClusterPredictController.predict(clusterDataPoints.get(0).externalId, model.modelId);
+            // Expected is clusterDataPoints.get(0).clusterIndex, but it can't be guaranteed because we only ran 1 iteration
+            // So we only check if predicted cluster index is less than the number of clusters
+            System.assertEquals(true, predictResult.clusterIndex < 5, 'Cluster predicted incorrectly');
+
         }
     }
 

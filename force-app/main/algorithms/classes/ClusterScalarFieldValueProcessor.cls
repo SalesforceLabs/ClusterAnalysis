@@ -65,4 +65,13 @@ public with sharing class ClusterScalarFieldValueProcessor implements ClusterFie
         }
         return value;
     }
+
+    public void serializeValueToJson(JSONGenerator gen, Object value) {
+        if (value != null) {
+            gen.writeObject(value);
+        }
+        else {
+            gen.writeNull();
+        }
+    }
 }

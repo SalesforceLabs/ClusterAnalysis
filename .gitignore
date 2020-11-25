@@ -7,3 +7,6 @@
 node_modules
 .idea
 mdapi-source
+
+# VS Code project settings
+.vscode/

@@ -30,9 +30,8 @@
     }
 
     public override void init(ClusterModelWrapper model) {
-        this.state = new ClusterKMeansJobState();
-        this.state.currentAlgorithmStep = 0;
-        this.state.iterationsCount = 0;
+        this.steps.clear();
+        this.state = (ClusterKMeansJobState)this.createJobState();
         this.state.model = model;
         model.numberOfClusters = Integer.valueOf(model.parameters.get('numberOfClusters'));
         model.distanceFunction = String.valueOf(model.parameters.get('distanceFunction'));
@@ -56,7 +55,18 @@
         super.init(model);
     }
 
-    public override ClusterJobState getJobState() {
+    public override void initializeDistanceCache() {
+        this.distanceCacheManager = new ClusterRecordIdDistanceCacheManager(ClusterConstants.KMEANS_CACHE_SIZE);
+    }
+
+    public override ClusterJobState createJobState() {
+        ClusterKMeansJobState newState = new ClusterKMeansJobState();
+        newState.currentAlgorithmStep = 0;
+        newState.iterationsCount = 0;
+        return newState;
+    }
+
+    public override ClusterJobState getJobState() {        
         return this.state;
     }
 
@@ -122,5 +132,9 @@
         parameters.add(new ClusterAlgorithmParameter('distanceFunction', 'Distance Function', ClusterAlgorithmParameter.ParameterType.SELECT_PARAMETER, ClusterConstants.DISTANCE_MANHATTAN, 
             new String[]{ ClusterConstants.DISTANCE_MANHATTAN, ClusterConstants.DISTANCE_EUCLIDEAN }));
         return parameters;
+    }
+
+    public override Integer predict(ClusterDataPoint dataPoint) {
+        return ClusterDataHelper.findNearestCluster(dataPoint, this);
     }
 }

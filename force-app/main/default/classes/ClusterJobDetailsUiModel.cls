@@ -76,4 +76,6 @@ public with sharing class ClusterJobDetailsUiModel {
     public Integer maxGraphDataPoints;
     @AuraEnabled
     public List<ClusterJobCluster> clusters;
+    @AuraEnabled
+    public String[] clusterColors;
 }

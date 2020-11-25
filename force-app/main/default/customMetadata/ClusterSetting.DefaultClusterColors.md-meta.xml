@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Default Cluster Colors</label>
+    <protected>false</protected>
+    <values>
+        <field>Description__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>LongTextValue__c</field>
+        <value xsi:type="xsd:string">[&quot;#1b70fc&quot;, &quot;#faff16&quot;, &quot;#d50527&quot;, &quot;#158940&quot;, &quot;#f898fd&quot;, &quot;#24c9d7&quot;, &quot;#cb9b64&quot;, &quot;#866888&quot;, &quot;#22e67a&quot;,
+        &quot;#e509ae&quot;, &quot;#9dabfa&quot;, &quot;#437e8a&quot;, &quot;#b21bff&quot;, &quot;#ff7b91&quot;, &quot;#94aa05&quot;, &quot;#ac5906&quot;, &quot;#82a68d&quot;, &quot;#fe6616&quot;, &quot;#7a7352&quot;, &quot;#f9bc0f&quot;,
+        &quot;#b65d66&quot;, &quot;#07a2e6&quot;, &quot;#c091ae&quot;, &quot;#8a91a7&quot;, &quot;#88fc07&quot;, &quot;#ea42fe&quot;, &quot;#9e8010&quot;, &quot;#10b437&quot;, &quot;#c281fe&quot;, &quot;#f92b75&quot;, &quot;#07c99d&quot;,
+        &quot;#a946aa&quot;, &quot;#bfd544&quot;, &quot;#16977e&quot;, &quot;#ff6ac8&quot;, &quot;#a88178&quot;, &quot;#5776a9&quot;, &quot;#678007&quot;, &quot;#fa9316&quot;, &quot;#85c070&quot;, &quot;#6aa2a9&quot;, &quot;#989e5d&quot;,
+        &quot;#fe9169&quot;, &quot;#cd714a&quot;, &quot;#6ed014&quot;, &quot;#c5639c&quot;, &quot;#c23271&quot;, &quot;#698ffc&quot;, &quot;#678275&quot;, &quot;#c5a121&quot;, &quot;#a978ba&quot;, &quot;#ee534e&quot;, &quot;#d24506&quot;,
+        &quot;#59c3fa&quot;, &quot;#ca7b0a&quot;, &quot;#6f7385&quot;, &quot;#9a634a&quot;, &quot;#48aa6f&quot;, &quot;#ad9ad0&quot;, &quot;#d7908c&quot;, &quot;#6a8a53&quot;, &quot;#8c46fc&quot;, &quot;#8f5ab8&quot;, &quot;#fd1105&quot;,
+        &quot;#7ea7cf&quot;, &quot;#d77cd1&quot;, &quot;#a9804b&quot;, &quot;#0688b4&quot;, &quot;#6a9f3e&quot;, &quot;#ee8fba&quot;, &quot;#a67389&quot;, &quot;#9e8cfe&quot;, &quot;#bd443c&quot;, &quot;#6d63ff&quot;, &quot;#d110d5&quot;,
+        &quot;#798cc3&quot;, &quot;#df5f83&quot;, &quot;#b1b853&quot;, &quot;#bb59d8&quot;, &quot;#1d960c&quot;, &quot;#867ba8&quot;, &quot;#18acc9&quot;, &quot;#25b3a7&quot;, &quot;#f3db1d&quot;, &quot;#938c6d&quot;, &quot;#936a24&quot;,
+        &quot;#a964fb&quot;, &quot;#92e460&quot;, &quot;#a05787&quot;, &quot;#9c87a0&quot;, &quot;#20c773&quot;, &quot;#8b696d&quot;, &quot;#78762d&quot;, &quot;#e154c6&quot;, &quot;#40835f&quot;, &quot;#d73656&quot;, &quot;#1afd5c&quot;,
+        &quot;#c4f546&quot;, &quot;#3d88d8&quot;, &quot;#bd3896&quot;, &quot;#1397a3&quot;, &quot;#f940a5&quot;, &quot;#66aeff&quot;, &quot;#d097e7&quot;, &quot;#fe6ef9&quot;, &quot;#d86507&quot;, &quot;#8b900a&quot;, &quot;#d47270&quot;,
+        &quot;#e8ac48&quot;, &quot;#cf7c97&quot;, &quot;#cebb11&quot;, &quot;#718a90&quot;, &quot;#e78139&quot;, &quot;#ff7463&quot;, &quot;#bea1fd&quot;]</value>
+    </values>
+    <values>
+        <field>Value__c</field>
+        <value xsi:nil="true"/>
+    </values>
+</CustomMetadata>

@@ -1,6 +1,6 @@
 public with sharing abstract class ClusterIterableBase implements Database.Batchable<Object>, Database.Stateful, ClusterAlgorithmStep {
     public ClusterAlgorithmRunner runner;
-    private Integer batchSize;
+    protected Integer batchSize;
     private Boolean hadErrorsDuringProcessing = false;
     private String lastProcessingError;
 
@@ -12,7 +12,11 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
 
     public ClusterIterableBase(Integer batchSize) {
         this.batchSize = batchSize;
-    }   
+    }
+
+    public virtual Integer getBatchSize() {
+        return this.batchSize;
+    }
     
     public virtual void init(ClusterAlgorithmRunner runner) {
         this.runner = runner;
@@ -20,7 +24,7 @@ public with sharing abstract class ClusterIterableBase implements Database.Batch
 
     public virtual void run() {
         ClusterJobState jobState = this.runner.getJobState();
-        jobState.currentJobId = Database.executeBatch(this, this.batchSize);
+        jobState.currentJobId = Database.executeBatch(this, this.getBatchSize());
         log.debug('Started batch job: ' + jobState.currentJobId);
     }
 

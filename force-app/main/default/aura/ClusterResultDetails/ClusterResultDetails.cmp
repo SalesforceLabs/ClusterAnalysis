@@ -1,6 +1,7 @@
 <aura:component controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
     <aura:attribute name="dataPoint" type="Object" access="public" />
     <aura:attribute name="jobState" type="Object" access="public" />
+    <aura:attribute name="clusterColor" type="String" access="public" />
     <aura:attribute name="showRecordName" type="Boolean" access="public" default="false" />
     <aura:attribute name="objectValues" type="Object" access="private" />
     <aura:attribute name="clusterColorCss" type="String" access="private" default="" />
@@ -26,4 +27,4 @@
             </aura:iteration>
         </dl>
     </div>
-</aura:component>	
+</aura:component>

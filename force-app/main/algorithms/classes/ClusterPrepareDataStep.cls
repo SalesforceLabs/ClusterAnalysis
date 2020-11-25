@@ -33,17 +33,13 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         Object[] values = new Object[length];
         Integer scopeSize = scope.size();
         ClusterJobResult__c[] results = new ClusterJobResult__c[scopeSize];
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
 
         if (scopeSize > 0) {
             //Checking the access of the real object returned from the soql query. 
             //Somebody could provide a SOQL query from an object which is different from the model object
             //This is not allowed
-            Schema.DescribeSObjectResult realDesc = scope.get(0).getSObjectType().getDescribe();
-            ClusterAccessCheck.checkReadPermission(realDesc);
-            if (model.objectName.toLowerCase() != realDesc.getName().toLowerCase()) {
-                throw new ClusterException('The SOQL query object name (' + realDesc.getName() + ') is not the same as model object name (' + model.objectName + ')');
-            }
+            ClusterAccessCheck.checkSObjectReadPermission(scope.get(0), model.objectName);
         }
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             SObject record = scope[sindex];
@@ -53,7 +49,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
             result.RecordId__c = dataPoint.externalId;
             result.RecordName__c = dataPoint.recordName;            
             result.ClusterJob__c = jobState.clusterJob.Id;
-            result.Json__c = JSON.serialize(dataPoint.values);
+            ClusterDataHelper.populateClusterJobResultJsonValues(result, objectProcessor.serializeValuesToJson(dataPoint.values));
             result.Random__c = ClusterDataHelper.getRandomInt(0, RANDOM_SIZE); //Randomize record order
             results[sindex] = result;
         }
@@ -71,7 +67,7 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
         if (jobState.numRecords == 0) {
             throw new ClusterException('Model SOQL query returned 0 records, interrupting the cluster job');
         }
-        ClusterSObjectProcessor objectProcessor = new ClusterSObjectProcessor(jobState);
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
         objectProcessor.processTotals();        
         super.done();
     }

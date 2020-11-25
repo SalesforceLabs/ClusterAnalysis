@@ -55,7 +55,7 @@ public with sharing class ClusterJobOutputStep extends ClusterBatchBase implemen
         //CRUD permissions on ClusterJobResult__c are checked in ClusterAccessCheck.checkCRUDPermission in ClusterAlgorithmRunner.start which is calling all ClusterAlgorithmStep implementors
         //exception is thrown there in case of no access
         //Checking the same in every processRecords is redundant
-        List<ClusterJobResult__c> results = [SELECT Id, Cluster__c, Json__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND RecordId__c IN :ids LIMIT :scope.size()];
+        List<ClusterJobResult__c> results = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND RecordId__c IN :ids LIMIT :scope.size()];
         Map<String, ClusterJobResult__c> resultsMap = new Map<String, ClusterJobResult__c>();
         //Building map for faster lookup
         for (ClusterJobResult__c result:results) {

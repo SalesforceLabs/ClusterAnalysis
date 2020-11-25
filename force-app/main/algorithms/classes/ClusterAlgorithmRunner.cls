@@ -19,11 +19,10 @@ public abstract with sharing class ClusterAlgorithmRunner {
     public ClusterDistanceCacheManager distanceCacheManager;
     public ClusterAlgorithmRunner() {
         this.steps = new List<ClusterAlgorithmStep>();
+        this.objectFactory = new ClusterObjectFactory();
     }
 
-    public void initializeDistanceCache(Integer numberOfObjects) {
-        this.distanceCacheManager = new ClusterDistanceCacheManager(numberOfObjects);
-    }
+    public abstract void initializeDistanceCache();
 
     public virtual ClusterAlgorithmRunner.ModelValidationResult validateModel(ClusterModelWrapper model) {
         ModelValidationResult result = new ModelValidationResult();
@@ -87,8 +86,9 @@ public abstract with sharing class ClusterAlgorithmRunner {
             this.steps.add(jobOutputStep);
         }
     }
-    public abstract ClusterJobState getJobState();
-    public abstract void setJobState(ClusterJobState state);
+    public abstract ClusterJobState getJobState();    
+    public abstract ClusterJobState createJobState();    
+    private ClusterObjectFactory objectFactory{ get; set; }
 
     public virtual void start() {
         try {
@@ -171,16 +171,67 @@ public abstract with sharing class ClusterAlgorithmRunner {
     public virtual Double calculateDPDistance(ClusterDataPoint currentObject, ClusterDataPoint centroid) {
         //Check cache if both data points are loaded into sample array
         if (currentObject.index != null && centroid.index != null) {
-            double distance = this.distanceCacheManager.get(currentObject.index, centroid.index);
+            double distance = this.distanceCacheManager.get(currentObject, centroid);
             if (distance == null) {
                 distance = this.calculateDistance(currentObject.values, centroid.values);
-                this.distanceCacheManager.set(currentObject.index, centroid.index, distance);
+                this.distanceCacheManager.set(currentObject, centroid, distance);
             }
             return distance;
         }
         return this.calculateDistance(currentObject.values, centroid.values);
     }
 
+    public ClusterSObjectProcessor getSObjectProcessor() {
+        return this.objectFactory.createSObjectProcessor(this.getJobState());
+    }
+
+    public void setJobState(String jobStateJson) {
+        Map<String, Object> jobStateValues = (Map<String, Object>)JSON.deserializeUntyped(jobStateJson);
+        ClusterJobState newJobState = this.createJobState();
+        newJobState.loadFromMap(jobStateValues);
+        this.init(newJobState.model);
+        this.setJobState(newJobState);
+    }
+
+    public abstract void setJobState(ClusterJobState state);
+
+    public Integer predict(Id recordId, String jobStateJson) {
+        this.setJobState(jobStateJson);
+        return this.predict(recordId);
+    }
+
+    public Integer predict(Id dpRecordId) {
+        ClusterDataPoint dataPoint = this.getDataPoint(dpRecordId);
+        return this.predict(dataPoint);
+    }
+
+    public ClusterDataPoint getDataPoint(Id recordId) {
+        ClusterModelWrapper model = this.getJobState().model;
+        String keyCode = String.valueOf(recordId).subString(0,3);
+        Schema.DescribeSObjectResult objectDescribe = ClusterUtils.findObjectDescByKeyCode(keyCode);
+        if (objectDescribe.getName().toLowerCase() != model.objectName.toLowerCase()) {
+            throw new ClusterException('Model object (' + model.objectName +') does not match with the record id object (' + objectDescribe.getName() + ')');
+        }
+        String modelSoql = model.generateSoqlSelect();
+        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(recordId)) + '\'';
+        ClusterAlgorithmRunner.ModelValidationResult vr = this.validateModel(model);
+        if (!vr.isValid) {
+            ClusterException ex = new ClusterException();
+            ex.setMessage('Model validation failed. Error message(s): ' + String.join(vr.messages,'\n'));
+            throw ex;
+        }
+        List<SObject> predictRecords = Database.query(modelSoql);
+        if (predictRecords.size() != 1) {
+            throw new ClusterException('Record with id ' + recordId + ' was not found');
+        }
+        ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
+        return objectProcessor.processSObject(predictRecords.get(0));
+    }
+
+    public abstract Integer predict(ClusterDataPoint dataPoint);
+
     protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
+
     public abstract ClusterAlgorithmParameter[] getParameters(ClusterModelWrapper model);
+    
 }

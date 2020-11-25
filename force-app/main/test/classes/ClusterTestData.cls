@@ -55,6 +55,10 @@ public with sharing class ClusterTestData {
         return standarduser;
     }
 
+    public static void createLeads(){
+        List<sObject> leads = Test.loadData(Lead.sObjectType, 'ClustanLeadsMock');
+    }
+
     public static ClusterModelWrapper createModel(string modelJson) {
         User adminUser = createClusterAdmin();
         ClusterModelWrapper model;
@@ -62,5 +66,40 @@ public with sharing class ClusterTestData {
             model = ClusterModelBuilderController.saveModel(modelJson);
         }
         return model;
+    }
+
+    public static ClusterModelWrapper createLongTextModel() {
+        String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"Description","displayLabel":"Description","relationName":"","objectName":"Lead","distanceType":"LongText","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead LIMIT 10"}';
+        return ClusterTestData.createModel(modelJson);
+    }
+
+    public static List<SObject> getBatchApexData(Database.Batchable<sObject> batchApexInstance) {
+        // Get a query locator
+        Database.QueryLocator ql = (Database.QueryLocator)batchApexInstance.start(null);
+        // Get an iterator
+        Database.QueryLocatorIterator it =  ql.iterator();
+        List<SObject> resultScope = new List<SObject>();
+        while (it.hasNext())
+        {
+            resultScope.add((SObject)it.next());
+        }
+        return resultScope;
+    }
+
+    public static String loadTextFromStaticResource(String resourceName) {
+        //Looks like the only way to load a string from a static resource in a unit test is to mock an http response
+        StaticResourceCalloutMock mock = new StaticResourceCalloutMock();
+        mock.setStaticResource(resourceName);
+        mock.setStatusCode(200);
+        mock.setHeader('Content-Type', 'application/json');
+        
+        // Set the mock callout mode
+        Test.setMock(HttpCalloutMock.class, mock);
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint('https://www.salesforce.com');
+        req.setMethod('GET');
+        Http h = new Http();
+        HttpResponse res = h.send(req);
+        return res.getBody();
     }
 }

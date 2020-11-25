@@ -72,6 +72,14 @@ public with sharing class ClusterAccessCheck {
         }
         return errors;
     }
+
+    public static void checkSObjectReadPermission(SObject record, String expectedObjectName) {
+        Schema.DescribeSObjectResult realDesc = record.getSObjectType().getDescribe();
+        checkReadPermission(realDesc);
+        if (expectedObjectName.toLowerCase() != realDesc.getName().toLowerCase()) {
+            throw new ClusterException('The SOQL query object name (' + realDesc.getName() + ') is not the same as model object name (' + expectedObjectName + ')');
+        }
+    }
     
 
 }

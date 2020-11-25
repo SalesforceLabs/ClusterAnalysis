@@ -12,6 +12,7 @@
                 let dpDetails = component.find('dataPointDetails');
                 dpDetails.set('v.dataPoint', uiModel.dataPoint);
                 dpDetails.set('v.jobState', uiModel.jobState);
+                dpDetails.set('v.clusterColor', uiModel.clusterColor);
                 dpDetails.rebind();
             },
             function (state, errors) {

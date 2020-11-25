@@ -1,16 +1,4 @@
 ({
-    d3clusterColors: ["#1b70fc", "#faff16", "#d50527", "#158940", "#f898fd", "#24c9d7", "#cb9b64", "#866888", "#22e67a",
-        "#e509ae", "#9dabfa", "#437e8a", "#b21bff", "#ff7b91", "#94aa05", "#ac5906", "#82a68d", "#fe6616", "#7a7352", "#f9bc0f",
-        "#b65d66", "#07a2e6", "#c091ae", "#8a91a7", "#88fc07", "#ea42fe", "#9e8010", "#10b437", "#c281fe", "#f92b75", "#07c99d",
-        "#a946aa", "#bfd544", "#16977e", "#ff6ac8", "#a88178", "#5776a9", "#678007", "#fa9316", "#85c070", "#6aa2a9", "#989e5d",
-        "#fe9169", "#cd714a", "#6ed014", "#c5639c", "#c23271", "#698ffc", "#678275", "#c5a121", "#a978ba", "#ee534e", "#d24506",
-        "#59c3fa", "#ca7b0a", "#6f7385", "#9a634a", "#48aa6f", "#ad9ad0", "#d7908c", "#6a8a53", "#8c46fc", "#8f5ab8", "#fd1105",
-        "#7ea7cf", "#d77cd1", "#a9804b", "#0688b4", "#6a9f3e", "#ee8fba", "#a67389", "#9e8cfe", "#bd443c", "#6d63ff", "#d110d5",
-        "#798cc3", "#df5f83", "#b1b853", "#bb59d8", "#1d960c", "#867ba8", "#18acc9", "#25b3a7", "#f3db1d", "#938c6d", "#936a24",
-        "#a964fb", "#92e460", "#a05787", "#9c87a0", "#20c773", "#8b696d", "#78762d", "#e154c6", "#40835f", "#d73656", "#1afd5c",
-        "#c4f546", "#3d88d8", "#bd3896", "#1397a3", "#f940a5", "#66aeff", "#d097e7", "#fe6ef9", "#d86507", "#8b900a", "#d47270",
-        "#e8ac48", "#cf7c97", "#cebb11", "#718a90", "#e78139", "#ff7463", "#bea1fd"],
-
     init: function() {
     },
 
@@ -48,18 +36,20 @@
     },
 
     loadDataPointsCallback: function(component, dataPointsJson, offset, maxCount) {
+        let jobDetails = component.get('v.jobDetails');
         let dataPoints = JSON.parse(dataPointsJson);
         for (let i=0; i<dataPoints.length; i++) {
             dataPoints[i].values = JSON.parse(dataPoints[i].valuesJson);
+            this.processDataPointValues(jobDetails.state, dataPoints[i].values);
             dataPoints[i].valuesJson = null;
         }
         let allDataPoints = component.get('v.dataPoints');
-        let jobDetails = component.get('v.jobDetails');
         let helper = this;
         
         allDataPoints = (allDataPoints == null) ? dataPoints : allDataPoints.concat(dataPoints);
         if ((dataPoints.length < maxCount) || (offset > jobDetails.maxGraphDataPoints)) {
             if (jobDetails.model.algorithm == 'K-Means') {
+                //jobDetails.state.centroids.forEach(c => helper.processDataPointValues(jobDetails.state, c.values));
                 allDataPoints = allDataPoints.concat(jobDetails.state.centroids); //Adding centroids to data points array for K-Means for visualization
             }
             component.set("v.dataPoints", allDataPoints);
@@ -190,7 +180,7 @@
                     .attr("cy", function (d) { return d.y; })
                     .attr("r", 4)
                     .style("opacity", d => d.isCentroid || isCollide ? 1 : 0.5)
-                    .style("fill", (d, i) => { return helper.d3clusterColors[dataPoints[i].clusterIndex]; })
+                    .style("fill", (d, i) => { return jobDetails.clusterColors[dataPoints[i].clusterIndex]; })
                     .style("stroke", (d, i) => { return helper.getNodeStrokeColor(d); })
                     .on("mouseover", tipMouseover)
                     .on("mouseout", tipMouseout);
@@ -291,7 +281,7 @@
                                 self.processBatch(i * chunkSize, chunkSize);            				
                                 if (i == numChunks - 1) {
                                     console.log('Distance calculations complete');
-                                    callback(distanceMatrix);
+                                    setTimeout(function() { callback(distanceMatrix); }, 2000);
                                 }
                                 resolve();
                             }
@@ -307,144 +297,8 @@
         chunker.processMatrix(callback, distanceMatrix);
     },
 
-    // code from https://github.com/trekhleb/javascript-algorithms/tree/master/src/algorithms/string/levenshtein-distance
-    levenshteinDistance: function (a, b) {
-        // Create empty edit distance matrix for all possible modifications of
-        // substrings of a to substrings of b.
-        const distanceMatrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-
-        // Fill the first row of the matrix.
-        // If this is first row then we're transforming empty string to a.
-        // In this case the number of transformations equals to size of a substring.
-        for (let i = 0; i <= a.length; i += 1) {
-            distanceMatrix[0][i] = i;
-        }
-
-        // Fill the first column of the matrix.
-        // If this is first column then we're transforming empty string to b.
-        // In this case the number of transformations equals to size of b substring.
-        for (let j = 0; j <= b.length; j += 1) {
-            distanceMatrix[j][0] = j;
-        }
-
-        for (let j = 1; j <= b.length; j += 1) {
-            for (let i = 1; i <= a.length; i += 1) {
-                const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-                distanceMatrix[j][i] = Math.min(
-                    distanceMatrix[j][i - 1] + 1, // deletion
-                    distanceMatrix[j - 1][i] + 1, // insertion
-                    distanceMatrix[j - 1][i - 1] + indicator // substitution
-                );
-            }
-        }
-
-        return distanceMatrix[b.length][a.length];
-    },
-
-    calculateNumericGowerDistance: function (a, b, delta) {
-        if (a == null && b == null) return 0;
-        let d = 0;
-        try {
-            d = Math.abs(a - b) / delta;
-        }
-        catch (ex) { 
-            d = 1;
-        }
-        return isNaN(d) ? 1.0 : d;
-    },
-
-    calculateTextGowerDistance: function (a, b, min, max) {
-        if (a == null && b == null) return 0;
-        let r = max;
-        let d = 0;
-        try {
-            if (a == null) {
-                d = Number(b.length()) / r;
-            }
-            else if (b == null) {
-                d = Number(a.length()) / r;
-            }
-            else d = this.levenshteinDistance(a, b) / r;
-        }
-        catch (ex) { 
-            d = 1;
-        }
-        return isNaN(d) ? 1.0 : d;
-    },
-
-    calculateCategoryGowerDistance: function (a, b) {
-        if (a == null && b == null) return 0;
-        return (a == b) ? 0 : 1;
-    },
-
     gowerDistance: function (currentObject, centroid, jobState) {
-        let distance = 0;
-        let weight = 0;
-        let model = jobState.model;
-        for (let i = 0; i < model.fields.length; i++) {
-            if (model.fields[i].isNumeric) {
-                distance += model.fields[i].weight * this.calculateNumericGowerDistance(Number(currentObject[i]), Number(centroid[i]),
-                    Number(jobState.minMaxValues[i].delta));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isText) {
-                distance += model.fields[i].weight * this.calculateTextGowerDistance(String(currentObject[i]), String(centroid[i]),
-                    Number(jobState.minMaxValues[i].minValue), Number(jobState.minMaxValues[i].maxValue));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isCategory) {
-                distance += model.fields[i].weight * this.calculateCategoryGowerDistance(String(currentObject[i]), String(centroid[i]));
-                weight += model.fields[i].weight;
-            }
-            else if (model.fields[i].isLongText) {
-                let tf1 = currentObject[i];
-                let tf2 = centroid[i];
-                let idf = jobState.minMaxValues[i].maxValue;
-                distance += model.fields[i].weight * this.calculateCosineDistance(tf1, tf2, idf);
-                weight += model.fields[i].weight;
-            }
-        }
-        return distance / weight;
-    },
-
-    calculateCosineDistance: function(vector1, vector2, idfVector) {
-        if (vector1 == null && vector2 == null) return 0.0;
-        if (vector1 == null || vector2 == null) return 1.0;
-        // Cosine similarity returns 1 if vectors are equal, subtracting from 1 will convert it to the distance
-        return 1.0 - this.calculateCosineSimilarity(vector1, vector2, idfVector);
-    },
-
-    calculateCosineSimilarity: function(vector1, vector2, idfVector) {
-        //We will also use idf vector in calculations to optimize loops a little
-        let dotProduct = 0.0;
-        let magnitude1 = 0.0;
-        let magnitude2 = 0.0;
-        let zero = 0.0;
-        //Vector sizes might be different
-        let v1Size = vector1.length;
-        let v2Size = vector2.length;
-        let idfSize = idfVector.length;
-        let length = Math.max(v1Size, v2Size);
-        for (let i = 0; i < length; i++) {
-            let v1 = i < v1Size ? vector1[i] : zero;
-            let v2 = i < v2Size ? vector2[i] : zero;
-            if ((idfVector != null) && i < idfSize) {
-                v1 = v1 * idfVector[i];
-                v2 = v2 * idfVector[i];
-            }
-            dotProduct += v1 * v2;
-            magnitude1 += v1 * v1;
-            magnitude2 += v2 * v2;
-        }
-        magnitude1 = Math.sqrt(magnitude1);
-        magnitude2 = Math.sqrt(magnitude2);
-        let magnitude = magnitude1 * magnitude2;
-        if (this.doublesEqual(magnitude, zero)) {
-            return 1.0;
-        }
-        else {
-            return dotProduct / magnitude;
-        }
+        return clustanUtils.gowerDistance(currentObject, centroid, jobState);
     },
 
     encodeHtml: function(rawStr) {
@@ -454,8 +308,8 @@
         return p.innerHTML;
     },
 
-    doublesEqual: function (a, b) {
-        return Math.abs(a-b) < 0.000001;
+    processDataPointValues: function(jobState, values) {
+        clustanUtils.decompressDataPointValues(jobState, values);
     },
 
 })

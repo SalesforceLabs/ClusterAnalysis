@@ -6,12 +6,17 @@
 public with sharing class ClusterSObjectProcessor {
     private ClusterJobState jobState;
     private ClusterFieldValueProcessor scalarProcessor;
-    private ClusterFieldValueProcessor longTextProcessor;
+    private ClusterLongTextFieldValueProcessor longTextProcessor;
+    private static Logger log = LogFactory.getLogger();
 
     public ClusterSObjectProcessor(ClusterJobState state) {
         this.jobState = state;
         this.scalarProcessor = new ClusterScalarFieldValueProcessor(this.jobState);
         this.longTextProcessor = new ClusterLongTextFieldValueProcessor(this.jobState);
+    }
+
+    public void setCompression(Boolean compression) {
+        this.longTextProcessor.setCompression(compression);
     }
 
     public ClusterDataPoint processSObject(SObject record) {
@@ -34,6 +39,7 @@ public with sharing class ClusterSObjectProcessor {
         if ((dp.recordName == null) || (dp.recordName == '')) {
             dp.recordName = dp.externalId;
         }
+        dp.recordId = record.Id;
         return dp;
     }
 
@@ -46,8 +52,15 @@ public with sharing class ClusterSObjectProcessor {
         }
     }
 
+    public ClusterDataPoint createDataPointFromResult(ClusterJobResult__c resultRecord) {
+        ClusterDataPoint dp = new ClusterDataPoint(resultRecord);
+        dp.values = (Object[])this.parseValuesFromJson(ClusterDataHelper.getClusterJobResultValues(resultRecord));
+        return dp;
+    }
+
     public Object[] parseValuesFromJson(string jsonValues) {
         //We have to use our own json parser (with blackjack :)) because standard parser converts Double[] to Object[] which takes 3 times more Apex heap
+        log.debug(LoggingLevel.FINE, 'Parsing json: ' + jsonValues);
         JSONParser parser = JSON.createParser(jsonValues);
         JSONToken nextToken = parser.nextToken();
         Object[] values = null;
@@ -66,5 +79,26 @@ public with sharing class ClusterSObjectProcessor {
             }
         }
         return values;
+    }
+
+    public String serializeValuesToJson(Object[] values) {
+        //And now we have our own json serializer (with blackjack :)). It is slightly faster and we can reduce double presicion to reduce string size
+        //Compressed arrays are serialized with less overhead
+        //The size of LongText TF-IDF Double vectors can easily be above 20K items
+        JSONGenerator gen = JSON.createGenerator(false);
+        gen.writeStartArray();
+        if (values != null) {
+            for (Integer i = 0; i < this.jobState.model.fields.size(); i++) {
+                ClusterModelFieldWrapper field = this.jobState.model.fields[i];
+                if (field.isLongText) {
+                    this.longTextProcessor.serializeValueToJson(gen, values[i]);
+                }
+                else {
+                    this.scalarProcessor.serializeValueToJson(gen, values[i]);
+                }
+            }
+        }
+        gen.writeEndArray();
+        return gen.getAsString();
     }
 }

@@ -3,20 +3,10 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterDistanceCacheManager {
-    Integer matrixSize;
-    Double[] distanceCache;
-    public ClusterDistanceCacheManager(Integer numberOfObjects) {
-        this.matrixSize = numberOfObjects;
-        this.distanceCache = new Double[this.matrixSize * this.matrixSize];
-    }
+public abstract with sharing class ClusterDistanceCacheManager {
 
-    public Double get(Integer x, Integer y) {
-        return this.distanceCache[y * this.matrixSize + x];
-    }
+    public abstract Double get(ClusterDataPoint objectA, ClusterDataPoint objectB);
 
-    public void set(Integer x, Integer y, Double value) {
-        this.distanceCache[y * this.matrixSize + x] = value;
-        this.distanceCache[x * this.matrixSize + y] = value;
-    }
+    public abstract void set(ClusterDataPoint objectA, ClusterDataPoint objectB, Double value);
+
 }

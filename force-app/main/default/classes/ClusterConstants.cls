@@ -22,9 +22,11 @@ public with sharing class ClusterConstants {
     public static final String DISTANCE_GOWER = 'Gower';
 
     public static final String LANGUAGE_NONE = 'none';
-    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 15000; //Max size of word list for tf-idf
+    public static final Integer MAX_TFIDF_WORDBAG_SIZE = 50000; //Max size of word list for tf-idf
+    public static final Integer MAX_JSON_FIELD_SIZE = 131072;
 
     public static final Integer TEST_BATCH_SIZE = 200;
+    public static final Integer KMEANS_CACHE_SIZE = 10000;
 
     private static Integer getIntegerSettingValue(String name, Integer defaultValue) {
         Integer intValue = defaultValue;
@@ -42,6 +44,24 @@ public with sharing class ClusterConstants {
             LogFactory.getLogger().error('Error getting custom setting ' + name, ex);            
         }
         return intValue;
+    }
+
+    private static String getLongTextSettingValue(String name, String defaultValue) {
+        String textValue = defaultValue;
+        try {
+            ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterSetting__mdt);
+            //Read permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
+            List<ClusterSetting__mdt> settings = [SELECT DeveloperName, LongTextValue__c FROM ClusterSetting__mdt WHERE DeveloperName = :name];
+            if (settings.size() > 0) {
+                if (settings[0].LongTextValue__c != null && settings[0].LongTextValue__c != '') {
+                    textValue = settings[0].LongTextValue__c;
+                }
+            }
+        }
+        catch (Exception ex) {
+            LogFactory.getLogger().error('Error getting custom setting ' + name, ex);            
+        }
+        return textValue;
     }
 
     public static Integer getBatchSize() {
@@ -62,6 +82,14 @@ public with sharing class ClusterConstants {
 
     public static Integer getKMedoidsSwapBatchSize() {
         return getIntegerSettingValue('KMedoidsSwapBatchSize', 200);
+    }
+
+    public static Integer getInitCentroidStepBatchSize() {
+        return 5;
+    }
+
+    public static Integer getInitCentroidStepLongTextBatchSize() {
+        return 1;
     }
 
     public static Integer getAttachmentMaxSize() {
@@ -106,6 +134,14 @@ public with sharing class ClusterConstants {
             return new Set<String>(languages.get(0).StopWords__c.split(','));
         }
         return emptySet;
+    }
+
+    public static Integer getMaxJsonFieldSize() {
+        return MAX_JSON_FIELD_SIZE;
+    }
+
+    public static String[] getDefaultClusterColors() {
+        return (String[])JSON.deserialize(getLongTextSettingValue('DefaultClusterColors','[]'), String[].class);
     }
 
 }
