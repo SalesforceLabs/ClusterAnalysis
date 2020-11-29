@@ -11,6 +11,8 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
     ClusterJobState jobState;
     Map<String,ClusterWordPreprocessor> wordPreprocessors;
     Boolean useCompression;
+    @TestVisible
+    private static Integer minWordCount = ClusterConstants.getMinTfIdfWordCount();
 
     public ClusterLongTextFieldValueProcessor(ClusterJobState state) {
         this.jobState = state;
@@ -76,7 +78,9 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         //Removing html tags and breaking into words
         String[] words = splitText(text.stripHtmlTags());
 
-        Integer numTokens = 0;
+        //Unfiltered word map
+        Map<String, Integer> tempWordMap = new Map<String, Integer>();
+        
         for (Integer i = 0; i < words.size(); i++) {
             //Skip empty and single character words
             if (words[i].length() < 2) {
@@ -87,13 +91,32 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             if (token == null) {
                 continue;
             }
-            addWordToMap(token, currentWordMap, 1, null);
-            numTokens++;
+            addWordToMap(token, tempWordMap, 1, null);
         }
+
         //Adding words and updating counts in aggregated structures
-        for (String currentToken:currentWordMap.keySet()) {
-            addWordToMap(currentToken, wordMap, 1, wordList); // Adding 1 here because for IDF we need to calculate the number of documents containing this term
-        }
+        Integer numTokens = 0;
+        Integer currMinWordCount = minWordCount;
+        do {
+            for (String currentToken:tempWordMap.keySet()) {
+                Integer currentTokenCount = tempWordMap.get(currentToken);
+                //Use the word if is used more than currMinWordCount times in the document
+                if (currentTokenCount >= currMinWordCount) {
+                    currentWordMap.put(currentToken, currentTokenCount);
+                    numTokens += currentTokenCount;
+                    addWordToMap(currentToken, wordMap, 1, wordList); // Adding 1 here because for IDF we need to calculate the number of documents containing this term                
+                }
+            }
+            if (numTokens == 0) {
+                //If no words were retrieved we will try one more time with currMinWordCount = 1
+                if (currMinWordCount > 1) {
+                    currMinWordCount = 1;
+                }
+                else {
+                    currMinWordCount = 0;
+                }
+            }            
+        } while (currMinWordCount > 0 && numTokens == 0);
         return numTokens;
     }
     

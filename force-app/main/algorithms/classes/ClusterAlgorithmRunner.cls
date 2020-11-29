@@ -205,6 +205,22 @@ public abstract with sharing class ClusterAlgorithmRunner {
         return this.predict(dataPoint);
     }
 
+    public abstract Integer predict(ClusterDataPoint dataPoint);
+
+    public List<ClusterNeighbor> findNearestClusters(Id recordId, Integer numNeighbors) {
+        ClusterDataPoint dataPoint = this.getDataPoint(recordId);
+        return this.findNearestClusters(dataPoint, numNeighbors);
+    }
+
+    public abstract List<ClusterNeighbor> findNearestClusters(ClusterDataPoint dataPoint, Integer numNeighbors);
+
+    public List<ClusterDataPointNeighbor> findNearestNeighbors(Id recordId, List<Integer> nearestClusters, Integer numNeighbors) {
+        ClusterDataPoint dataPoint = this.getDataPoint(recordId);
+        return this.findNearestNeighbors(dataPoint, nearestClusters, numNeighbors);
+    }
+
+    public abstract List<ClusterDataPointNeighbor> findNearestNeighbors(ClusterDataPoint dataPoint, List<Integer> nearestClusters, Integer numNeighbors);
+
     public ClusterDataPoint getDataPoint(Id recordId) {
         ClusterModelWrapper model = this.getJobState().model;
         String keyCode = String.valueOf(recordId).subString(0,3);
@@ -227,8 +243,6 @@ public abstract with sharing class ClusterAlgorithmRunner {
         ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
         return objectProcessor.processSObject(predictRecords.get(0));
     }
-
-    public abstract Integer predict(ClusterDataPoint dataPoint);
 
     protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
 

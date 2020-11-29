@@ -16,6 +16,8 @@ public with sharing class ClusterDataPoint {
     public Integer clusterIndex;
     @AuraEnabled
     public String recordName;    
+    @AuraEnabled
+    public Double distanceToCluster;
     public Integer index; //index of the item in the array
     public Double cost;
     public ClusterDataPoint() {
@@ -27,6 +29,7 @@ public with sharing class ClusterDataPoint {
         this.externalId = resultRecord.RecordId__c;
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
         this.recordName = resultRecord.RecordName__c;
+        this.distanceToCluster = Double.valueOf(resultRecord.DistanceToCluster__c);
     }
 
     public void loadFromMap(Map<String, Object> values) {
@@ -38,6 +41,7 @@ public with sharing class ClusterDataPoint {
         this.clusterIndex = (Integer)values.get('clusterIndex');
         this.index = (Integer)values.get('index');
         this.cost = Double.valueOf(values.get('cost'));
+        this.distanceToCluster = Double.valueOf(values.get('distanceToCluster'));
         Object[] dpValues = (Object[])values.get('values');
         this.values = new List<Object>();
         if (dpValues != null) {

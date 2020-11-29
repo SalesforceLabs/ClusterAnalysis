@@ -158,6 +158,86 @@ public with sharing class ClusterPredictController {
     @AuraEnabled
     public static ClusterPredictUiModel.PredictJobCluster predict(Id recordId, Id jobOrModelId) {
         log.debug('Running prediction for record ' + recordId + ', jobOrModelId ' + jobOrModelId);
+        Id jobId = getJobId(jobOrModelId);
+        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
+        ClusterDataPoint dataPoint = runner.getDataPoint(recordId);
+        log.debug('Loaded datapoint: ' + JSON.serialize(dataPoint));
+        Integer clusterIndex = runner.predict(dataPoint);
+        ClusterJobCluster__c cluster = runner.getJobState().jobClusters[clusterIndex];
+        ClusterPredictUiModel.PredictJobCluster predictCluster = new ClusterPredictUiModel.PredictJobCluster();
+        predictCluster.clusterId = cluster.Id;
+        predictCluster.clusterName = cluster.ClusterName__c;
+        predictCluster.clusterNumber = cluster.ClusterNumber__c;
+        predictCluster.clusterIndex = clusterIndex;
+        predictCluster.dataPoint = dataPoint;
+        predictCluster.jobState = ClusterJobManager.loadJobState(jobId);
+        String[] clusterColors = ClusterConstants.getDefaultClusterColors();
+        predictCluster.clusterColor = clusterColors[clusterIndex];
+        return predictCluster;
+    }
+
+    @AuraEnabled
+    public static List<ClusterDataPointNeighbor> findNearestNeighbors(Id recordId, Id jobOrModelId, Integer numNeighbors) {
+        log.debug('Finding nearest neighbors for record ' + recordId + ', jobOrModelId ' + jobOrModelId);
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
+        Id jobId = getJobId(jobOrModelId);
+        List<ClusterDataPointNeighbor> nearestNeighbors = null;
+        List<ClusterJobNeighbor__c> neighbors = [SELECT Id, ClusterJob__c, ClusterJobResult__c, Distance__c, NeighborRecordId__c, RecordId__c 
+            FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+        if (neighbors.size() > 0) {
+            log.debug('Retrieved ' + neighbors.size() + ' previously calculated neighbors');
+            nearestNeighbors = new List<ClusterDataPointNeighbor>();
+            for (ClusterJobNeighbor__c neighbor:neighbors) {
+                nearestNeighbors.add(new ClusterDataPointNeighbor(neighbor));
+            }
+        }
+        else {
+            log.debug('Previous calculations were not found. Starting nearest neighbor calculations async');
+            findNearestNeighborsAsync(recordId, jobId, numNeighbors);
+        }
+        return nearestNeighbors;
+    }
+
+    @AuraEnabled
+    public static List<ClusterDataPointNeighbor> pullNearestNeighbors(Id recordId, Id jobOrModelId, Integer numNeighbors) {
+        log.debug('Pulling nearest neighbors for record ' + recordId + ', jobOrModelId ' + jobOrModelId);
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
+        Id jobId = getJobId(jobOrModelId);
+        List<ClusterDataPointNeighbor> nearestNeighbors = null;
+        List<ClusterJobNeighbor__c> neighbors = [SELECT Id, ClusterJob__c, ClusterJobResult__c, Distance__c, NeighborRecordId__c, RecordId__c 
+            FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+        if (neighbors.size() > 0) {
+            log.debug('Retrieved ' + neighbors.size() + ' previously calculated neighbors');
+            nearestNeighbors = new List<ClusterDataPointNeighbor>();
+            for (ClusterJobNeighbor__c neighbor:neighbors) {
+                nearestNeighbors.add(new ClusterDataPointNeighbor(neighbor));
+            }
+        }
+        else {
+            log.debug('Previous calculations were not completed');
+        }
+        return nearestNeighbors;
+    }
+
+    @future
+    public static void findNearestNeighborsAsync(Id recordId, Id jobId, Integer numNeighbors) {
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
+        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
+        List<ClusterNeighbor> clusterNeighbors = runner.findNearestClusters(recordId, 3);
+        List<Integer> nearestClusters = new List<Integer>();
+        for (ClusterNeighbor cn:clusterNeighbors) {
+            nearestClusters.add(cn.clusterIndex);
+        }
+        List<ClusterDataPointNeighbor> neighbors = runner.findNearestNeighbors(recordId, nearestClusters, numNeighbors);
+        List<ClusterJobNeighbor__c> neighborRecords = new List<ClusterJobNeighbor__c>();
+        for (ClusterDataPointNeighbor neighbor:neighbors) {
+            ClusterJobNeighbor__c neighborRecord = new ClusterJobNeighbor__c();
+            neighbor.populateNeighborRecord(neighborRecord);
+        }
+        insert neighborRecords;
+    }
+
+    private static Id getJobId(Id jobOrModelId) {
         Schema.DescribeSObjectResult modelDesc = ClusterModel__c.SObjectType.getDescribe();
         Schema.DescribeSObjectResult jobDesc = ClusterJob__c.SObjectType.getDescribe();
         String keyCode  = String.valueOf(jobOrModelId).subString(0,3);
@@ -171,29 +251,7 @@ public with sharing class ClusterPredictController {
         else {
             throw new ClusterException('Incorrect cluster job id ' + jobOrModelId);
         }
-        List<ClusterJob__c> jobRecords = [SELECT Id, JobName__c, ClusterModel__c, ClusterModel__r.Algorithm__c, NumberOfClusters__c, ObjectName__c, JobStatus__c, JobStatusText__c, StartDate__c, EndDate__c, InternalJobId__c, Score__c 
-            FROM ClusterJob__c WHERE Id = :jobId WITH SECURITY_ENFORCED];
-        if (jobRecords.size() != 1) {
-            throw new ClusterException('Cannot find cluster job with id ' + jobId);
-        }
-        ClusterJob__c job = jobRecords.get(0);        
-        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunner(job.ClusterModel__r.Algorithm__c);
-        String jobStateJson = ClusterJobManager.loadJobState(jobId);
-        runner.setJobState(jobStateJson);
-        ClusterDataPoint dataPoint = runner.getDataPoint(recordId);
-        log.debug('Loaded datapoint: ' + JSON.serialize(dataPoint));
-        Integer clusterIndex = runner.predict(dataPoint);
-        ClusterJobCluster__c cluster = runner.getJobState().jobClusters[clusterIndex];
-        ClusterPredictUiModel.PredictJobCluster predictCluster = new ClusterPredictUiModel.PredictJobCluster();
-        predictCluster.clusterId = cluster.Id;
-        predictCluster.clusterName = cluster.ClusterName__c;
-        predictCluster.clusterNumber = cluster.ClusterNumber__c;
-        predictCluster.clusterIndex = clusterIndex;
-        predictCluster.dataPoint = dataPoint;
-        predictCluster.jobState = jobStateJson;
-        String[] clusterColors = ClusterConstants.getDefaultClusterColors();
-        predictCluster.clusterColor = clusterColors[clusterIndex];
-        return predictCluster;
+        return jobId;
     }
 
     public static Id getLastCompletedJobId(Id modelId){

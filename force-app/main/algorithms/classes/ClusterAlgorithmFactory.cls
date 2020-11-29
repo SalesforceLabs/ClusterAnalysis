@@ -27,4 +27,17 @@ public with sharing class ClusterAlgorithmFactory {
             throw new ClusterException(algorithm + ' algorithm is not supported');
         }
     }
+
+    public static ClusterAlgorithmRunner getRunnerFromJobId(Id jobId) {
+        List<ClusterJob__c> jobRecords = [SELECT Id, JobName__c, ClusterModel__c, ClusterModel__r.Algorithm__c, NumberOfClusters__c, ObjectName__c, JobStatus__c, JobStatusText__c, StartDate__c, EndDate__c, InternalJobId__c, Score__c 
+            FROM ClusterJob__c WHERE Id = :jobId WITH SECURITY_ENFORCED];
+        if (jobRecords.size() != 1) {
+            throw new ClusterException('Cannot find cluster job with id ' + jobId);
+        }
+        ClusterJob__c job = jobRecords.get(0);        
+        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunner(job.ClusterModel__r.Algorithm__c);
+        String jobStateJson = ClusterJobManager.loadJobState(jobId);
+        runner.setJobState(jobStateJson);
+        return runner;
+    }
 }

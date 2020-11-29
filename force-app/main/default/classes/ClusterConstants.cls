@@ -136,6 +136,14 @@ public with sharing class ClusterConstants {
         return emptySet;
     }
 
+    public static Integer getMinTfIdfWordCount() {
+        Integer minWordCount = getIntegerSettingValue('TFIDFMinWordCount', 2);
+        if (minWordCount <= 0) {
+            minWordCount = 2;
+        }
+        return minWordCount;
+    }
+
     public static Integer getMaxJsonFieldSize() {
         return MAX_JSON_FIELD_SIZE;
     }

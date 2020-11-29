@@ -50,7 +50,7 @@ public with sharing class ClusterJobDetailsController {
         }
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission above, exception is thrown in case of no access
-        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+        List<ClusterJobResult__c> randomRecords = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Random__c LIMIT :count OFFSET :offset];
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         for (ClusterJobResult__c record:randomRecords) {
@@ -100,7 +100,7 @@ public with sharing class ClusterJobDetailsController {
     @AuraEnabled
     public static ClusterResultDetailsUiModel getJobResultModel(Id jobResultId){
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
-        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c 
+        List<ClusterJobResult__c> results = [SELECT Id, Name, Cluster__c, Cluster__r.ClusterName__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
             FROM ClusterJobResult__c WHERE Id = :jobResultId WITH SECURITY_ENFORCED];
         
         ClusterJobResult__c result = results.get(0);

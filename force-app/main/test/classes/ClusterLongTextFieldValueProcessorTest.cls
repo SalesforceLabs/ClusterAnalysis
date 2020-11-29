@@ -8,19 +8,20 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             ClusterWordPreprocessor wordPreprocessor = new ClusterWordPreprocessor('english');
             Map<String, Integer> wordMap = new Map<String,Integer>();
             List<String> wordList = new List<String>();
-            String text = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah';
+            String text = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah Yeah';
+            ClusterLongTextFieldValueProcessor.minWordCount = 2; //Explicitly setting min word count
             Double[] tf = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor);
             System.assertEquals(true, wordMap.containsKey('never'), 'TF word parsing failed');
             System.assertEquals(false, wordMap.containsKey('do'), 'TF word parsing failed');
-            System.assertEquals(true, wordMap.containsKey('know'), 'TF word parsing failed');
+            System.assertEquals(false, wordMap.containsKey('know'), 'TF word parsing failed');
             System.assertEquals('care', wordList.get(1), 'TF word parsing failed');
-            System.assertEquals(4, wordList.size(), 'TF word parsing failed');
+            System.assertEquals(3, wordList.size(), 'TF word parsing failed');
             System.assertEquals(1, wordMap.get('never'), 'TF word count failed');
-            System.assertEquals(1, wordMap.get('know'), 'TF word count failed');
+            System.assertEquals(true, wordMap.get('know') == null, 'TF word count failed');
             System.assertEquals(1, wordMap.get('yeah'), 'TF word count failed');
             System.assertEquals(true, ClusterDataHelper.doublesEqual(tf[0], Double.valueOf(2.0)/Double.valueOf(6.0)), 'TF calculated incorrectly');
 
-            String text2 = 'Never cared for what they say, Never cared for games they play';
+            String text2 = 'Never cared for what they say, Never cared for games they play play';
             Double[] tf2 = ClusterLongTextFieldValueProcessor.calculateTF(text2, wordMap, wordList, wordPreprocessor);
             System.assertEquals(2, wordMap.get('never'), 'TF word count failed for text2');
             System.assertEquals(1, wordMap.get('yeah'), 'TF word count failed for text2');
@@ -43,6 +44,19 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, Double.valueOf(0.0)), 'Cosine distance calculated incorrectly');
             cosineDistance = 1.0 - ClusterDataHelper.calculateCosineSimilarity(tf, tf2, idf);
             System.assertEquals(true, cosineDistance > 0.0, 'Cosine distance calculated incorrectly');
+
+            //Testing fallback to word count 1
+            wordMap = new Map<String,Integer>();
+            wordList = new List<String>();
+            String text4 = 'Never cared for what they say';
+            Double[] tf4 = ClusterLongTextFieldValueProcessor.calculateTF(text4, wordMap, wordList, wordPreprocessor);
+            System.assertEquals(1, wordMap.get('never'), 'TF word count failed for text4');
+            System.assertEquals(1, wordMap.get('care'), 'TF word count failed for text4');
+
+            wordMap = new Map<String,Integer>();
+            wordList = new List<String>();
+            tf4 = ClusterLongTextFieldValueProcessor.calculateTF('a b c d e', wordMap, wordList, wordPreprocessor);
+            System.assertEquals(0, tf4.size(), 'TF word count failed for empty tf');
         }
     }
 

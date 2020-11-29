@@ -315,6 +315,11 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>ClusterJobNeighbor__c.ClusterJobResult__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>ClusterJobResult__c.ClusterName__c</field>
         <readable>true</readable>
@@ -327,6 +332,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>ClusterJobResult__c.Cluster__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ClusterJobResult__c.DistanceToCluster__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -459,6 +469,15 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>true</modifyAllRecords>
         <object>ClusterJobCluster__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>ClusterJobNeighbor__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
