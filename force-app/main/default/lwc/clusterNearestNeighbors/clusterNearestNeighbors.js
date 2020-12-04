@@ -21,10 +21,12 @@ export default class ClusterNearestNeighbors extends LightningElement {
     @track resultColumnCssClass;
     @track containerDivStyle = "";
     pollingCount = 0;
+    widthAdjusted = false;
 
     connectedCallback() {
         this.recordSearchLabel = 'Search';
         this.pollingCount = 0;
+        this.widthAdjusted = false;
         if (!this.numNeighbors) {
             this.numNeighbors = 15;
         }
@@ -36,14 +38,31 @@ export default class ClusterNearestNeighbors extends LightningElement {
         }
         this.recordLookupVisible = (!this.lookupRecordId);
         if (this.recordLookupVisible) {
-            this.containerDivStyle = "";
+            this.containerDivStyle = "overflow:visible";
             this.resultColumnCssClass = "predict-neighbors__col slds-col slds-medium-size_6-of-12 slds-large-size_4-of-12 slds-size_1-of-1";
         }
         else {
-            this.containerDivStyle = "max-height: 600px";
+            this.containerDivStyle = "max-height: 600px;overflow-y:auto";
             this.resultColumnCssClass = "predict-neighbors__col slds-col slds-size_1-of-1";
         }
         this.callGetModel(false);
+    }
+
+    renderedCallback() {
+        let containerDiv = this.template.querySelector('div.predict-container');
+        if (containerDiv && containerDiv.offsetWidth && !this.widthAdjusted) {
+            let width = containerDiv.offsetWidth;
+            if (width < 800) {
+                this.resultColumnCssClass = "predict-neighbors__col slds-col slds-size_1-of-1";
+            }
+            else if (width < 1024) {
+                this.resultColumnCssClass = "predict-neighbors__col slds-col slds-size_6-of-12";
+            }
+            else {
+                this.resultColumnCssClass = "predict-neighbors__col slds-size_4-of-12";
+            }
+            this.widthAdjusted = true;
+        }
     }
 
     get predictResultsVisible() {
@@ -121,12 +140,13 @@ export default class ClusterNearestNeighbors extends LightningElement {
     }
 
     preprocessResults() {
+        this.uiModel.jobState = JSON.parse(this.uiModel.jobState);
+        clustanUtils.decompressJobState(this.uiModel.jobState);
         this.uiModel.nearestNeighbors.forEach(nn => {
             if (nn.neighborDataPoint && nn.neighborDataPoint.clusterIndex >=0) nn.clusterColor = this.uiModel.clusterColors[nn.neighborDataPoint.clusterIndex];
             nn.similarity = ((1.0 - nn.distance) * 100.0).toFixed(2) + '%';
+            clustanUtils.decompressDataPointValues(this.uiModel.jobState, nn.neighborDataPoint.values);
         });
-        this.uiModel.jobState = JSON.parse(this.uiModel.jobState);
-
     }
 
     handleLookupSearch(event) {
@@ -140,7 +160,8 @@ export default class ClusterNearestNeighbors extends LightningElement {
                 target.setSearchResults(results);
             })
             .catch((error) => {
-                this.handleError(error);;
+                this.handleError(error);
+                target.setSearchResults([]);
             });
     }
 

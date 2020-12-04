@@ -7,7 +7,7 @@
     </targets>
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
-            <property label="Cluster Job or Model Id" name="jobOrModelId" type="String" required="true"/>
+            <property label="Cluster Job Id or Model Name" name="jobOrModel" type="String" required="true"/>
         </targetConfig>
     </targetConfigs>    
 </LightningComponentBundle>

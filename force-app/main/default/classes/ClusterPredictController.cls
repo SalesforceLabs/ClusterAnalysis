@@ -162,9 +162,10 @@ public with sharing class ClusterPredictController {
     }
 
     @AuraEnabled
-    public static ClusterPredictUiModel.PredictJobCluster predict(Id recordId, Id jobOrModelId) {
-        log.debug('Running prediction for record ' + recordId + ', jobOrModelId ' + jobOrModelId);
-        Id jobId = getJobId(jobOrModelId);
+    public static ClusterPredictUiModel.PredictJobCluster predict(Id recordId, String jobOrModel) {
+        log.debug('Running prediction for record: ' + recordId + ', jobOrModel: ' + jobOrModel);
+        ClusterModelJob modelJob = getModelJob(jobOrModel);
+        Id jobId = modelJob.jobId;
         ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
         ClusterDataPoint dataPoint = runner.getDataPoint(recordId);
         log.debug('Loaded datapoint: ' + JSON.serialize(dataPoint));

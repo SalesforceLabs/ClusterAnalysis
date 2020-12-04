@@ -1,7 +1,7 @@
 <template>
     <div class="predict-container slds-panel" style={containerDivStyle}>
         <template if:true={recordLookupVisible}>
-            <div class="slds-grid slds-gutters">
+            <div class="slds-grid slds-gutters predict-lookupcontainer">
                 <div class="slds-col slds-size_8-of-12">
                     <c-lookup selection={lookupSelection}
                     onsearch={handleLookupSearch}
@@ -45,7 +45,7 @@
                 <div class="slds-grid slds-wrap slds-gutters">
                     <template for:each={uiModel.nearestNeighbors} for:item="neighbor">
                         <div key={neighbor.neighborExternalRecordId} class={resultColumnCssClass}>
-                            <article class="slds-card">
+                            <article class="slds-card predict-card">
                                 <div class="predict-neighbors__card">
                                     <c-cluster-data-point-details key={neighbor.neighborExternalRecordId} cluster-data-point={neighbor.neighborDataPoint} job-state={uiModel.jobState} 
                                         cluster-color={neighbor.clusterColor} show-record-name="true"></c-cluster-data-point-details>

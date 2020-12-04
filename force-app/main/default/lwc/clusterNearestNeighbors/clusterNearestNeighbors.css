@@ -4,17 +4,14 @@
 .predict-container__footer {
     height: 60px;
 }
-.predict-container__content {
-    height: -moz-calc(100% - 120px);
-    height: -webkit-calc(100% - 120px);
-    height: calc(100% - 120px);
-    width: 100%;
-}
 .predict-container {
     height: 100%;
     width: 100%;
     overflow-x: hidden;
     padding-bottom: 10px;
+}
+.predict-card {
+    border: 1px solid rgb(221, 219, 218) !important;
 }
 .spinnerDiv {
     height: 50px;
@@ -33,6 +30,7 @@
 }
 .predict-neighbors__col {
     padding-top: 7px;
+    padding-right: 5px;
 }
 .predict-neighbors__card {
     padding-left: 5px;

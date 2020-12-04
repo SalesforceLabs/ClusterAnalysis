@@ -46,7 +46,7 @@ describe('c-cluster-predict-result', () => {
         const element = createElement('c-cluster-predict-result', {
             is: ClusterPredictResult
         });
-        element.jobOrModelId = 'a023B000003CvAEQA0';
+        element.jobOrModel = 'a023B000003CvAEQA0';
         element.recordId = '00Q3B000006d55pUAA';
         document.body.appendChild(element);
         //element.predict();
@@ -69,7 +69,7 @@ describe('c-cluster-predict-result', () => {
         const element = createElement('c-cluster-predict-result', {
             is: ClusterPredictResult
         });
-        element.jobOrModelId = 'a023B000003CvAEQA0';
+        element.jobOrModel = 'a023B000003CvAEQA0';
         element.recordId = '00Q3B000006d55pUAA';
         document.body.appendChild(element);
         return flushPromises().then(() => {

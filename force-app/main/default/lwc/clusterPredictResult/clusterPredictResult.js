@@ -25,7 +25,7 @@ const columns = [
 
 export default class ClusterPredictResult extends NavigationMixin(LightningElement) {
     @api recordId;
-    @api jobOrModelId;
+    @api jobOrModel;
     @api hideHeader = false;
     @track predictCluster;
     @track predictModel;
@@ -41,10 +41,10 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     sortedBy;
 
     connectedCallback() {
-        if (this.recordId && this.jobOrModelId) {
+        if (this.recordId && this.jobOrModel) {
             predict({
                     recordId: this.recordId,
-                    jobOrModelId: this.jobOrModelId
+                    jobOrModel: this.jobOrModel
                 })
             .then(result => {
                 this.predictCallback(result);
@@ -73,11 +73,11 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
 
     @api
     predict() {
-        if (this.recordId && this.jobOrModelId) {
+        if (this.recordId && this.jobOrModel) {
             this.spinnerVisible = true;
             return predict({
                 recordId: this.recordId,
-                jobOrModelId: this.jobOrModelId
+                jobOrModel: this.jobOrModel
             })
             .then(result => {
                 this.predictCallback(result);
