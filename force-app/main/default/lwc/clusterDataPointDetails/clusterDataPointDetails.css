@@ -1,0 +1,15 @@
+.crd_clusterbox {
+    width: 15px;
+    height: 15px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin-left: 5px;
+}
+.crd_columntext {
+    white-space: normal;
+    height: auto;
+    overflow-wrap: break-word;
+}

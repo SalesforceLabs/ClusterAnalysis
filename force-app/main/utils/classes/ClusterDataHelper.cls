@@ -194,14 +194,18 @@ public with sharing class ClusterDataHelper {
         log.debug('Retrieved ' + nearestDataPoints.size() + ' nearest data points from ' + nearestClusters.size() + ' nearest clusters');
 
         List<ClusterDataPointNeighbor> neighbors = new List<ClusterDataPointNeighbor>();
+        Set<String> processedDpIds = new Set<String>();
         for (ClusterDataPoint nearestDP:nearestDataPoints) {
-            ClusterDataPointNeighbor neighbor = new ClusterDataPointNeighbor();
-            neighbor.externalRecordId = dataPoint.externalId;
-            neighbor.neighborDataPoint = nearestDP;
-            neighbor.neighborExternalRecordId = nearestDP.externalId;
-            neighbor.distance = runner.calculateDPDistance(dataPoint, nearestDP);
-            neighbor.jobId = jobState.clusterJob.Id;            
-            neighbors.add(neighbor);
+            if (!processedDpIds.contains(nearestDP.recordId)) {
+                ClusterDataPointNeighbor neighbor = new ClusterDataPointNeighbor();
+                neighbor.externalRecordId = dataPoint.externalId;
+                neighbor.neighborDataPoint = nearestDP;
+                neighbor.neighborExternalRecordId = nearestDP.externalId;
+                neighbor.distance = runner.calculateDPDistance(dataPoint, nearestDP);
+                neighbor.jobId = jobState.clusterJob.Id;            
+                neighbors.add(neighbor);
+                processedDpIds.add(nearestDP.recordId);
+            }
         }
         //Sorting based on distance and retrieving first numNeighbors
         neighbors.sort();
@@ -497,22 +501,24 @@ public with sharing class ClusterDataHelper {
         return Math.round(Math.random() * (max - min) + min);
     }
 
-    public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterKMeansJobState jobState) {
+    public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterJobState jobState) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
+        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
+            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
         
         return getDataPoints(randomRecordLocator, jobState);
     }
 
-    public static ClusterDataPoint[] getRandomDataPoints(Integer count, Integer clusterIndex, Double distanceToCenter, ClusterKMeansJobState jobState) {
-        Double[] distanceTolerances = new Double[3];
-        distanceTolerances[0] = distanceToCenter * 0.1;  //10%
-        distanceTolerances[1] = distanceToCenter * 0.25; //25%
-        distanceTolerances[2] = distanceToCenter * 0.50; //50%
+    public static ClusterDataPoint[] getRandomDataPoints(Integer count, Integer clusterIndex, Double distanceToCenter, ClusterJobState jobState) {
+        log.debug('Retrieving nearest random data points in cluster ' + clusterIndex);
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
-        List<ClusterJobResult__c> jobResults;
+        List<ClusterJobResult__c> jobResults = null;
         if (distanceToCenter != null) {
+            Double[] distanceTolerances = new Double[3];
+            distanceTolerances[0] = distanceToCenter * 0.1;  //10%
+            distanceTolerances[1] = distanceToCenter * 0.25; //25%
+            distanceTolerances[2] = distanceToCenter * 0.50; //50%
             for (Integer i=0; i<distanceTolerances.size(); i++) {
                 Decimal distanceMin = Decimal.valueOf(distanceToCenter - distanceTolerances[i]);
                 Decimal distanceMax = Decimal.valueOf(distanceToCenter + distanceTolerances[i]);
@@ -525,7 +531,7 @@ public with sharing class ClusterDataHelper {
             }
         }
         //If we failed to get nearest results or if distanceToCenter is null
-        if (jobResults.size() == 0 || distanceToCenter == null) {
+        if (distanceToCenter == null || jobResults == null || jobResults.size() == 0) {
             jobResults = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
                 FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND ClusterNumber__c = :clusterIndex ORDER BY Random__c LIMIT :count];
         }
@@ -534,13 +540,13 @@ public with sharing class ClusterDataHelper {
     }
 
 
-    public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterKMeansJobState jobState) {
+    public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterJobState jobState) {
         Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c 
                 WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
         return ClusterDataHelper.getDataPoints(resultLocator, jobState);
     }
 
-    public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterKMeansJobState jobState) {
+    public static ClusterDataPoint[] getDataPoints(Database.QueryLocator dpLocator, ClusterJobState jobState) {
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterObjectFactory objectFactory = new ClusterObjectFactory();
         ClusterSObjectProcessor objectProcessor = objectFactory.createSObjectProcessor(jobState, false); //No compression for javascript
@@ -556,7 +562,7 @@ public with sharing class ClusterDataHelper {
         return dataPoints;
     }
 
-    public static ClusterDataPoint[] getDataPoints(ClusterJobResult__c[] jobResults, ClusterKMeansJobState jobState) {
+    public static ClusterDataPoint[] getDataPoints(ClusterJobResult__c[] jobResults, ClusterJobState jobState) {
         Integer index=0;
         List<ClusterDataPoint> dataPoints = new List<ClusterDataPoint>();
         ClusterObjectFactory objectFactory = new ClusterObjectFactory();

@@ -1,0 +1,40 @@
+.predict-container__header {
+    height: 60px;
+}
+.predict-container__footer {
+    height: 60px;
+}
+.predict-container__content {
+    height: -moz-calc(100% - 120px);
+    height: -webkit-calc(100% - 120px);
+    height: calc(100% - 120px);
+    width: 100%;
+}
+.predict-container {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    padding-bottom: 10px;
+}
+.spinnerDiv {
+    height: 50px;
+    width: 250px;
+    position: relative;
+    vertical-align: middle;
+    line-height: 50px;
+}
+.predict-findcontainer {
+    line-height: 72px;
+    vertical-align: bottom;
+}
+.predict-neighbors {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+.predict-neighbors__col {
+    padding-top: 7px;
+}
+.predict-neighbors__card {
+    padding-left: 5px;
+    padding-top: 5px;
+}

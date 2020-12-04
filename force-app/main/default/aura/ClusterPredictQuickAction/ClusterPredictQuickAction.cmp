@@ -1,18 +1,3 @@
-<aura:component implements="force:lightningQuickActionWithoutHeader,force:hasRecordId">
-    <!--
-    <aura:html tag="style">
-        .cuf-content {
-          padding: 0 0rem !important;
-        }
-        .slds-p-around-medium {
-          padding: 0rem !important;
-        }
-        .slds-modal__content{
-          overflow-y:hidden !important;
-          height:unset !important;
-          max-height:unset !important;
-        }
-    </aura:html>
--->
+<aura:component implements="force:lightningQuickActionWithoutHeader,force:hasRecordId">    
     <c:clusterPredict recordId="{!v.recordId}" onclose="{!c.closeModal}"/>
 </aura:component>	

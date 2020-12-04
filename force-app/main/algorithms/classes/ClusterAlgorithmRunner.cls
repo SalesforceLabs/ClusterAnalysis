@@ -221,6 +221,36 @@ public abstract with sharing class ClusterAlgorithmRunner {
 
     public abstract List<ClusterDataPointNeighbor> findNearestNeighbors(ClusterDataPoint dataPoint, List<Integer> nearestClusters, Integer numNeighbors);
 
+    public List<ClusterDataPointNeighbor> getNearestNeighborsFromDb(Id recordId, Id jobId) {
+        ClusterJobState jobState = this.getJobState();
+        List<ClusterDataPointNeighbor> nearestNeighbors = new List<ClusterDataPointNeighbor>();
+        List<ClusterJobNeighbor__c> neighbors = [SELECT Id, ClusterJob__c, ClusterJobResult__c, Distance__c, NeighborRecordId__c, RecordId__c,
+            ClusterJobResult__r.Id, ClusterJobResult__r.Name, ClusterJobResult__r.Cluster__c, ClusterJobResult__r.ClusterJob__c, ClusterJobResult__r.ClusterName__c,
+            ClusterJobResult__r.ClusterNumber__c, ClusterJobResult__r.DistanceToCluster__c, ClusterJobResult__r.Json__c, ClusterJobResult__r.Json2__c,
+            ClusterJobResult__r.Json3__c, ClusterJobResult__r.Json4__c, ClusterJobResult__r.Json5__c, ClusterJobResult__r.Random__c, ClusterJobResult__r.RecordId__c, ClusterJobResult__r.RecordName__c
+            FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+        ClusterJobResult__c[] jobResults = new ClusterJobResult__c[1];
+        Set<String> neighborIds = new Set<String>();
+        if (neighbors.size() > 0) {
+            log.debug('Retrieved ' + neighbors.size() + ' previously calculated neighbors');
+            for (ClusterJobNeighbor__c neighbor:neighbors) {
+                //Dupes are possible if 2 users run KNN simultaniously on the same record Id.
+                //We will dedupe them here for now
+                if (!neighborIds.contains(neighbor.NeighborRecordId__c) && (neighbor.ClusterJobResult__r != null) && (neighbor.ClusterJobResult__r.RecordId__c != recordId)) {
+                    jobResults[0] = neighbor.ClusterJobResult__r;                    
+                    ClusterDataPoint[] dataPoints = ClusterDataHelper.getDataPoints(jobResults, jobState);
+                    ClusterDataPointNeighbor nearestNeighbor = new ClusterDataPointNeighbor(neighbor);
+                    if (dataPoints.size() > 0) {
+                        nearestNeighbor.neighborDataPoint = dataPoints[0];
+                    }
+                    nearestNeighbors.add(nearestNeighbor);
+                    neighborIds.add(neighbor.NeighborRecordId__c);
+                }
+            }
+        }
+        return nearestNeighbors;
+    }
+
     public ClusterDataPoint getDataPoint(Id recordId) {
         ClusterModelWrapper model = this.getJobState().model;
         String keyCode = String.valueOf(recordId).subString(0,3);

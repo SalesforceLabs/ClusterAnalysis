@@ -1,0 +1,64 @@
+<template>
+    <div class="predict-container slds-panel" style={containerDivStyle}>
+        <template if:true={recordLookupVisible}>
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_8-of-12">
+                    <c-lookup selection={lookupSelection}
+                    onsearch={handleLookupSearch}
+                    onselectionchange={handleLookupSelectionChange}
+                    label={recordSearchLabel}
+                    placeholder="Type record name or Id"
+                    required></c-lookup>
+                </div>
+                <div class="slds-col slds-size_2-of-12">
+                    <lightning-input type="number" name="numNeighbors" required value={numNeighbors} label="Number of records" max="50" onchange={handleNumNeighborsChange}></lightning-input>                    
+                </div>
+                <div class="slds-col slds-size_2-of-12 predict-findcontainer">                    
+                    <lightning-button variant="brand" label="Find" title="Find similar records" onclick={handleFindClick} class="slds-m-left_x-small"></lightning-button>
+                </div>
+            </div>
+        </template>
+        <template if:false={recordLookupVisible}>
+            <div class="slds-card__header slds-grid">
+                <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="standard:related_list" size="small"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                    <a class="slds-card__header-link slds-truncate" title={headerLabel}>
+                        <span>{headerLabel}</span>
+                    </a>
+                    </h2>
+                </div>
+                </header>
+            </div>
+        </template>
+        <template if:true={spinnerVisible}>
+            <div class="spinnerDiv">
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                <span class="slds-p-horizontal_small">Loading results</span>
+            </div>
+        </template>
+        <template if:true={resultsLoaded}>
+            <div class="predict-neighbors">
+                <div class="slds-grid slds-wrap slds-gutters">
+                    <template for:each={uiModel.nearestNeighbors} for:item="neighbor">
+                        <div key={neighbor.neighborExternalRecordId} class={resultColumnCssClass}>
+                            <article class="slds-card">
+                                <div class="predict-neighbors__card">
+                                    <c-cluster-data-point-details key={neighbor.neighborExternalRecordId} cluster-data-point={neighbor.neighborDataPoint} job-state={uiModel.jobState} 
+                                        cluster-color={neighbor.clusterColor} show-record-name="true"></c-cluster-data-point-details>
+                                </div>
+                                <footer class="slds-card__footer">
+                                    <p class="slds-text-align_left slds-text-heading_small">Similarity: {neighbor.similarity}</p>
+                                </footer>
+                            </article>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+        <div class="slds-text-color_destructive">{errorMessage}</div>
+    </div>
+</template>

@@ -28,6 +28,9 @@ public with sharing class ClusterConstants {
     public static final Integer TEST_BATCH_SIZE = 200;
     public static final Integer KMEANS_CACHE_SIZE = 10000;
 
+    private static Map<String, Set<String>> stopWords = new Map<String, Set<String>>();
+    private static List<UiSelectOption> supportedLanguages = null;
+
     private static Integer getIntegerSettingValue(String name, Integer defaultValue) {
         Integer intValue = defaultValue;
         try {
@@ -113,27 +116,42 @@ public with sharing class ClusterConstants {
     }
 
     public static List<UiSelectOption> getSupportedModelLanguages() {
-        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
-        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel FROM ClusterLanguage__mdt WHERE DeveloperName <> :LANGUAGE_NONE ORDER BY MasterLabel];
-        List<UiSelectOption> langList = new List<UiSelectOption>();
-        langList.add(new UiSelectOption('None', 'None'));
-        for (ClusterLanguage__mdt language : languages) {
-            langList.add(new UiSelectOption(language.DeveloperName, language.MasterLabel));
+        if (supportedLanguages == null) {
+            ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+            List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel FROM ClusterLanguage__mdt WHERE DeveloperName <> :LANGUAGE_NONE ORDER BY MasterLabel];
+            List<UiSelectOption> langList = new List<UiSelectOption>();
+            langList.add(new UiSelectOption('None', 'None'));
+            for (ClusterLanguage__mdt language : languages) {
+                langList.add(new UiSelectOption(language.DeveloperName, language.MasterLabel));
+            }
+            supportedLanguages = langList;
+            return langList;
         }
-        return langList;
+        else {
+            return supportedLanguages;
+        }
     }
 
     public static Set<String> getStopWords(String language) {
-        Set<String> emptySet = new Set<String>();
-        if (language == null || language == '' || language.toLowerCase() == LANGUAGE_NONE) {
+        Set<String> stopWordSet = stopWords.get(language);
+        if (stopWordSet == null) {
+            Set<String> emptySet = new Set<String>();
+            if (language == null || language == '' || language.toLowerCase() == LANGUAGE_NONE) {
+                return emptySet;
+            }
+            ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
+            List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel,clustan__StopWords__c FROM ClusterLanguage__mdt WHERE DeveloperName = :language];
+            if (languages.size() > 0) {
+                stopWordSet = new Set<String>(languages.get(0).StopWords__c.split(','));
+                stopWords.put(language, stopWordSet);
+                return stopWordSet;
+            }
+            stopWords.put(language, emptySet);
             return emptySet;
         }
-        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterLanguage__mdt);
-        List<ClusterLanguage__mdt> languages = [SELECT DeveloperName, MasterLabel,clustan__StopWords__c FROM ClusterLanguage__mdt WHERE DeveloperName = :language];
-        if (languages.size() > 0) {
-            return new Set<String>(languages.get(0).StopWords__c.split(','));
+        else {
+            return stopWordSet;
         }
-        return emptySet;
     }
 
     public static Integer getMinTfIdfWordCount() {

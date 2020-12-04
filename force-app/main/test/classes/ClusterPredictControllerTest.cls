@@ -65,4 +65,22 @@ public with sharing class ClusterPredictControllerTest {
             Test.stopTest();
         }
     }
+
+    @isTest
+    public static void testKNN() {
+        ClusterKMeansRunnerTest.testKMeans();
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 11];
+            List<ClusterJob__c> jobs = [SELECT Id FROM ClusterJob__c LIMIT 1];
+            Id jobId = jobs[0].Id;
+            Id recordId = leads[0].Id;
+            ClusterPredictKNNUiModel uiModel = ClusterPredictController.getNearestNeighbors(recordId, jobId, 3);
+            System.assertEquals(3, uiModel.nearestNeighbors.size(), 'Incorrect nn size');
+            System.assertEquals(true, uiModel.nearestNeighbors[1].distance >= uiModel.nearestNeighbors[0].distance, 'Incorrect nn sorting');
+            ClusterPredictKNNUiModel uiModel2 = ClusterPredictController.pullNearestNeighbors(recordId, jobId, 3);
+            System.assertEquals(uiModel.nearestNeighbors.size(), uiModel2.nearestNeighbors.size(), 'Incorrect pull nn size');
+        }
+    }
+
 }

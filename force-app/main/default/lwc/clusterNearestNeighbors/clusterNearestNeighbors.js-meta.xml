@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>50.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__RecordPage</target>        
+    </targets>
+    <targetConfigs>
+        <targetConfig targets="lightning__RecordPage">
+            <property label="Cluster Job Id or Model Name" name="jobOrModel" type="String" required="true"/>
+            <property label="Number of similar records" name="numNeighbors" type="String" required="true" default="10"/>
+            <property label="Header label" name="headerLabel" type="String" required="true" default="Similar records"/>
+        </targetConfig>
+    </targetConfigs>    
+
+</LightningComponentBundle>
