@@ -33,11 +33,27 @@ public with sharing class ClusterPredictControllerTest {
             System.assertEquals(1, uiModel.models.size(), 'Incorrect predict model size');
             System.assertEquals(true, uiModel.jobId != null, 'Incorrect predict job Id');
             System.assertEquals(false, uiModel.recordIdNeeded, 'Incorrect recordIdNeeded value');
-            ClusterPredictUiModel.PredictJobCluster predictCluster = ClusterPredictController.predict(leads[0].Id, uiModel.jobId);
-            System.assertEquals(true, predictCluster.clusterIndex >= 0, 'Incorrect predict cluster index');
-            System.assertEquals(String.valueOf(leads[0].Id), predictCluster.dataPoint.externalId, 'Incorrect predict datapoint id');
+            ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, true);
+            System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect cluster index when cached');
         }
     }
+
+    @isTest
+    public static void testPredict() {
+        ClusterKMedoidsPAMRunnerTest.testKMedoids();
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
+            ClusterPredictUiModel uiModel = ClusterPredictController.getPredictUiModel(leads[0].Id);
+            ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, true);
+            System.assertEquals(-1, predictResult.clusterIndex, 'Incorrect cluster index when polling');
+
+            predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.jobId, false);
+            System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect predict cluster index');
+            System.assertEquals(String.valueOf(leads[0].Id), predictResult.dataPoint.externalId, 'Incorrect predict datapoint id');
+        }
+    }
+
 
     @isTest
     public static void testGetModelNoJobs() {
@@ -56,7 +72,7 @@ public with sharing class ClusterPredictControllerTest {
             System.assertEquals(true, hadError, 'Incorrect handling of models without jobs (getPredictUiModel)');
             hadError = false;
             try {
-                ClusterPredictUiModel.PredictJobCluster predictCluster = ClusterPredictController.predict(leads[0].Id, model.modelId);
+                ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, model.modelId, false);
             }
             catch (ClusterException ex) {
                 hadError = true;

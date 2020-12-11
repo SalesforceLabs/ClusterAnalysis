@@ -150,10 +150,12 @@ public with sharing class ClusterCompressedDoubleArray {
         cv.value = value;
         cv.count = count;
         this.values.add(cv);
+        this.prevValue = value;
     }
 
     public void addCompressedValue(ClusterCompressedDouble value) {
         this.values.add(value);
+        this.prevValue = value.value;
     }
 
 

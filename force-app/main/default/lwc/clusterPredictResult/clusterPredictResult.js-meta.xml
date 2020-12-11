@@ -8,6 +8,7 @@
     <targetConfigs>
         <targetConfig targets="lightning__RecordPage">
             <property label="Cluster Job Id or Model Name" name="jobOrModel" type="String" required="true"/>
+            <property label="Header label" name="headerLabel" type="String" required="true" default="Cluster Predictions"/>
         </targetConfig>
     </targetConfigs>    
 </LightningComponentBundle>

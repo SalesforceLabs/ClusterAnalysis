@@ -59,6 +59,7 @@ public with sharing class ClusterDataHelper {
     private static Logger log = LogFactory.getLogger();
     private static final Map<String, ClusterFieldFunctions> fieldFunctionsMap;
     private static final ClusterFieldFunctions textFieldComparer;
+    private static final ClusterFieldFunctions numericFieldComparer;
     public static final Double DOUBLEEPSILON = 0.000001;
     public static final Double DOUBLE_MAX_VALUE = 9223372036854775807.0;
     public static final Double DOUBLE_ZERO = 0.0;
@@ -69,7 +70,8 @@ public with sharing class ClusterDataHelper {
     static {
         fieldFunctionsMap = new Map<String, ClusterFieldFunctions>();
         textFieldComparer = new TextFieldFunctions();
-        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_NUMERIC, new NumericFieldFunctions());
+        numericFieldComparer = new NumericFieldFunctions();
+        fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_NUMERIC, numericFieldComparer);
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_TEXT, textFieldComparer);
         fieldFunctionsMap.put(ClusterConstants.FIELDTYPE_CATEGORY, new CategoryFieldFunctions());
     }
@@ -455,7 +457,7 @@ public with sharing class ClusterDataHelper {
             }
         }
         Double magnitude = magnitude1 * magnitude2;
-        if (Math.abs(magnitude - zero) < DOUBLEEPSILON) {
+        if ((magnitude - zero) < DOUBLEEPSILON) {
             return 1.0;
         }
         else {
@@ -541,8 +543,8 @@ public with sharing class ClusterDataHelper {
 
 
     public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterJobState jobState) {
-        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c FROM ClusterJobResult__c 
-                WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
+        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
+            FROM ClusterJobResult__c WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
         return ClusterDataHelper.getDataPoints(resultLocator, jobState);
     }
 
@@ -685,6 +687,17 @@ public with sharing class ClusterDataHelper {
             if (Math.abs(compare - compareTo) < DOUBLEEPSILON) result = 0;
             else if (compare > compareTo) result = 1;
             else result = -1;
+        }
+        return result;
+    }
+
+    public static Integer compareStrings(String compare, String compareTo) {
+        Integer result = 0;
+        if ((compare == null) && (compareTo == null)) result = 0;
+        else if (compare == null) result = -1;
+        else if (compareTo == null) result = 1;
+        else {            
+            result = compare.compareTo(compareTo);
         }
         return result;
     }

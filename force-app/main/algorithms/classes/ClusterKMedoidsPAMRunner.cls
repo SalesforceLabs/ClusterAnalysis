@@ -116,7 +116,7 @@
         return false;
     }
 
-    protected override Double calculateDistance(Object[] currentObject, Object[] centroid) {
+    public override Double calculateDistance(Object[] currentObject, Object[] centroid) {
         return ClusterDataHelper.calculateGowerDistance(currentObject, centroid, this.state);
     }
 
@@ -126,10 +126,6 @@
         parameters.add(new ClusterAlgorithmParameter('numberOfClusters', 'Number of clusters', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, clusterNumber, null));
         parameters.add(new ClusterAlgorithmParameter('runRefinementStep', 'Run cluster refinement', ClusterAlgorithmParameter.ParameterType.BOOLEAN_PARAMETER, true, null));
         return parameters;
-    }
-
-    public override Integer predict(ClusterDataPoint dataPoint) {
-        return ClusterDataHelper.findNearestCluster(dataPoint, this);
     }
 
     public override List<ClusterNeighbor> findNearestClusters(ClusterDataPoint dataPoint, Integer numNeighbors) {

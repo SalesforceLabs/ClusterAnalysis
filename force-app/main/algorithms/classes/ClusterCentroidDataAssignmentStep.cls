@@ -33,6 +33,27 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         jobState.hasAssignmentChanged = false;
         this.sampleResultsIds = jobState.sampleResultsIds;
     }
+
+    public override Integer getBatchSize() {
+        //If model has long text fields we need to reduce the batch size to avoid hitting heap/CPU limits        
+        ClusterModelWrapper model = this.runner.getJobState().model;
+        if (model.hasLongTextFields()) {
+            //For long text high number of clusters might cause Apex CPU timeouts
+            Integer batchSize = ClusterConstants.getLongTextBatchSize();
+            if (model.numberOfClusters < ClusterConstants.MIN_LONGTEXTCLASSES) {
+                return batchSize;
+            }
+            else if (model.numberOfClusters > ClusterConstants.MAX_LONGTEXTCLASSES) {
+                return 1; //Too many classes to calculate
+            }
+            else {
+                return Math.round(Double.valueOf(batchSize) / (Double.valueOf(model.numberOfClusters) / Double.valueOf(4)));
+            }
+        }
+        else {
+            return ClusterConstants.getBatchSize();
+        }
+    }
     
     protected override Database.QueryLocator getBatchQueryLocator() {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
@@ -64,9 +85,9 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Integer previousCentroidIndex = 0;
-            Double minDistance = this.runner.calculateDPDistance(currentDataPoint, centroids[nearestCentroidIndex]);
+            Double minDistance = this.runner.calculateDistance(currentDataPoint.values, centroids[nearestCentroidIndex].values);
             for (Integer cindex = 1; cindex < centroidSize; cindex++) {
-                Double distance = this.runner.calculateDPDistance(currentDataPoint, centroids[cindex]);
+                Double distance = this.runner.calculateDistance(currentDataPoint.values, centroids[cindex].values);
                 if (Math.abs(distance) < Math.abs(minDistance)) {
                     minDistance = distance;
                     nearestCentroidIndex = cindex;

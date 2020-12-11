@@ -8,8 +8,6 @@ public with sharing class ClusterPredictKNNUiModel {
     @AuraEnabled
     public String jobState;
     @AuraEnabled
-    public ClusterDataPoint dataPoint;
-    @AuraEnabled
     public List<ClusterDataPointNeighbor> nearestNeighbors;
     @AuraEnabled
     public String[] clusterColors;

@@ -4,7 +4,7 @@
  * @author: Iskander Mukhamedgaliyev
  */
 public with sharing class ClusterPredictUiModel {
-    public class PredictJobCluster {
+    public class PredictResultModel {
         @AuraEnabled
         public Id clusterId;
         @AuraEnabled
@@ -19,6 +19,8 @@ public with sharing class ClusterPredictUiModel {
         public String jobState;
         @AuraEnabled
         public String clusterColor;
+        @AuraEnabled
+        public ClusterPredictionResult predictionResult;
     }
     public ClusterPredictUiModel() {
         models = new List<ClusterModelWrapper>();

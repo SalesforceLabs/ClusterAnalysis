@@ -11,9 +11,21 @@
 }
 .spinnerDiv {
     height: 50px;
-    width: 50px;
+    width: 350px;
     position: relative;
+    vertical-align: middle;
+    line-height: 50px;
+
 }
-.prClusterResult {
+.predict-heading {
     margin-top: 10px;
+    font-weight: bold;
+}
+.predict-heading-value {
+    margin-top: 10px;
+}
+.predict-card {
+    border: unset;
+    box-shadow: none;
+    margin-top: 5px;
 }

@@ -41,6 +41,11 @@
                 <default>false</default>
                 <label>Cluster Result Output</label>
             </value>
+            <value>
+                <fullName>Prediction</fullName>
+                <default>false</default>
+                <label>Prediction</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

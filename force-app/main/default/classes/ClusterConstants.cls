@@ -13,6 +13,7 @@ public with sharing class ClusterConstants {
     public static final String FIELDTYPE_LONGTEXT = 'LongText';
     public static final String FIELDTYPE_NONE = 'None';
     public static final String FIELDTYPE_OUTPUT = 'Output';
+    public static final String FIELDTYPE_PREDICTION = 'Prediction';
 
     public static final String ALGORITHM_KMEANS = 'K-Means';
     public static final String ALGORITHM_KMEDOIDS = 'K-Medoids';
@@ -27,6 +28,12 @@ public with sharing class ClusterConstants {
 
     public static final Integer TEST_BATCH_SIZE = 200;
     public static final Integer KMEANS_CACHE_SIZE = 10000;
+    public static final Integer NUM_NEAREST_CLUSTERS = 3;
+    public static final Integer NUM_NEAREST_NEIGHBORS_PREDICTION = 11;
+    public static final Integer MAX_NEIGHBORS = 50;
+    public static final Integer MAX_PREDICTION_VALUES = 5;
+    public static final Integer MAX_LONGTEXTCLASSES = 35;
+    public static final Integer MIN_LONGTEXTCLASSES = 10;
 
     private static Map<String, Set<String>> stopWords = new Map<String, Set<String>>();
     private static List<UiSelectOption> supportedLanguages = null;

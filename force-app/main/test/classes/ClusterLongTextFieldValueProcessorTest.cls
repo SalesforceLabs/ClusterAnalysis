@@ -60,6 +60,78 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
         }
     }
 
+    @isTest
+    public static void testTfIdfCompressed() {
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            ClusterWordPreprocessor wordPreprocessor = new ClusterWordPreprocessor('english');
+            Map<String, Integer> wordMap = new Map<String,Integer>();
+            List<String> wordList = new List<String>();
+            String text = 'new purchase po purchase po dear purchased has please log allocation after receive item please take consideration mandatory receipts section order make receipt item ordered how video link kind regards administrator';
+            String text2 = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah Yeah';
+            ClusterLongTextFieldValueProcessor.minWordCount = 2; //Explicitly setting min word count
+            ClusterCompressedDoubleArray tf1 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor);
+            ClusterCompressedDoubleArray tf2 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text2, wordMap, wordList, wordPreprocessor);
+            ClusterCompressedDoubleArray idf = ClusterLongTextFieldValueProcessor.calculateCompressedIDF(wordList, wordMap, 2);
+            wordMap = new Map<String,Integer>();
+            for (String word:wordList) {
+                wordMap.put(word, 0);
+            }
+            ClusterCompressedDoubleArray tf3 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor);
+            
+            System.debug('tf1:' + JSON.serialize(tf1));
+            System.debug('tf3:' + JSON.serialize(tf3));
+            //System.assertEquals(tf3.size(), tf1.size(), 'TF vectors are different');
+            Double cosineDistance = ClusterDataHelper.calculateCosineDistance(tf1, tf3, idf);
+            System.debug('cosineDistance:' + cosineDistance);
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, ClusterDataHelper.DOUBLE_ZERO), 'Cosine distance incorrect');
+        }
+    }
+
+    /* This was used to debug tf-idf. This was fun without an apex debugger. I will save this for records and remove next time. I hope I won't need this anymore )
+    @isTest(SeeAllData=true)
+    public static void testLinearDistance() {
+        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId('a020U000003wOHNQA2');
+        ClusterJobResult__c leadResult = [SELECT Id, RecordId__c FROM ClusterJobResult__c WHERE RecordId__c = '00Q0U000005d96vUAA' AND ClusterJob__c='a020U000003wOHNQA2']; //Dugald Strut
+        Lead l1 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id=:leadResult.RecordId__c];
+        List<Id> dataPointIds = new List<Id>();
+        dataPointIds.add(leadResult.Id);
+        ClusterDataPoint d1 = ClusterDataHelper.getDataPoints(dataPointIds, runner.getJobState()).get(0);
+        Lead l2 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id='00Q0U000005d8xtUAA']; //Sacha Lambourn
+
+        ClusterDataPoint d2 = runner.getDataPoint(l1.Id);
+        System.debug('DP1: ' + JSON.serialize(d1.values));
+        System.debug('DP2: ' + JSON.serialize(d2.values));
+        Double distance = runner.calculateDPDistance(d1, d2);
+        System.debug('Distance: ' + distance);
+        distance = runner.calculateDPDistance(d2, d1);
+        System.debug('DistanceTo: ' + distance);
+        Double tfdistance = ClusterDataHelper.calculateCosineDistance(d1.values[0], d2.values[0], null);
+        System.debug('tf Distance: ' + tfdistance);
+
+
+        leadResult = [SELECT Id, RecordId__c FROM ClusterJobResult__c WHERE RecordId__c = '00Q0U000005d8xtUAA' AND ClusterJob__c='a020U000003wOHNQA2']; //Sacha Lambourn
+        l1 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id=:leadResult.RecordId__c];
+        dataPointIds = new List<Id>();
+        dataPointIds.add(leadResult.Id);
+        d1 = ClusterDataHelper.getDataPoints(dataPointIds, runner.getJobState()).get(0);
+        l2 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id='00Q0U000005d96vUAA']; //Dugald Strut
+
+        d2 = runner.getDataPoint(l1.Id);
+        System.debug('DP1: ' + JSON.serialize(d1.values));
+        System.debug('DP2: ' + JSON.serialize(d2.values));
+        distance = runner.calculateDPDistance(d1, d2);
+        System.debug('Distance: ' + distance);
+        distance = runner.calculateDPDistance(d2, d1);
+        System.debug('DistanceTo: ' + distance);
+
+        ClusterCompressedDoubleArray ccd1 = (ClusterCompressedDoubleArray)d1.values[0];
+        ClusterCompressedDoubleArray ccd2 = (ClusterCompressedDoubleArray)d2.values[0];
+        System.assertEquals(true, ClusterDataHelper.doublesEqual(ClusterDataHelper.DOUBLE_ZERO, ClusterDataHelper.DOUBLE_ZERO), 'Distance test failed');
+
+    }
+    */
+
     private static void testCDAIterators(ClusterCompressedDoubleArray ccda, List<Double> da) {
         //Testing hasNext/next
         ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator iterator = new ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator(ccda);

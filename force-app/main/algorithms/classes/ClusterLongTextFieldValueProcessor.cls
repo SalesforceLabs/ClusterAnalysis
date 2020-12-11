@@ -30,6 +30,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
 
     public Object processFieldValue(SObject record, ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue) {
         //Initializing word counter map and word list if needed
+        List<String> wordList = (List<String>)minMaxValue.minValue;
+        if (wordList == null) {
+            wordList = new List<String>();
+            minMaxValue.minValue = wordList;
+        }
         Map<String, Integer> wordMap;
         try {
             wordMap = (Map<String, Integer>)minMaxValue.maxValue;
@@ -38,16 +43,18 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 minMaxValue.maxValue =wordMap;
             }
         }
-        catch (System.TypeException ex) {
+        catch (System.TypeException ex) {            
             //TODO: This is an ugly workaround for "System.TypeException: Invalid conversion from runtime type clustan.ClusterCompressedDoubleArray to Map<String,Integer>"
-            //in predict code flow
+            //Because we replaced wordMap minMaxValue.maxValue with idf compressed array we can't get wordMap anymore
+            //Previous wordMap is not needed to calculate tf and we are not going to recalculate idf in predict flow
+            //So we just catch this exception and initialize word map from word list
+            //This way in Apex is faster than using instanceof (in clustering flow this method will be called N times, in predict flow only once)
             wordMap = new Map<String, Integer>();
+            for (String word: wordList) {
+                wordMap.put(word, 0);
+            }
         }
-        List<String> wordList = (List<String>)minMaxValue.minValue;
-        if (wordList == null) {
-            wordList = new List<String>();
-            minMaxValue.minValue = wordList;
-        }
+
         
         Object fieldValue = ClusterDataHelper.getSObjectFieldValue(record, fieldDesc);
         if (fieldValue == null) {

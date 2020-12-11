@@ -14,7 +14,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
     public static Logger log = LogFactory.getLogger();
     @TestVisible
-    private static ClusterJobState jobState;
+    private static ClusterJobState jobState;  //TODO: get rid of this or store somewhere else
     public List<ClusterAlgorithmStep> steps;
     public ClusterDistanceCacheManager distanceCacheManager;
     public ClusterAlgorithmRunner() {
@@ -195,17 +195,64 @@ public abstract with sharing class ClusterAlgorithmRunner {
 
     public abstract void setJobState(ClusterJobState state);
 
-    public Integer predict(Id recordId, String jobStateJson) {
+    public ClusterPredictionResult predict(Id recordId, String jobStateJson) {
         this.setJobState(jobStateJson);
         return this.predict(recordId);
     }
 
-    public Integer predict(Id dpRecordId) {
+    public ClusterPredictionResult predict(Id dpRecordId) {
         ClusterDataPoint dataPoint = this.getDataPoint(dpRecordId);
         return this.predict(dataPoint);
     }
 
-    public abstract Integer predict(ClusterDataPoint dataPoint);
+    public virtual ClusterPredictionResult predict(ClusterDataPoint dataPoint) {
+        log.debug('Starting prediction calculations for ' + dataPoint.recordName);
+        ClusterJobState jobState = this.getJobState();
+        List<ClusterDataPointNeighbor> nearestNeighbors = this.getNearestNeighborsFromDb(dataPoint.externalId, jobState.clusterJob.Id, ClusterConstants.NUM_NEAREST_NEIGHBORS_PREDICTION);
+        if (nearestNeighbors.size() == 0) {
+            nearestNeighbors = this.findNearestNeighbors(dataPoint.externalId, ClusterConstants.NUM_NEAREST_NEIGHBORS_PREDICTION);
+        }
+        ClusterPredictionResult predictionResult = new ClusterPredictionResult();
+        predictionResult.dataPoint = dataPoint;
+        Map<Id,ClusterPredictionResult.FieldPrediction> fieldPredictionMap = new Map<Id,ClusterPredictionResult.FieldPrediction>();
+        ClusterPredictionResult.FieldPrediction clusterPrediction = new ClusterPredictionResult.FieldPrediction();
+        for (ClusterDataPointNeighbor neighbor:nearestNeighbors) {
+            for (Integer i=0; i<jobState.model.fields.size(); i++) {
+                ClusterModelFieldWrapper field = jobState.model.fields[i];
+                if (field.isPrediction) {
+                    log.debug('Calculating prediction values for field: ' + field.name + ', value: ' + neighbor.neighborDataPoint.values[i]);
+                    ClusterPredictionResult.FieldPrediction fieldPrediction = fieldPredictionMap.get(field.fieldId);
+                    if (fieldPrediction == null) {
+                        fieldPrediction = new ClusterPredictionResult.FieldPrediction();
+                        fieldPrediction.field = field;
+                        fieldPredictionMap.put(field.fieldId, fieldPrediction);
+                    }
+                    if (field.isDataTypeNumeric) {
+                        //If prediction field is numeric calculate weighted mean
+                        fieldPrediction.addPredictionDoubleValue(Double.valueOf(neighbor.neighborDataPoint.values[i]), (Double)1.0 - neighbor.distance);
+                    }
+                    else {
+                        //If it is a string calculate weighted mode
+                        fieldPrediction.addPredictionStringValue(String.valueOf(neighbor.neighborDataPoint.values[i]), (Double)1.0 - neighbor.distance);
+                    }
+                }
+            }
+            //Calculate weighted cluster index mode
+            log.debug('Adding cluster index: ' + neighbor.neighborDataPoint.clusterIndex);
+            clusterPrediction.addPredictionStringValue(String.valueOf(neighbor.neighborDataPoint.clusterIndex), (Double)1.0 - neighbor.distance);
+        }
+        clusterPrediction.aggregateValues(nearestNeighbors.size());
+        predictionResult.fieldPredictions = fieldPredictionMap.values();
+        predictionResult.clusterPrediction = clusterPrediction;
+        for (ClusterPredictionResult.FieldPrediction prediction:predictionResult.fieldPredictions) {
+            prediction.aggregateValues(nearestNeighbors.size());
+        }
+        log.debug(JSON.serialize(clusterPrediction));
+        predictionResult.clusterIndex = Integer.valueOf(clusterPrediction.fieldValuePredictions[0].value);
+        //TODO: replace with NN calculation
+        //predictionResult.clusterIndex = ClusterDataHelper.findNearestCluster(dataPoint, this);
+        return predictionResult;
+    }
 
     public List<ClusterNeighbor> findNearestClusters(Id recordId, Integer numNeighbors) {
         ClusterDataPoint dataPoint = this.getDataPoint(recordId);
@@ -219,9 +266,56 @@ public abstract with sharing class ClusterAlgorithmRunner {
         return this.findNearestNeighbors(dataPoint, nearestClusters, numNeighbors);
     }
 
-    public abstract List<ClusterDataPointNeighbor> findNearestNeighbors(ClusterDataPoint dataPoint, List<Integer> nearestClusters, Integer numNeighbors);
+    public List<ClusterDataPointNeighbor> findNearestNeighbors(Id recordId, Integer numNeighbors) {
+        log.debug('Starting k nearest neighbor calculations for record id: ' + recordId);
+        ClusterJobState state = this.getJobState();
+        Id jobId = state.clusterJob.Id;
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
+        List<ClusterNeighbor> clusterNeighbors = this.findNearestClusters(recordId, ClusterConstants.NUM_NEAREST_CLUSTERS);
+        List<Integer> nearestClusters = new List<Integer>();
+        for (ClusterNeighbor cn:clusterNeighbors) {
+            nearestClusters.add(cn.clusterIndex);
+        }
+        log.debug('Retrieved ' + nearestClusters.size() + ' nearest clusters');
+        //We will retrieve MAX_NEIGHBORS neighbors and then return first numNeighbors
+        List<ClusterDataPointNeighbor> neighbors = this.findNearestNeighbors(recordId, nearestClusters, ClusterConstants.MAX_NEIGHBORS);
+        List<ClusterJobNeighbor__c> neighborRecords = new List<ClusterJobNeighbor__c>();
+        for (ClusterDataPointNeighbor neighbor:neighbors) {
+            ClusterJobNeighbor__c neighborRecord = new ClusterJobNeighbor__c();
+            neighbor.populateNeighborRecord(neighborRecord);
+            neighborRecords.add(neighborRecord);
+        }
+        //Check again is another future method finished calculations
+        Integer count = [SELECT count() FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+        if (count == 0) {
+            log.debug('Inserting ' + neighborRecords.size() + ' nearest neighbors');
+            insert neighborRecords;
+        }
+        List<ClusterDataPointNeighbor> firstNeighbors = this.getFirstNeighbors(neighbors, numNeighbors);
+        log.debug('Returning ' + firstNeighbors.size() + ' nearest neighbors');
+        return firstNeighbors;
+    }
 
+    public List<ClusterDataPointNeighbor> getFirstNeighbors(List<ClusterDataPointNeighbor> neighbors, Integer numNeighbors) {
+        if (numNeighbors < neighbors.size()) {
+            List<ClusterDataPointNeighbor> firstNeighbors = new List<ClusterDataPointNeighbor>();
+            for (Integer i=0; i<numNeighbors; i++) {
+                firstNeighbors.add(neighbors.get(i));
+            }
+            return firstNeighbors;
+        }
+        else {
+            return neighbors;
+        }
+    }
+
+    public abstract List<ClusterDataPointNeighbor> findNearestNeighbors(ClusterDataPoint dataPoint, List<Integer> nearestClusters, Integer numNeighbors);
+    
     public List<ClusterDataPointNeighbor> getNearestNeighborsFromDb(Id recordId, Id jobId) {
+        return this.getNearestNeighborsFromDb(recordId, jobId, ClusterConstants.MAX_NEIGHBORS);
+    }
+
+    public List<ClusterDataPointNeighbor> getNearestNeighborsFromDb(Id recordId, Id jobId, Integer numNeighbors) {
         ClusterJobState jobState = this.getJobState();
         List<ClusterDataPointNeighbor> nearestNeighbors = new List<ClusterDataPointNeighbor>();
         List<ClusterJobNeighbor__c> neighbors = [SELECT Id, ClusterJob__c, ClusterJobResult__c, Distance__c, NeighborRecordId__c, RecordId__c,
@@ -245,21 +339,25 @@ public abstract with sharing class ClusterAlgorithmRunner {
                     }
                     nearestNeighbors.add(nearestNeighbor);
                     neighborIds.add(neighbor.NeighborRecordId__c);
+                    if (nearestNeighbors.size() >= numNeighbors) {
+                        break;
+                    }
                 }
             }
         }
+        log.debug('Returning ' + numNeighbors + ' neighbors');
         return nearestNeighbors;
     }
 
-    public ClusterDataPoint getDataPoint(Id recordId) {
+    public ClusterDataPoint getDataPoint(Id externalRecordId) {
         ClusterModelWrapper model = this.getJobState().model;
-        String keyCode = String.valueOf(recordId).subString(0,3);
+        String keyCode = String.valueOf(externalRecordId).subString(0,3);
         Schema.DescribeSObjectResult objectDescribe = ClusterUtils.findObjectDescByKeyCode(keyCode);
         if (objectDescribe.getName().toLowerCase() != model.objectName.toLowerCase()) {
             throw new ClusterException('Model object (' + model.objectName +') does not match with the record id object (' + objectDescribe.getName() + ')');
         }
         String modelSoql = model.generateSoqlSelect();
-        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(recordId)) + '\'';
+        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(externalRecordId)) + '\'';
         ClusterAlgorithmRunner.ModelValidationResult vr = this.validateModel(model);
         if (!vr.isValid) {
             ClusterException ex = new ClusterException();
@@ -268,13 +366,13 @@ public abstract with sharing class ClusterAlgorithmRunner {
         }
         List<SObject> predictRecords = Database.query(modelSoql);
         if (predictRecords.size() != 1) {
-            throw new ClusterException('Record with id ' + recordId + ' was not found');
+            throw new ClusterException('Record with id ' + externalRecordId + ' was not found');
         }
         ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
         return objectProcessor.processSObject(predictRecords.get(0));
     }
 
-    protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
+    public abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
 
     public abstract ClusterAlgorithmParameter[] getParameters(ClusterModelWrapper model);
     

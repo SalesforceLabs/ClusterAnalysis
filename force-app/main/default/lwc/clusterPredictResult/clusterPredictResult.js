@@ -27,6 +27,7 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     @api recordId;
     @api jobOrModel;
     @api hideHeader = false;
+    @api headerLabel = 'Cluster Predictions';
     @track predictCluster;
     @track predictModel;
     @track predictionLoaded = false;
@@ -35,16 +36,19 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     @track similarityValue;
     @track spinnerVisible = true;
     @track clusterPageUrl = '#';
+    pollingCount = 0;
     similarityColumns = columns;
     defaultSortDirection = 'asc';
     sortDirection = 'asc';
     sortedBy;
 
     connectedCallback() {
+        this.pollingCount = 0;
         if (this.recordId && this.jobOrModel) {
             predict({
                     recordId: this.recordId,
-                    jobOrModel: this.jobOrModel
+                    jobOrModel: this.jobOrModel,
+                    isPolling: false
                 })
             .then(result => {
                 this.predictCallback(result);
@@ -77,7 +81,8 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
             this.spinnerVisible = true;
             return predict({
                 recordId: this.recordId,
-                jobOrModel: this.jobOrModel
+                jobOrModel: this.jobOrModel,
+                isPolling: this.pollingCount > 0
             })
             .then(result => {
                 this.predictCallback(result);
@@ -92,21 +97,52 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     }
 
     predictCallback(result) {
-        this.spinnerVisible = false;
         this.predictCluster = result;
+        if (this.predictCluster.clusterIndex == -1 || this.predictCluster.predictionResult == null) {
+            this.setPolling();
+            return;
+        }
+        this.pollingCount = 0;
+        this.spinnerVisible = false;
         this.predictCluster.jobState = JSON.parse(this.predictCluster.jobState);
         this.predictModel = this.predictCluster.jobState.model;
         clustanUtils.decompressDataPointValues(this.predictCluster.jobState, this.predictCluster.dataPoint.values);
         clustanUtils.decompressJobState(this.predictCluster.jobState);
-        this.similarityValue = (100.0 - 100.0 * clustanUtils.gowerDistance(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState)).toFixed(2);
-        let similarities = clustanUtils.calculateSimilarity(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState);
-        this.similarityData = similarities
-            .map((value, index) =>({ name: this.predictCluster.jobState.model.fields[index].name, similarity: value, weight: this.predictCluster.jobState.model.fields[index].weight}))
-            .filter(item => item.similarity != null);        
+        this.predictCluster.predictionResult.fieldPredictions.forEach(fieldPrediction => {
+            fieldPrediction.fieldValuePredictions.forEach(fvp => {
+                fvp.probabilityText = (100.0 * fvp.probability).toFixed(2) 
+                if (fieldPrediction.isNumeric) {
+                    fvp.valueText = Number(fvp.value).toLocaleString();
+                }
+                else {
+                    fvp.valueText = fvp.value;
+                }
+            });
+        });
+        
         this.predictionLoaded = true;
         this[NavigationMixin.GenerateUrl](this.getClusterPageNavigationDetails(this.predictCluster.clusterId)).then(url => {
             this.clusterPageUrl = url;
         });
+    }
+
+    setPolling() {
+        if (!this.recordId) return;
+        let MAX_POLLING_COUNT = 12; //we will poll for 2 mins max
+        this.pollingCount++;
+        if (this.pollingCount < MAX_POLLING_COUNT) {
+            this.spinnerVisible = true;
+            setTimeout(() => {
+                this.predict();
+            }, 10000);
+        }
+        else if (this.pollingCount == MAX_POLLING_COUNT) {
+            this.handleError('Could not get prediction. Try reloading the page in few minutes');
+        }
+    }
+
+    get hasFieldPredictions() {
+        return this.predictionLoaded && (this.predictCluster.predictionResult.fieldPredictions && this.predictCluster.predictionResult.fieldPredictions.length > 0);
     }
 
     handleClusterLinkClick(event) {

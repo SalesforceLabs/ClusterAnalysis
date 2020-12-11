@@ -7,7 +7,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
     }
 
     @isTest
-    public static void testKMedoids() {        
+    public static void testKMedoids() {
         String modelJson = '{"algorithm":"K-Medoids","fields":[{"name":"AnnualRevenue","displayLabel":"Annual Revenue","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Id","displayLabel":"Lead ID","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"Industry","displayLabel":"Industry","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Name","displayLabel":"Full Name","relationName":"","objectName":"Lead","distanceType":"None","weight":1},{"name":"NumberOfEmployees","displayLabel":"Employees","relationName":"","objectName":"Lead","distanceType":"Numeric","weight":1},{"name":"Rating","displayLabel":"Rating","relationName":"","objectName":"Lead","distanceType":"Category","weight":1},{"name":"Title","displayLabel":"Title","relationName":"","objectName":"Lead","distanceType":"Text","weight":1}],"filter":"{\\"expressionFields\\":[],\\"customLogic\\":\\"\\"}","isCustomSoql":false,"name":"LeadsUnitTest","numberOfClusters":5,"objectName":"Lead","soql":"SELECT AnnualRevenue, Id, Industry, Name, NumberOfEmployees, Rating, Title FROM Lead LIMIT 50"}';
         ClusterModelWrapper model = ClusterTestData.createModel(modelJson);
         User clusterUser = ClusterTestData.createClusterUser();
@@ -301,10 +301,27 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             List<ClusterDataPoint> clusterDataPoints = ClusterJobDetailsController.getDataPoints(state.clusterJob.Id, 100, 0);
             System.assertEquals(true, clusterDataPoints.size() > 0, 'No data points retrieved');
 
-            ClusterPredictUiModel.PredictJobCluster predictResult = ClusterPredictController.predict(clusterDataPoints.get(0).externalId, model.modelId);
-            // Expected is clusterDataPoints.get(0).clusterIndex, but it can't be guaranteed because we only ran 1 iteration
+            ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(clusterDataPoints.get(0).externalId, model.modelId, false);
+            // Expected is clusterDataPoints.get(0).clusterIndex, but it can't be guaranteed because we only run 1 iteration
             // So we only check if predicted cluster index is less than the number of clusters
             System.assertEquals(true, predictResult.clusterIndex < 5, 'Cluster predicted incorrectly');
+
+            ClusterJobResult__c leadResult = [SELECT Id, RecordId__c FROM ClusterJobResult__c LIMIT 1];
+            Lead l1 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id=:leadResult.RecordId__c];
+            List<Id> dataPointIds = new List<Id>();
+            dataPointIds.add(leadResult.Id);
+            ClusterDataPoint d1 = ClusterDataHelper.getDataPoints(dataPointIds, state).get(0);
+            l1.Id = null;
+            l1.FirstName = 'Test2';
+            l1.LastName = 'Test2';
+            l1.Company = 'Test2';
+            insert l1;
+            ClusterDataPoint d2 = runner.getDataPoint(l1.Id);
+            //Double distance = runner.calculateDPDistance(d1, d2);
+            Double distance = ClusterDataHelper.calculateCosineDistance(d1.values[0], d2.values[0], null);
+            ClusterCompressedDoubleArray ccd1 = (ClusterCompressedDoubleArray)d1.values[0];
+            ClusterCompressedDoubleArray ccd2 = (ClusterCompressedDoubleArray)d2.values[0];
+            System.assertEquals(true, ClusterDataHelper.doublesEqual(distance, ClusterDataHelper.DOUBLE_ZERO), 'Distance test failed');
 
         }
     }
@@ -329,6 +346,23 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
         }
         if (leadUpdated) {
             testKMedoids();
+        }
+    }
+
+    @isTest
+    public static void testPredictionModel() {
+        ClusterModelWrapper model = ClusterTestData.createPredictionModel();
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            ClusterKMedoidsPAMRunner runner = ClusterTestData.runKMedoids(model, 5);
+            Lead l = [SELECT Id, Name FROM Lead LIMIT 1];
+            ClusterPredictionResult pr = runner.predict(l.Id);
+            System.assertEquals(2, pr.fieldPredictions.size(), 'Incorrect field prediction size');
+            System.assertEquals('Industry', pr.fieldPredictions[1].field.name, 'Incorrect prediction field name');
+            System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].value != null, 'Incorrect prediction field value');
+            System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].probability > 0.0, 'Incorrect prediction field value probability');
+            System.assertEquals(true, Double.valueOf(pr.fieldPredictions[0].fieldValuePredictions[0].value) > 0.0, 'Incorrect prediction field value');
+            System.assertEquals(1, pr.fieldPredictions[0].fieldValuePredictions.size(), 'Incorrect prediction field values size');
         }
     }
     
