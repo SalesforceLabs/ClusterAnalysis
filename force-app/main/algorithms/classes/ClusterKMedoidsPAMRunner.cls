@@ -132,7 +132,4 @@
         return ClusterDataHelper.findNearestClusters(dataPoint, numNeighbors, this);
     }
 
-    public override List<ClusterDataPointNeighbor> findNearestNeighbors(ClusterDataPoint dataPoint, List<Integer> nearestClusters, Integer numNeighbors) {
-        return ClusterDataHelper.findNearestNeighbors(dataPoint, nearestClusters, numNeighbors, this);
-    }
 }

@@ -356,7 +356,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
         System.runAs(clusterUser) {
             ClusterKMedoidsPAMRunner runner = ClusterTestData.runKMedoids(model, 5);
             Lead l = [SELECT Id, Name FROM Lead LIMIT 1];
-            ClusterPredictionResult pr = runner.predict(l.Id);
+            ClusterPredictionResult pr = runner.getPredictor().predict(l.Id);
             System.assertEquals(2, pr.fieldPredictions.size(), 'Incorrect field prediction size');
             System.assertEquals('Industry', pr.fieldPredictions[1].field.name, 'Incorrect prediction field name');
             System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].value != null, 'Incorrect prediction field value');

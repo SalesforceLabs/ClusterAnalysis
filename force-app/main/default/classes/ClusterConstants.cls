@@ -32,6 +32,9 @@ public with sharing class ClusterConstants {
     public static final Integer NUM_NEAREST_NEIGHBORS_PREDICTION = 11;
     public static final Integer MAX_NEIGHBORS = 50;
     public static final Integer MAX_PREDICTION_VALUES = 5;
+    public static final Integer MIN_KNN_NEIGHBOR_SIZE = 4; //Min neighbor count per cluster
+    public static final Integer MIN_KNN_DP_COUNT = 20;
+
     public static final Integer MAX_LONGTEXTCLASSES = 35;
     public static final Integer MIN_LONGTEXTCLASSES = 10;
 

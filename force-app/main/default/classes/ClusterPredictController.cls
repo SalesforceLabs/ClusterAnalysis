@@ -171,11 +171,11 @@ public with sharing class ClusterPredictController {
         predictResult.clusterIndex = -1;
         predictResult.predictionResult = null;
         //If yes or if in test mode - run prediction
-        if (nCount == 1 || (Test.isRunningTest() && !isPolling)) {            
+        if (nCount == 1 || Test.isRunningTest()) {            
             //TODO: getDataPoint is very expensive for the sync mode
             //we should save the source data point as job result in async mode and use load
             ClusterDataPoint dataPoint = runner.getDataPoint(recordId); 
-            ClusterPredictionResult predictionResult = runner.predict(dataPoint);
+            ClusterPredictionResult predictionResult = runner.getPredictor().predict(dataPoint);
             Integer clusterIndex = predictionResult.clusterIndex;
             ClusterJobCluster__c cluster = runner.getJobState().jobClusters[clusterIndex];
             predictResult.clusterId = cluster.Id;
@@ -207,7 +207,7 @@ public with sharing class ClusterPredictController {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         List<ClusterDataPointNeighbor> nearestNeighbors = null;
         if (recordId != null) {
-            nearestNeighbors = runner.getNearestNeighborsFromDb(recordId, jobId, numNeighbors);
+            nearestNeighbors = runner.getPredictor().getNearestNeighborsFromDb(recordId, jobId, numNeighbors);
             if (nearestNeighbors == null || nearestNeighbors.size() == 0) {
                 log.debug('Previous calculations were not found. Starting nearest neighbor calculations');
                 if (Test.isRunningTest()) {
@@ -242,7 +242,7 @@ public with sharing class ClusterPredictController {
         ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
         ClusterPredictKNNUiModel uiModel = new ClusterPredictKNNUiModel();
         ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
-        List<ClusterDataPointNeighbor> nearestNeighbors = runner.getNearestNeighborsFromDb(recordId, jobId, numNeighbors);
+        List<ClusterDataPointNeighbor> nearestNeighbors = runner.getPredictor().getNearestNeighborsFromDb(recordId, jobId, numNeighbors);
         if (nearestNeighbors == null || nearestNeighbors.size() == 0) {
             log.debug('Previous calculations were not completed');
         }
@@ -273,7 +273,7 @@ public with sharing class ClusterPredictController {
             log.debug('Starting k nearest neighbor calculations for record id: ' + recordId);
             ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
             ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
-            List<ClusterDataPointNeighbor> neighbors = runner.findNearestNeighbors(recordId, numNeighbors);
+            List<ClusterDataPointNeighbor> neighbors = runner.getPredictor().findNearestNeighbors(recordId, numNeighbors);
             return neighbors;
         }
         catch (Exception ex) {
@@ -333,6 +333,7 @@ public with sharing class ClusterPredictController {
         return modelJob;
     }
 
+    //TODO: remove this method - not used
     private static Id getJobId(Id jobOrModelId) {
         Schema.DescribeSObjectResult modelDesc = ClusterModel__c.SObjectType.getDescribe();
         Schema.DescribeSObjectResult jobDesc = ClusterJob__c.SObjectType.getDescribe();

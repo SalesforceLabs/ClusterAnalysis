@@ -33,6 +33,7 @@ public with sharing class ClusterPredictControllerTest {
             System.assertEquals(1, uiModel.models.size(), 'Incorrect predict model size');
             System.assertEquals(true, uiModel.jobId != null, 'Incorrect predict job Id');
             System.assertEquals(false, uiModel.recordIdNeeded, 'Incorrect recordIdNeeded value');
+            ClusterPredictController.findNearestNeighbors(leads[0].Id, uiModel.jobId, ClusterConstants.MAX_NEIGHBORS);
             ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, true);
             System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect cluster index when cached');
         }
@@ -45,8 +46,8 @@ public with sharing class ClusterPredictControllerTest {
         System.runAs(clusterUser) {
             List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
             ClusterPredictUiModel uiModel = ClusterPredictController.getPredictUiModel(leads[0].Id);
-            ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, true);
-            System.assertEquals(-1, predictResult.clusterIndex, 'Incorrect cluster index when polling');
+            ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, false);
+            System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect cluster index when using model name');
 
             predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.jobId, false);
             System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect predict cluster index');

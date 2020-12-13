@@ -20,7 +20,10 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         Integer bs = super.getBatchSize();
         if (jobState.iterationsCount < 2) {
-            bs = bs / 2; //Reducing batch size for initial swap operation, distance cache is mostly empty at this stage
+            bs = bs / 3; //Reducing batch size for initial swap operation, distance cache is mostly empty at this stage
+            if (bs == 0) {
+                bs = 1;
+            }
         }
         return bs;
     }
@@ -51,7 +54,6 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
         ClusterModelWrapper model = jobState.model;
         Integer scopeSize = scope.size();
         List<ClusterDataPoint> centroids = jobState.centroids;
-        ClusterIterableBase.log.debug('Initial centroids ' + centroids);
         Integer centroidSize = centroids.size();
         Double[] centroidCosts = new Double[centroidSize];
         List<ClusterDataPoint> allDataPoints = jobState.dataPoints;
@@ -66,8 +68,6 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
             else {
                 currentMedoid = centroids[currentRecord.clusterIndex];
             }
-            ClusterIterableBase.log.debug('Current record ' + currentRecord);
-            ClusterIterableBase.log.debug('Current medoid ' + currentMedoid);
             if (currentRecord.recordId == currentMedoid.recordId) continue;           
             //Cloning and swapping centroids
             for (Integer i=0; i<centroidSize; i++) {
@@ -75,7 +75,6 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
                 newCentroids[i] = centroids[i];
             }
             newCentroids[currentRecord.clusterIndex] = currentRecord;
-            ClusterIterableBase.log.debug('New centroids ' + newCentroids);
             for (Integer dpindex = 0; dpindex < allDataPoints.size(); dpindex++) {
                 if (allDataPoints[dpindex].recordId == currentRecord.recordId) continue;
                 ClusterDataPoint currentObject = allDataPoints[dpindex];
@@ -84,13 +83,13 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
                 //This however will require more memory
                 Integer nearestCentroidIndex = 0;
                 Boolean isCentroid = false;
-                Double minDistance = this.runner.calculateDPDistance(currentObject, newCentroids[nearestCentroidIndex]);
+                Double minDistance = Math.abs(this.runner.calculateDPDistance(currentObject, newCentroids[nearestCentroidIndex]));
                 for (Integer cindex = 1; cindex < centroidSize; cindex++) {
                     isCentroid = newCentroids[cindex].recordId == allDataPoints[dpindex].recordId;
                     if (isCentroid)
                         break;
-                    Double distance = this.runner.calculateDPDistance(currentObject, newCentroids[cindex]);
-                    if (Math.abs(distance) < Math.abs(minDistance)) {
+                    Double distance = Math.abs(this.runner.calculateDPDistance(currentObject, newCentroids[cindex]));
+                    if (distance < minDistance) {
                         minDistance = distance;
                         nearestCentroidIndex = cindex;
                     }
@@ -102,18 +101,18 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
             }
             //Calculating total new centroid cost
             Double totalNewCost = 0;
-            for (Integer i=0; i<centroidCosts.size(); i++) {
+            for (Integer i=0; i<centroidSize; i++) {
                 totalNewCost += centroidCosts[i];
             }
             //If new cost is less than current remember this
             if (totalNewCost < totalMinCost) {
                 ClusterIterableBase.log.debug('Current min cost: ' + totalMinCost + ', new min cost ' + totalNewCost);
-                for (Integer i=0; i<centroidCosts.size(); i++) {
+                for (Integer i=0; i<centroidSize; i++) {
                     this.minCentroidCosts[i] = centroidCosts[i];
                 }
                 this.minCentroids[currentRecord.clusterIndex] = currentRecord;
                 totalMinCost = totalNewCost;
-                ClusterIterableBase.log.debug('Swapping centroid' + currentRecord.clusterIndex + ' to ' + currentRecord);
+                ClusterIterableBase.log.debug('Swapping centroid' + currentRecord.clusterIndex + ' to ' + currentRecord.clusterIndex);
                 //Set hasSwapped flag to repeat data data assignment and swap steps again
                 jobState.hasSwapped = true;
             }
@@ -124,7 +123,7 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         //Perform swap to the minimal configuration
         if (jobState.hasSwapped) {
-            ClusterIterableBase.log.debug('Swapping centroids from ' + jobState.centroids + ' to ' + this.minCentroids);
+            ClusterIterableBase.log.debug('Swapping centroids');
             jobState.centroids = this.minCentroids;
         }
         //Clear variables to reduce state

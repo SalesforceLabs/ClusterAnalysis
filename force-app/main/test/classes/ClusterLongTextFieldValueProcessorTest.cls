@@ -86,51 +86,7 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.debug('cosineDistance:' + cosineDistance);
             System.assertEquals(true, ClusterDataHelper.doublesEqual(cosineDistance, ClusterDataHelper.DOUBLE_ZERO), 'Cosine distance incorrect');
         }
-    }
-
-    /* This was used to debug tf-idf. This was fun without an apex debugger. I will save this for records and remove next time. I hope I won't need this anymore )
-    @isTest(SeeAllData=true)
-    public static void testLinearDistance() {
-        ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId('a020U000003wOHNQA2');
-        ClusterJobResult__c leadResult = [SELECT Id, RecordId__c FROM ClusterJobResult__c WHERE RecordId__c = '00Q0U000005d96vUAA' AND ClusterJob__c='a020U000003wOHNQA2']; //Dugald Strut
-        Lead l1 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id=:leadResult.RecordId__c];
-        List<Id> dataPointIds = new List<Id>();
-        dataPointIds.add(leadResult.Id);
-        ClusterDataPoint d1 = ClusterDataHelper.getDataPoints(dataPointIds, runner.getJobState()).get(0);
-        Lead l2 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id='00Q0U000005d8xtUAA']; //Sacha Lambourn
-
-        ClusterDataPoint d2 = runner.getDataPoint(l1.Id);
-        System.debug('DP1: ' + JSON.serialize(d1.values));
-        System.debug('DP2: ' + JSON.serialize(d2.values));
-        Double distance = runner.calculateDPDistance(d1, d2);
-        System.debug('Distance: ' + distance);
-        distance = runner.calculateDPDistance(d2, d1);
-        System.debug('DistanceTo: ' + distance);
-        Double tfdistance = ClusterDataHelper.calculateCosineDistance(d1.values[0], d2.values[0], null);
-        System.debug('tf Distance: ' + tfdistance);
-
-
-        leadResult = [SELECT Id, RecordId__c FROM ClusterJobResult__c WHERE RecordId__c = '00Q0U000005d8xtUAA' AND ClusterJob__c='a020U000003wOHNQA2']; //Sacha Lambourn
-        l1 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id=:leadResult.RecordId__c];
-        dataPointIds = new List<Id>();
-        dataPointIds.add(leadResult.Id);
-        d1 = ClusterDataHelper.getDataPoints(dataPointIds, runner.getJobState()).get(0);
-        l2 = [SELECT Description, Id, Industry, Name, NumberOfEmployees, Title FROM Lead WHERE Id='00Q0U000005d96vUAA']; //Dugald Strut
-
-        d2 = runner.getDataPoint(l1.Id);
-        System.debug('DP1: ' + JSON.serialize(d1.values));
-        System.debug('DP2: ' + JSON.serialize(d2.values));
-        distance = runner.calculateDPDistance(d1, d2);
-        System.debug('Distance: ' + distance);
-        distance = runner.calculateDPDistance(d2, d1);
-        System.debug('DistanceTo: ' + distance);
-
-        ClusterCompressedDoubleArray ccd1 = (ClusterCompressedDoubleArray)d1.values[0];
-        ClusterCompressedDoubleArray ccd2 = (ClusterCompressedDoubleArray)d2.values[0];
-        System.assertEquals(true, ClusterDataHelper.doublesEqual(ClusterDataHelper.DOUBLE_ZERO, ClusterDataHelper.DOUBLE_ZERO), 'Distance test failed');
-
-    }
-    */
+    }    
 
     private static void testCDAIterators(ClusterCompressedDoubleArray ccda, List<Double> da) {
         //Testing hasNext/next
