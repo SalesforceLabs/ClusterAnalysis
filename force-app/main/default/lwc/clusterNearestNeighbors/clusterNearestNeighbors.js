@@ -22,6 +22,7 @@ export default class ClusterNearestNeighbors extends LightningElement {
     @track containerDivStyle = "";
     pollingCount = 0;
     widthAdjusted = false;
+    timeoutHandle = null;
 
     connectedCallback() {
         this.recordSearchLabel = 'Search';
@@ -46,6 +47,12 @@ export default class ClusterNearestNeighbors extends LightningElement {
             this.resultColumnCssClass = "predict-neighbors__col slds-col slds-size_1-of-1";
         }
         this.callGetModel(false);
+    }
+
+    disconnectedCallback() {
+        if (this.timeoutHandle) {
+            clearTimeout(this.timeoutHandle);
+        }
     }
 
     renderedCallback() {
@@ -118,13 +125,14 @@ export default class ClusterNearestNeighbors extends LightningElement {
     }
 
     setPolling() {
+        this.timeoutHandle = null;
         if (!this.lookupRecordId) return;
         let MAX_POLLING_COUNT = 12; //we will poll for 2 mins max
         if (this.uiModel.nearestNeighbors == null || this.uiModel.nearestNeighbors.length == 0) {
             this.pollingCount++;
             if (this.pollingCount < MAX_POLLING_COUNT) {
                 this.spinnerVisible = true;
-                setTimeout(() => {
+                this.timeoutHandle = setTimeout(() => {
                     this.callPullModel();
                 }, 10000);
             }

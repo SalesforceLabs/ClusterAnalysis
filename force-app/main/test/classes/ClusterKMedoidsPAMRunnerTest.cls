@@ -355,14 +355,16 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
             ClusterKMedoidsPAMRunner runner = ClusterTestData.runKMedoids(model, 5);
+            Test.startTest();
             Lead l = [SELECT Id, Name FROM Lead LIMIT 1];
-            ClusterPredictionResult pr = runner.getPredictor().predict(l.Id);
+            ClusterPredictionResult pr = runner.getPredictor().predict(l.Id, true);
             System.assertEquals(2, pr.fieldPredictions.size(), 'Incorrect field prediction size');
             System.assertEquals('Industry', pr.fieldPredictions[1].field.name, 'Incorrect prediction field name');
             System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].value != null, 'Incorrect prediction field value');
             System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].probability > 0.0, 'Incorrect prediction field value probability');
             System.assertEquals(true, Double.valueOf(pr.fieldPredictions[0].fieldValuePredictions[0].value) > 0.0, 'Incorrect prediction field value');
             System.assertEquals(1, pr.fieldPredictions[0].fieldValuePredictions.size(), 'Incorrect prediction field values size');
+            Test.stopTest();
         }
     }
     

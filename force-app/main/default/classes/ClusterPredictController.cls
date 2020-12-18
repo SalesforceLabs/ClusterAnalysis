@@ -10,6 +10,8 @@ public with sharing class ClusterPredictController {
     }
 
     public static final Integer SOSL_SEARCH_LIMIT = 50;
+    public static final String ERR_NO_COMPLETED_JOBS = 'This model doesn\'t have any completed jobs. Run this model first to use predict functionality';
+    public static final String ERR_JOB_NOT_COMPLETED = 'This cluster job is not completed. Run this model first to use predict functionality';
     public static Logger log = LogFactory.getLogger();
 
     @AuraEnabled(Cacheable = true)
@@ -27,7 +29,7 @@ public with sharing class ClusterPredictController {
                 uiModel.models.add(model);
                 uiModel.jobId = getLastCompletedJobId(model.modelId);
                 if (uiModel.jobId == null) {
-                    throw new ClusterException('This model doesn\'t have any completed jobs. Run this model first to use predict functionality');
+                    throw new ClusterException(ERR_NO_COMPLETED_JOBS);
                 }
                 uiModel.recordIdNeeded = true;
             }
@@ -39,7 +41,7 @@ public with sharing class ClusterPredictController {
                     uiModel.models.add(ClusterModelBuilderController.loadModel(jobs[0].ClusterModel__c));
                 }
                 else {
-                    throw new ClusterException('This job is not completed. Predict can only be used on completed jobs');
+                    throw new ClusterException(ERR_JOB_NOT_COMPLETED);
                 }
                 uiModel.recordIdNeeded = true;
             }
@@ -94,7 +96,7 @@ public with sharing class ClusterPredictController {
                     model = ClusterModelBuilderController.loadModel(jobs.get(0).ClusterModel__c);
                 }
                 else {
-                    throw new ClusterException('This job is not completed. Predict can only be used on completed jobs');
+                    throw new ClusterException(ERR_JOB_NOT_COMPLETED);
                 }
             }
             else {
@@ -171,11 +173,21 @@ public with sharing class ClusterPredictController {
         predictResult.clusterIndex = -1;
         predictResult.predictionResult = null;
         //If yes or if in test mode - run prediction
-        if (nCount == 1 || Test.isRunningTest()) {            
-            //TODO: getDataPoint is very expensive for the sync mode
-            //we should save the source data point as job result in async mode and use load
-            ClusterDataPoint dataPoint = runner.getDataPoint(recordId); 
-            ClusterPredictionResult predictionResult = runner.getPredictor().predict(dataPoint);
+        if (nCount == 1 || Test.isRunningTest()) {
+            ClusterDataPoint dataPoint;
+            //getDataPoint is very expensive for the sync mode
+            //we should have saved the source data point as job result, trying to load it
+            List<ClusterJobResult__c> jobResults = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c
+                FROM ClusterJobResult__c WHERE ClusterJob__c = :jobId AND RecordId__c = :recordId];
+            if (jobResults.size() > 0) {
+                log.debug('Retrieving the source datapoint from job results');
+                dataPoint = runner.getSObjectProcessor().createDataPointFromResult(jobResults.get(0));
+            }
+            else {
+                log.debug('Source datapoint was not found in results, preparing...');
+                dataPoint = runner.getDataPoint(recordId);
+            }
+            ClusterPredictionResult predictionResult = runner.getPredictor().predict(dataPoint, false);
             Integer clusterIndex = predictionResult.clusterIndex;
             ClusterJobCluster__c cluster = runner.getJobState().jobClusters[clusterIndex];
             predictResult.clusterId = cluster.Id;
@@ -273,7 +285,7 @@ public with sharing class ClusterPredictController {
             log.debug('Starting k nearest neighbor calculations for record id: ' + recordId);
             ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
             ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
-            List<ClusterDataPointNeighbor> neighbors = runner.getPredictor().findNearestNeighbors(recordId, numNeighbors);
+            List<ClusterDataPointNeighbor> neighbors = runner.getPredictor().findNearestNeighbors(recordId, numNeighbors, true);
             return neighbors;
         }
         catch (Exception ex) {
@@ -302,7 +314,7 @@ public with sharing class ClusterPredictController {
                 modelJob.model = ClusterModelBuilderController.loadModel(jobOrModelId);
                 modelJob.jobId = getLastCompletedJobId(jobOrModelId);
                 if (modelJob.jobId == null) {
-                    throw new ClusterException('This model doesn\'t have any completed jobs. Run this model first to use predict functionality');
+                    throw new ClusterException(ERR_NO_COMPLETED_JOBS);
                 }
             }
             else if (keyCode == jobDesc.getKeyPrefix()) {
@@ -313,7 +325,7 @@ public with sharing class ClusterPredictController {
                     modelJob.model = ClusterModelBuilderController.loadModel(jobs.get(0).ClusterModel__c);
                 }
                 else {
-                    throw new ClusterException('This cluster job is not completed. Run this model first to use predict functionality');
+                    throw new ClusterException(ERR_JOB_NOT_COMPLETED);
                 }            
             }
             else {
@@ -329,37 +341,11 @@ public with sharing class ClusterPredictController {
             }
             modelJob.model = new ClusterModelWrapper(models.get(0));
             modelJob.jobId = getLastCompletedJobId(modelJob.model.modelId);
+            if (modelJob.jobId == null) {
+                throw new ClusterException(ERR_NO_COMPLETED_JOBS);
+            }
         }
         return modelJob;
-    }
-
-    //TODO: remove this method - not used
-    private static Id getJobId(Id jobOrModelId) {
-        Schema.DescribeSObjectResult modelDesc = ClusterModel__c.SObjectType.getDescribe();
-        Schema.DescribeSObjectResult jobDesc = ClusterJob__c.SObjectType.getDescribe();
-        String keyCode  = String.valueOf(jobOrModelId).subString(0,3);
-        Id jobId = null;
-        if (keyCode == modelDesc.getKeyPrefix()) {
-            jobId = getLastCompletedJobId(jobOrModelId);
-            if (jobId == null) {
-                throw new ClusterException('This model doesn\'t have any completed jobs. Run this model first to use predict functionality');
-            }
-        }
-        else if (keyCode == jobDesc.getKeyPrefix()) {
-            jobId = jobOrModelId;
-            Integer jobCount = [SELECT Count() FROM ClusterJob__c WHERE Id = :jobOrModelId AND JobStatus__c = :ClusterConstants.JOBSTATUS_COMPLETED  
-                WITH SECURITY_ENFORCED LIMIT 1];
-            if (jobCount == 1) {
-                jobId = jobOrModelId;
-            }
-            else {
-                throw new ClusterException('This cluster job is not completed. Run this model first to use predict functionality');
-            }            
-        }
-        else {
-            throw new ClusterException('Incorrect cluster job id ' + jobOrModelId);
-        }
-        return jobId;
     }
 
     public static Id getLastCompletedJobId(Id modelId){

@@ -63,6 +63,7 @@ public with sharing class ClusterDataHelper {
     public static final Double DOUBLEEPSILON = 0.000001;
     public static final Double DOUBLE_MAX_VALUE = 9223372036854775807.0;
     public static final Double DOUBLE_ZERO = 0.0;
+    public static final Double DOUBLE_ONE = 1.0;
     public static final Integer INT_ZERO = 0;
 
     static {
@@ -218,7 +219,7 @@ public with sharing class ClusterDataHelper {
         if (a == null && b == null) {
             return 0;
         }
-        return (a == b) ? 0 : 1;
+        return (a == b) ? DOUBLE_ZERO : DOUBLE_ONE;
     }
 
     public static Double calculateGowerDistance(Object[] currentObject, Object[] centroid, ClusterJobState jobState) {
@@ -285,23 +286,22 @@ public with sharing class ClusterDataHelper {
 
     public static Double calculateCosineDistance(Object vector1, Object vector2, Object idfVector) {
         if ((vector1 == null) && (vector2 == null)) {
-            return 0.0;
+            return DOUBLE_ZERO;
         }
         else if ((vector1 == null) || (vector2 == null)) {
-            return 1.0;
+            return DOUBLE_ONE;
         }
         ClusterCompressedDoubleArray tf1i = (ClusterCompressedDoubleArray)vector1;
         ClusterCompressedDoubleArray tf2i = (ClusterCompressedDoubleArray)vector2;
         ClusterCompressedDoubleArray idfi = idfVector == null ? null : (ClusterCompressedDoubleArray)idfVector;
-        return 1.0 - calculateCosineSimilarity(tf1i, tf2i, idfi);
+        return DOUBLE_ONE - calculateCosineSimilarity(tf1i, tf2i, idfi);
     }   
 
     public static Double calculateCosineSimilarity(ClusterCompressedDoubleArray vector1, ClusterCompressedDoubleArray vector2, ClusterCompressedDoubleArray idfVector) {
         //We will also use idf vector in calculations to optimize loops a little        
-        Double dotProduct = 0.0;
-        Double magnitude1 = 0.0;
-        Double magnitude2 = 0.0;
-        Double zero = 0.0;
+        Double dotProduct = DOUBLE_ZERO;
+        Double magnitude1 = DOUBLE_ZERO;
+        Double magnitude2 = DOUBLE_ZERO;
         //Vector sizes might be different
         //The code below is extracted from ClusterCompressedDoubleArray.ClusterCompressedDoubleArrayIterator code and copy/pasted 3 times
         //This is proven to be about 3 times faster than using custom iterators hasNext/next or moveNext/getValue
@@ -326,7 +326,7 @@ public with sharing class ClusterDataHelper {
                 v1 = v1Value.value;
             }
             else {
-                v1 = zero;
+                v1 = DOUBLE_ZERO;
             }
 
             Double v2;
@@ -339,7 +339,7 @@ public with sharing class ClusterDataHelper {
                 v2 = v2Value.value;
             }
             else {
-                v2 = zero;
+                v2 = DOUBLE_ZERO;
             }
 
             if (idfHasNext) {
@@ -354,7 +354,7 @@ public with sharing class ClusterDataHelper {
                     idf = idfValue.value;
                 }
                 else {
-                    idf = zero;
+                    idf = DOUBLE_ZERO;
                 }
                 //Actual calculations
                 v1 = v1 * idf;
@@ -414,8 +414,8 @@ public with sharing class ClusterDataHelper {
             }
         }
         Double magnitude = magnitude1 * magnitude2;
-        if ((magnitude - zero) < DOUBLEEPSILON) {
-            return 1.0;
+        if ((magnitude - DOUBLE_ZERO) < DOUBLEEPSILON) {
+            return DOUBLE_ONE;
         }
         else {
             return dotProduct / Math.sqrt(magnitude);
@@ -463,14 +463,14 @@ public with sharing class ClusterDataHelper {
     public static ClusterDataPoint[] getRandomDataPoints(Integer count, ClusterJobState jobState) {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         //isAccessible permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
-        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
+        Database.QueryLocator randomRecordLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c 
             FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id ORDER BY Random__c LIMIT :count]);
         
         return getDataPoints(randomRecordLocator, jobState);
     }
 
     public static ClusterDataPoint[] getDataPoints(List<Id> dataPointIds, ClusterJobState jobState) {
-        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c 
+        Database.QueryLocator resultLocator = Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c 
             FROM ClusterJobResult__c WHERE Id IN :dataPointIds WITH SECURITY_ENFORCED]);
         return ClusterDataHelper.getDataPoints(resultLocator, jobState);
     }

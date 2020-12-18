@@ -125,6 +125,9 @@
         Object clusterNumber = model == null ? 4 : model.numberOfClusters;
         parameters.add(new ClusterAlgorithmParameter('numberOfClusters', 'Number of clusters', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, clusterNumber, null));
         parameters.add(new ClusterAlgorithmParameter('runRefinementStep', 'Run cluster refinement', ClusterAlgorithmParameter.ParameterType.BOOLEAN_PARAMETER, true, null));
+        if (model == null || model.hasLongTextFields()) {
+            parameters.add(new ClusterAlgorithmParameter('minWordFrequency', 'Min number of word occurrences', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, ClusterConstants.getMinTfIdfWordCount(), null));
+        }
         return parameters;
     }
 

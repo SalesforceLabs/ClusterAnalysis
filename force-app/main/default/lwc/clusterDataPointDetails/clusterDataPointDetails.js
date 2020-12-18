@@ -25,7 +25,7 @@ export default class ClusterDataPointDetails extends NavigationMixin(LightningEl
         let model = jobState.model;
         let dpValues = dataPoint.values;
         let objectValues = dpValues.map((cv,index) => { return { 
-            name: model.fields[index].name, value: clustanUtils.convertDataPointValue(index, cv, jobState)
+            name: model.fields[index].displayLabel, value: clustanUtils.convertDataPointValue(index, cv, jobState)
         } });
         this.objectValues = objectValues;
         this.clusterColorCss = 'background-color: ' + this.clusterColor;

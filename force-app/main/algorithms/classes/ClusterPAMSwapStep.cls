@@ -20,7 +20,8 @@ public with sharing class ClusterPAMSwapStep extends ClusterIterableBase {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         Integer bs = super.getBatchSize();
         if (jobState.iterationsCount < 2) {
-            bs = bs / 3; //Reducing batch size for initial swap operation, distance cache is mostly empty at this stage
+            Integer denom = jobState.model.hasLongTextFields() ? 4 : 2;
+            bs = bs / denom; //Reducing batch size for initial swap operation, distance cache is mostly empty at this stage
             if (bs == 0) {
                 bs = 1;
             }

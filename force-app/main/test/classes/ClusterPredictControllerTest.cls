@@ -25,9 +25,10 @@ public with sharing class ClusterPredictControllerTest {
 
     @isTest
     public static void testGetModel() {
-        ClusterKMeansRunnerTest.testKMeans();
+        ClusterTestData.runKMeans();
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
+            Test.startTest();
             List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
             ClusterPredictUiModel uiModel = ClusterPredictController.getPredictUiModel(leads[0].Id);
             System.assertEquals(1, uiModel.models.size(), 'Incorrect predict model size');
@@ -36,14 +37,16 @@ public with sharing class ClusterPredictControllerTest {
             ClusterPredictController.findNearestNeighbors(leads[0].Id, uiModel.jobId, ClusterConstants.MAX_NEIGHBORS);
             ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, true);
             System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect cluster index when cached');
+            Test.stopTest();
         }
     }
 
     @isTest
     public static void testPredict() {
-        ClusterKMedoidsPAMRunnerTest.testKMedoids();
+        ClusterTestData.runKMeans();
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
+            Test.startTest();
             List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
             ClusterPredictUiModel uiModel = ClusterPredictController.getPredictUiModel(leads[0].Id);
             ClusterPredictUiModel.PredictResultModel predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.models[0].name, false);
@@ -52,6 +55,7 @@ public with sharing class ClusterPredictControllerTest {
             predictResult = ClusterPredictController.predict(leads[0].Id, uiModel.jobId, false);
             System.assertEquals(true, predictResult.clusterIndex >= 0, 'Incorrect predict cluster index');
             System.assertEquals(String.valueOf(leads[0].Id), predictResult.dataPoint.externalId, 'Incorrect predict datapoint id');
+            Test.stopTest();
         }
     }
 
@@ -85,9 +89,10 @@ public with sharing class ClusterPredictControllerTest {
 
     @isTest
     public static void testKNN() {
-        ClusterKMeansRunnerTest.testKMeans();
+        ClusterTestData.runKMeans();
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
+            Test.startTest();
             List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 11];
             List<ClusterJob__c> jobs = [SELECT Id FROM ClusterJob__c LIMIT 1];
             Id jobId = jobs[0].Id;
@@ -97,6 +102,7 @@ public with sharing class ClusterPredictControllerTest {
             System.assertEquals(true, uiModel.nearestNeighbors[1].distance >= uiModel.nearestNeighbors[0].distance, 'Incorrect nn sorting');
             ClusterPredictKNNUiModel uiModel2 = ClusterPredictController.pullNearestNeighbors(recordId, jobId, 3);
             System.assertEquals(uiModel.nearestNeighbors.size(), uiModel2.nearestNeighbors.size(), 'Incorrect pull nn size');
+            Test.stopTest();
         }
     }
 

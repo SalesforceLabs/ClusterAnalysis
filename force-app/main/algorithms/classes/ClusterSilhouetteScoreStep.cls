@@ -83,6 +83,9 @@ public with sharing class ClusterSilhouetteScoreStep extends ClusterIterableBase
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         //TODO: Calculate silhouette for each cluster, probably add Score field to JobCluster object
         jobState.clusterJob.Score__c = this.totalSilhouetteScore / this.sampleCount;
+        //Releasing jobstate size
+        jobState.dataPointsIdMap = null;
+        jobState.dataPoints = null;
         super.done();
     }
 }

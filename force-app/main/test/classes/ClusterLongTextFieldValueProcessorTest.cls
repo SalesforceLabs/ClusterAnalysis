@@ -9,8 +9,7 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             Map<String, Integer> wordMap = new Map<String,Integer>();
             List<String> wordList = new List<String>();
             String text = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah Yeah';
-            ClusterLongTextFieldValueProcessor.minWordCount = 2; //Explicitly setting min word count
-            Double[] tf = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor);
+            Double[] tf = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor, 2);
             System.assertEquals(true, wordMap.containsKey('never'), 'TF word parsing failed');
             System.assertEquals(false, wordMap.containsKey('do'), 'TF word parsing failed');
             System.assertEquals(false, wordMap.containsKey('know'), 'TF word parsing failed');
@@ -22,14 +21,14 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             System.assertEquals(true, ClusterDataHelper.doublesEqual(tf[0], Double.valueOf(2.0)/Double.valueOf(6.0)), 'TF calculated incorrectly');
 
             String text2 = 'Never cared for what they say, Never cared for games they play play';
-            Double[] tf2 = ClusterLongTextFieldValueProcessor.calculateTF(text2, wordMap, wordList, wordPreprocessor);
+            Double[] tf2 = ClusterLongTextFieldValueProcessor.calculateTF(text2, wordMap, wordList, wordPreprocessor, 2);
             System.assertEquals(2, wordMap.get('never'), 'TF word count failed for text2');
             System.assertEquals(1, wordMap.get('yeah'), 'TF word count failed for text2');
 
             Double[] idf = ClusterLongTextFieldValueProcessor.calculateIDF(wordList, wordMap, 2);
             System.assertEquals(true, ClusterDataHelper.doublesEqual(Math.log10(Double.valueOf(2) / Double.valueOf(2)), idf[0]), 'IDF calculated incorrectly');
 
-            Double[] tf3 = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor);
+            Double[] tf3 = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor, 2);
             
             ClusterCompressedDoubleArray ctf = new ClusterCompressedDoubleArray(tf);
             ClusterCompressedDoubleArray ctf2 = new ClusterCompressedDoubleArray(tf2);
@@ -49,13 +48,13 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             wordMap = new Map<String,Integer>();
             wordList = new List<String>();
             String text4 = 'Never cared for what they say';
-            Double[] tf4 = ClusterLongTextFieldValueProcessor.calculateTF(text4, wordMap, wordList, wordPreprocessor);
+            Double[] tf4 = ClusterLongTextFieldValueProcessor.calculateTF(text4, wordMap, wordList, wordPreprocessor, 2);
             System.assertEquals(1, wordMap.get('never'), 'TF word count failed for text4');
             System.assertEquals(1, wordMap.get('care'), 'TF word count failed for text4');
 
             wordMap = new Map<String,Integer>();
             wordList = new List<String>();
-            tf4 = ClusterLongTextFieldValueProcessor.calculateTF('a b c d e', wordMap, wordList, wordPreprocessor);
+            tf4 = ClusterLongTextFieldValueProcessor.calculateTF('a b c d e', wordMap, wordList, wordPreprocessor, 2);
             System.assertEquals(0, tf4.size(), 'TF word count failed for empty tf');
         }
     }
@@ -69,15 +68,14 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             List<String> wordList = new List<String>();
             String text = 'new purchase po purchase po dear purchased has please log allocation after receive item please take consideration mandatory receipts section order make receipt item ordered how video link kind regards administrator';
             String text2 = 'Never cared for what they do, \r\n Never \n cared <b>for</b> what <br> they know! Yeah Yeah';
-            ClusterLongTextFieldValueProcessor.minWordCount = 2; //Explicitly setting min word count
-            ClusterCompressedDoubleArray tf1 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor);
-            ClusterCompressedDoubleArray tf2 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text2, wordMap, wordList, wordPreprocessor);
+            ClusterCompressedDoubleArray tf1 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor, 2);
+            ClusterCompressedDoubleArray tf2 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text2, wordMap, wordList, wordPreprocessor, 2);
             ClusterCompressedDoubleArray idf = ClusterLongTextFieldValueProcessor.calculateCompressedIDF(wordList, wordMap, 2);
             wordMap = new Map<String,Integer>();
             for (String word:wordList) {
                 wordMap.put(word, 0);
             }
-            ClusterCompressedDoubleArray tf3 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor);
+            ClusterCompressedDoubleArray tf3 = ClusterLongTextFieldValueProcessor.calculateCompressedTF(text, wordMap, wordList, wordPreprocessor, 2);
             
             System.debug('tf1:' + JSON.serialize(tf1));
             System.debug('tf3:' + JSON.serialize(tf3));

@@ -5,7 +5,6 @@
  */
 public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatchBase implements ClusterAlgorithmStep {
 
-    Integer[] clusterAttachmentSizes;
     transient List<Id> sampleResultsIds;
     Boolean updateResults = false;
     Boolean storeAssignments = false;
@@ -25,10 +24,6 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         ClusterBatchBase.log.debug('Starting data assignment step');
         super.init(runner);
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
-        clusterAttachmentSizes = new Integer[jobState.model.numberOfClusters];
-        for (Integer i=0; i < clusterAttachmentSizes.size(); i++) {
-            clusterAttachmentSizes[i] = 0;
-        }
         ClusterJobManager.deleteClusterAttachments(jobState.clusterJob.JobClusters__r);
         jobState.hasAssignmentChanged = false;
         this.sampleResultsIds = jobState.sampleResultsIds;
@@ -59,10 +54,12 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)runner.getJobState();
         //CRUD permissions are checked in ClusterAccessCheck.checkCRUDPermission in the constructor above (for performance reasons), exception is thrown in case of no access
         if (this.useSampleIds && this.sampleResultsIds != null && this.sampleResultsIds.size() > 0) {
-            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c FROM ClusterJobResult__c WHERE Id IN :sampleResultsIds]);
+            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c
+                FROM ClusterJobResult__c WHERE Id IN :sampleResultsIds]);
         }
         else {
-            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
+            return Database.getQueryLocator([SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c
+                FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id]);
         }
     }
 
@@ -77,8 +74,8 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         Object[] currentObject;
         ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
         List<ClusterJobResult__c> updatedResults = new List<ClusterJobResult__c>();
+        Double[] centroidDistances = new Double[centroidSize];
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
-            ClusterBatchBase.log.debug('Processing record ' + sindex);
             ClusterJobResult__c currentRecord = (ClusterJobResult__c)scope[sindex];
             ClusterDataPoint currentDataPoint = objectProcessor.createDataPointFromResult(currentRecord);
             //ClusterDataHelper.normalizeObject(currentObject, jobState);
@@ -86,8 +83,10 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
             Integer nearestCentroidIndex = 0;
             Integer previousCentroidIndex = 0;
             Double minDistance = this.runner.calculateDistance(currentDataPoint.values, centroids[nearestCentroidIndex].values);
+            centroidDistances[0] = minDistance;
             for (Integer cindex = 1; cindex < centroidSize; cindex++) {
                 Double distance = this.runner.calculateDistance(currentDataPoint.values, centroids[cindex].values);
+                centroidDistances[cindex] = distance;
                 if (Math.abs(distance) < Math.abs(minDistance)) {
                     minDistance = distance;
                     nearestCentroidIndex = cindex;
@@ -106,13 +105,22 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
                 //if distance to the nearest cluster is less reassign current data point to this cluster
                 if (nearestClusterDistance < currentClusterDistance) {
                     nearestCentroidIndex = previousCentroidIndex;
+                    minDistance = this.runner.calculateDistance(currentDataPoint.values, centroids[nearestCentroidIndex].values);
                 }
             }
             //Reassigning to another cluster if needed
             if (currentRecord.ClusterNumber__c != nearestCentroidIndex) {
                 currentRecord.ClusterNumber__c = nearestCentroidIndex;
                 currentRecord.Cluster__c = jobState.jobClusters[nearestCentroidIndex].Id;
-                currentRecord.DistanceToCluster__c = Decimal.valueOf(minDistance);
+                //Storing distance to the current centroid
+                currentRecord.DistanceToCluster__c = minDistance;
+                //Finding and calculating distance to the next centroid
+                //Both distances are used to optimize KNN search
+                Integer nextCentroidIndex = nearestCentroidIndex + 1;
+                if (nextCentroidIndex >= centroidSize) {
+                    nextCentroidIndex = 0;
+                }
+                currentRecord.DistanceToNNCluster__c = centroidDistances[nextCentroidIndex];
                 if (this.updateResults) {
                     //CRUD permissions are checked in ClusterAccessCheck.checkCRUDPermission in the constructor above (for performance reasons), exception is thrown in case of no access
                     updatedResults.add(currentRecord);
@@ -126,8 +134,4 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         }
     }
 
-    public override void done(){
-        this.clusterAttachmentSizes = null;
-        super.done();
-    }
 }

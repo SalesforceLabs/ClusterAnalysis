@@ -61,6 +61,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ClusterDataPointNeighbor</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ClusterDeleteJobControllerExt</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -149,6 +153,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ClusterKNNPredictor</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ClusterLongTextFieldValueProcessor</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -193,6 +201,10 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ClusterNeighbor</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ClusterObjectFactory</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -229,7 +241,15 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ClusterPredictKNNUiModel</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ClusterPredictUiModel</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ClusterPredictionResult</apexClass>
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
@@ -337,6 +357,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>ClusterJobResult__c.DistanceToCluster__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>ClusterJobResult__c.DistanceToNNCluster__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -131,6 +131,9 @@
         parameters.add(new ClusterAlgorithmParameter('numberOfClusters', 'Number of clusters', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, clusterNumber, null));
         parameters.add(new ClusterAlgorithmParameter('distanceFunction', 'Distance Function', ClusterAlgorithmParameter.ParameterType.SELECT_PARAMETER, ClusterConstants.DISTANCE_MANHATTAN, 
             new String[]{ ClusterConstants.DISTANCE_MANHATTAN, ClusterConstants.DISTANCE_EUCLIDEAN }));
+        if (model == null || model.hasLongTextFields()) {
+            parameters.add(new ClusterAlgorithmParameter('minWordFrequency', 'Min number of word occurrences', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, ClusterConstants.getMinTfIdfWordCount(), null));
+        }    
         return parameters;
     }
 

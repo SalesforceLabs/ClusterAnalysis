@@ -3,26 +3,6 @@ import predict from '@salesforce/apex/ClusterPredictController.predict';
 import clustanUtils from 'c/clustanUtils';
 import { NavigationMixin } from 'lightning/navigation';
 
-const columns = [
-    { label: 'Name', fieldName: 'name' },
-    {
-        label: 'Similarity',
-        fieldName: 'similarity',
-        type: 'percent',
-        typeAttributes: { maximumFractionDigits: 2 },
-        sortable: true,
-        cellAttributes: { alignment: 'left' },
-    },
-    {
-        label: 'Weight',
-        fieldName: 'weight',
-        type: 'percent',
-        typeAttributes: { maximumFractionDigits: 2 },
-        sortable: true,
-        cellAttributes: { alignment: 'left' },
-    },
-];
-
 export default class ClusterPredictResult extends NavigationMixin(LightningElement) {
     @api recordId;
     @api jobOrModel;
@@ -37,10 +17,7 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     @track spinnerVisible = true;
     @track clusterPageUrl = '#';
     pollingCount = 0;
-    similarityColumns = columns;
-    defaultSortDirection = 'asc';
-    sortDirection = 'asc';
-    sortedBy;
+    timeoutHandle = null;
 
     connectedCallback() {
         this.pollingCount = 0;
@@ -59,6 +36,12 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
         }
         else {
             this.handleError('Model or record are required for prediction');
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.timeoutHandle) {
+            clearTimeout(this.timeoutHandle);
         }
     }
 
@@ -127,12 +110,13 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     }
 
     setPolling() {
+        this.timeoutHandle = null;
         if (!this.recordId) return;
         let MAX_POLLING_COUNT = 12; //we will poll for 2 mins max
         this.pollingCount++;
         if (this.pollingCount < MAX_POLLING_COUNT) {
             this.spinnerVisible = true;
-            setTimeout(() => {
+            this.timeoutHandle = setTimeout(() => {
                 this.predict();
             }, 10000);
         }
@@ -177,29 +161,4 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
         }
     }
 
-    sortBy(field, reverse, primer) {
-        const key = primer
-            ? function(x) {
-                  return primer(x[field]);
-              }
-            : function(x) {
-                  return x[field];
-              };
-
-        return function(a, b) {
-            a = key(a);
-            b = key(b);
-            return reverse * ((a > b) - (b > a));
-        };
-    }
-
-    onHandleSort(event) {
-        const { fieldName: sortedBy, sortDirection } = event.detail;
-        const cloneData = [...this.similarityData];
-
-        cloneData.sort(this.sortBy(sortedBy, sortDirection === 'asc' ? 1 : -1));
-        this.similarityData = cloneData;
-        this.sortDirection = sortDirection;
-        this.sortedBy = sortedBy;
-    }
 }
