@@ -45,12 +45,14 @@ public with sharing class ClusterPAMDataAssignmentStep extends ClusterIterableBa
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Boolean isCentroid = false;
+            Integer centroidIndex;
             Double minDistance = this.runner.calculateDPDistance(currentRecord, centroids[nearestCentroidIndex]);
             for (Integer cindex = 1; cindex < centroidSize; cindex++) {
-                isCentroid = centroids[cindex].recordId == currentRecord.recordId;
-                if (isCentroid) {
+                Boolean isCurrentCentroid = centroids[cindex].recordId == currentRecord.recordId;
+                isCentroid = isCentroid || isCurrentCentroid;
+                if (isCurrentCentroid) {
                     currentRecord.clusterIndex = null;
-                    break;
+                    centroidIndex = cindex;
                 }
                 Double distance = this.runner.calculateDPDistance(currentRecord, centroids[cindex]);
                 if (Math.abs(distance) < Math.abs(minDistance)) {
@@ -67,6 +69,10 @@ public with sharing class ClusterPAMDataAssignmentStep extends ClusterIterableBa
                     ClusterIterableBase.log.debug('Reassigning ' + currentRecord + ' to cluster ' + nearestCentroidIndex);
                 }
                 centroidCosts[nearestCentroidIndex] += minDistance;
+            }
+            else {
+                //If current dp is a centroid store the nearest centroid
+                jobState.nearestCentroids[centroidIndex] = nearestCentroidIndex;
             }
         }        
         //Aggregating cost for each centroid/medoid

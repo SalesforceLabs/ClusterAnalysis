@@ -1,5 +1,5 @@
-public with sharing class ClusterPredictionResult {
-    public class FieldValuePrediction implements Comparable {
+global with sharing class ClusterPredictionResult {
+    global class FieldValuePrediction implements Comparable {
         @AuraEnabled
         public Object value;
         @AuraEnabled
@@ -12,8 +12,21 @@ public with sharing class ClusterPredictionResult {
             //Order by probability desc 
             return -1 * ClusterDataHelper.compareDoubles(this.probability, other.probability);
         }
+
+        global Object getValue() {
+            return this.value;
+        }
+
+        global Double getProbability() {
+            return this.probability;
+        }
+
+        global Integer getNumberOfSamples() {
+            return this.numberOfSamples;
+        }
     }
-    public class FieldPrediction {
+    
+    global class FieldPrediction {
         Map<String,FieldValuePrediction> fieldValuePredictionsMap;
         @AuraEnabled
         public ClusterModelFieldWrapper field;
@@ -36,7 +49,6 @@ public with sharing class ClusterPredictionResult {
                 }
             }
         }
-
 
         public FieldPrediction() {
             this.fieldValuePredictionsMap = new Map<String,FieldValuePrediction>();
@@ -95,6 +107,10 @@ public with sharing class ClusterPredictionResult {
             }
         }
 
+        global List<FieldValuePrediction> getFieldValuePredictions() {
+            return this.fieldValuePredictions;
+        }
+
     }
     @AuraEnabled
     public List<FieldPrediction> fieldPredictions;
@@ -108,7 +124,23 @@ public with sharing class ClusterPredictionResult {
     public ClusterDataPoint dataPoint;
 
 
-    public ClusterPredictionResult() {
+    global ClusterPredictionResult() {
         this.fieldPredictions = new List<FieldPrediction>();
+    }
+
+    global List<FieldPrediction> getFieldPredictions() {
+        return this.fieldPredictions;
+    }
+
+    global List<ClusterDataPointNeighbor> getNearestNeighbors() {
+        return this.nearestNeighbors;
+    }
+
+    global FieldPrediction getClusterPrediction() {
+        return this.clusterPrediction;
+    }
+
+    global Integer getClusterIndex() {
+        return this.clusterIndex;
     }
 }

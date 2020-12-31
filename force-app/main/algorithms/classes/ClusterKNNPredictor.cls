@@ -124,10 +124,7 @@ public with sharing class ClusterKNNPredictor {
                         ClusterDataHelper.populateClusterJobResultJsonValues(jobResult, this.runner.getSObjectProcessor().serializeValuesToJson(dataPoint.values));
                         jobResult.Random__c = ClusterDataHelper.getRandomInt(0, 1000000); //Randomize record order
                         jobResult.DistanceToCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[dataPoint.clusterIndex].values);
-                        Integer nextClusterIndex = dataPoint.clusterIndex + 1;
-                        if (nextClusterIndex >= state.centroids.size()) {
-                            nextClusterIndex = 0;
-                        }
+                        Integer nextClusterIndex = state.getNextClusterIndex(dataPoint.clusterIndex);
                         jobResult.DistanceToNNCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[nextClusterIndex].values);
                         insert jobResult;
                     }
@@ -159,18 +156,22 @@ public with sharing class ClusterKNNPredictor {
         }
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
         List<ClusterDataPoint> nearestDataPoints = new List<ClusterDataPoint>();
-        Integer centroidSize = jobState.centroids.size();
+        Boolean hasNearestCentroids = jobState.hasNearestCentroids();
+        Integer centroidSize = jobState.centroids.size();        
         //Getting nearest data points in nearest clusters
+        Double currentCentroidDistance;
         for (Integer i = 0; i < nearestClusters.size(); i++) {
             Double distance = this.runner.calculateDPDistance(dataPoint, jobState.centroids[nearestClusters[i]]);
-            Integer nextClusterIndex = nearestClusters[i] + 1;
-            if (nextClusterIndex >= centroidSize) {
-                nextClusterIndex = 0;
+            if (dataPoint.clusterIndex == nearestClusters[i]) {
+                currentCentroidDistance = distance;
             }
+            Integer nextClusterIndex = jobState.getNextClusterIndex(i);
             Double nextClusterDistance = this.runner.calculateDPDistance(dataPoint, jobState.centroids[nextClusterIndex]);
             nearestDataPoints.addAll(this.getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, nearestClusters[i], distance, nextClusterDistance, jobState));
         }
-        //Also getting random datapoints from the same cluster
+        //Also getting random datapoints from the same cluster which have less distance to center than current dataPoint
+        nearestDataPoints.addAll(getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, dataPoint.clusterIndex, currentCentroidDistance));
+        //Also getting other random datapoints from the same cluster
         nearestDataPoints.addAll(getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, dataPoint.clusterIndex, null, null, jobState));
         log.debug('Retrieved ' + nearestDataPoints.size() + ' nearest data points from ' + nearestClusters.size() + ' nearest clusters');
 
@@ -243,16 +244,19 @@ public with sharing class ClusterKNNPredictor {
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
         List<ClusterJobResult__c> jobResults = null;
         if (distanceToCenter != null) {
-            Double[] distanceTolerances = new Double[4];
-            distanceTolerances[0] = distanceToCenter * 0.001;  //0.01%
-            distanceTolerances[1] = distanceToCenter * 0.01; //1%
-            distanceTolerances[2] = distanceToCenter * 0.1; //10%
-            distanceTolerances[3] = distanceToCenter * 0.25; //25%
+            Double[] distanceTolerances = new Double[6];
+            distanceTolerances[0] = distanceToCenter * 0.0001;  //0.001%
+            distanceTolerances[1] = distanceToCenter * 0.001;  //0.01%
+            distanceTolerances[2] = distanceToCenter * 0.01; //1%
+            distanceTolerances[3] = distanceToCenter * 0.05; //5%
+            distanceTolerances[4] = distanceToCenter * 0.1; //10%
+            distanceTolerances[5] = distanceToCenter * 0.25; //25%
             for (Integer i=0; i<distanceTolerances.size(); i++) {
                 Decimal distanceMin = Decimal.valueOf(distanceToCenter - distanceTolerances[i]);
                 Decimal distanceMax = Decimal.valueOf(distanceToCenter + distanceTolerances[i]);
                 Decimal nextDistanceMax = Decimal.valueOf(distanceToNextCluster + distanceTolerances[i]);
                 //We are trying to retrieve results with similar distanceToCenter value to reduce KNN calculations
+                //Here we are looking for an intersection of the current and nearest clusters
                 jobResults = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c 
                     FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND ClusterNumber__c = :clusterIndex 
                     AND (DistanceToCluster__c >= :distanceMin AND DistanceToCluster__c<= :distanceMax AND DistanceToNNCluster__c<=:nextDistanceMax) 
@@ -272,6 +276,19 @@ public with sharing class ClusterKNNPredictor {
         return ClusterDataHelper.getDataPoints(jobResults, jobState);
     }
 
+    public ClusterDataPoint[] getRandomDataPoints(Integer count, Integer clusterIndex, Double distanceToCenter) {
+        log.debug('Retrieving nearest random data points in cluster ' + clusterIndex + ' with radius ' + distanceToCenter);
+        ClusterJobState jobState = this.runner.getJobState();
+        ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
+        List<ClusterJobResult__c> jobResults = null;
+        //We are trying to retrieve results with similar distanceToCenter value to reduce KNN calculations
+        jobResults = [SELECT Id, Cluster__c, Json__c, Json2__c, Json3__c, Json4__c, Json5__c, RecordId__c, RecordName__c, ClusterNumber__c, ClusterJob__c, DistanceToCluster__c, DistanceToNNCluster__c 
+            FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND ClusterNumber__c = :clusterIndex 
+            AND DistanceToCluster__c<= :distanceToCenter 
+            ORDER BY DistanceToCluster__c DESC LIMIT :count];
+        log.debug('Retrieved ' + jobResults.size() + ' nearest random data points in cluster ' + clusterIndex);
+        return ClusterDataHelper.getDataPoints(jobResults, jobState);
+    }
 
 
 }

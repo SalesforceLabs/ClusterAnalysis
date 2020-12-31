@@ -29,7 +29,7 @@ public with sharing class ClusterConstants {
     public static final Integer TEST_BATCH_SIZE = 200;
     public static final Integer KMEANS_CACHE_SIZE = 10000;
     public static final Integer NUM_NEAREST_CLUSTERS = 3;
-    public static final Integer NUM_NEAREST_NEIGHBORS_PREDICTION = 11;
+    public static final Integer NUM_NEAREST_NEIGHBORS_PREDICTION = 7;
     public static final Integer MAX_NEIGHBORS = 50;
     public static final Integer MAX_PREDICTION_VALUES = 5;
     public static final Integer MIN_KNN_NEIGHBOR_SIZE = 4; //Min neighbor count per cluster

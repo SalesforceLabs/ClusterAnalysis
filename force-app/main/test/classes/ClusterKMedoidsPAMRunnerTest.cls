@@ -236,6 +236,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             pdaStep.execute(null, dataPoints);
             pdaStep.finish(null);
 
+            //TODO: this asserm might fail if two centroids are top 2 items. Probability is somewhat low
             System.assertEquals(true, (state.centroids[0].cost > 0) || (state.centroids[1].cost > 0), 'Centroid cost calculated incorrectly');
             Boolean isCentroidFirst = false;
             for (ClusterDataPoint centroid:state.centroids){
@@ -358,12 +359,14 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             Test.startTest();
             Lead l = [SELECT Id, Name FROM Lead LIMIT 1];
             ClusterPredictionResult pr = runner.getPredictor().predict(l.Id, true);
-            System.assertEquals(2, pr.fieldPredictions.size(), 'Incorrect field prediction size');
+            System.assertEquals(2, pr.getFieldPredictions().size(), 'Incorrect field prediction size');
             System.assertEquals('Industry', pr.fieldPredictions[1].field.name, 'Incorrect prediction field name');
-            System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].value != null, 'Incorrect prediction field value');
-            System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].probability > 0.0, 'Incorrect prediction field value probability');
+            System.assertEquals(true, pr.fieldPredictions[1].getFieldValuePredictions()[0].getValue() != null, 'Incorrect prediction field value');
+            System.assertEquals(true, pr.fieldPredictions[1].fieldValuePredictions[0].getProbability() > 0.0, 'Incorrect prediction field value probability');
             System.assertEquals(true, Double.valueOf(pr.fieldPredictions[0].fieldValuePredictions[0].value) > 0.0, 'Incorrect prediction field value');
             System.assertEquals(1, pr.fieldPredictions[0].fieldValuePredictions.size(), 'Incorrect prediction field values size');
+            System.assertEquals(true, pr.getClusterPrediction() != null, 'Incorrect cluster prediction');
+            System.assertEquals(true, pr.getClusterIndex() > -1 != null, 'Incorrect cluster index');
             Test.stopTest();
         }
     }

@@ -129,10 +129,10 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
             ccda.add(d);
         }
         //Testing compression
-        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccda.values[0].value, (Double)1.0), 'Incorrect value in compressed array');
-        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = ccda.values[2];
-        System.assertEquals(3, ccd.count, 'Incorrect count in compressed array');
-        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccd.value, (Double)3.0), 'Incorrect value in compressed array');
+        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccda.values[0].getValue(), (Double)1.0), 'Incorrect value in compressed array');
+        ClusterCompressedDoubleArray.ClusterCompressedDouble ccd = ccda.getCompressedList()[2];
+        System.assertEquals(3, ccd.getCount(), 'Incorrect count in compressed array');
+        System.assertEquals(true, ClusterDataHelper.doublesEqual(ccd.getValue(), (Double)3.0), 'Incorrect value in compressed array');
         
         //Testing last double
         testCDAIterators(ccda, da);

@@ -10,6 +10,7 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
     Boolean storeAssignments = false;
     Boolean useSampleIds = false;
     Boolean useDistanceToCluster = false;
+    Boolean hasNearestCentroids = true;
 
     public ClusterCentroidDataAssignmentStep(Boolean updateResults, Boolean storeAssignments, Boolean useSampelIds, Boolean useDistanceToCluster) {
         this.updateResults = updateResults;
@@ -27,6 +28,7 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
         ClusterJobManager.deleteClusterAttachments(jobState.clusterJob.JobClusters__r);
         jobState.hasAssignmentChanged = false;
         this.sampleResultsIds = jobState.sampleResultsIds;
+        this.hasNearestCentroids = jobState.hasNearestCentroids();
     }
 
     public override Integer getBatchSize() {
@@ -114,12 +116,9 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
                 currentRecord.Cluster__c = jobState.jobClusters[nearestCentroidIndex].Id;
                 //Storing distance to the current centroid
                 currentRecord.DistanceToCluster__c = minDistance;
-                //Finding and calculating distance to the next centroid
+                //Finding and calculating distance to the next nearest centroid
                 //Both distances are used to optimize KNN search
-                Integer nextCentroidIndex = nearestCentroidIndex + 1;
-                if (nextCentroidIndex >= centroidSize) {
-                    nextCentroidIndex = 0;
-                }
+                Integer nextCentroidIndex = jobState.getNextClusterIndex(nearestCentroidIndex);
                 currentRecord.DistanceToNNCluster__c = centroidDistances[nextCentroidIndex];
                 if (this.updateResults) {
                     //CRUD permissions are checked in ClusterAccessCheck.checkCRUDPermission in the constructor above (for performance reasons), exception is thrown in case of no access

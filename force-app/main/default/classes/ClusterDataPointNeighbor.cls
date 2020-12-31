@@ -3,7 +3,7 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterDataPointNeighbor implements Comparable {
+global with sharing class ClusterDataPointNeighbor implements Comparable {
     @AuraEnabled
     public String externalRecordId;
     @AuraEnabled
@@ -43,6 +43,30 @@ public with sharing class ClusterDataPointNeighbor implements Comparable {
     public Integer compareTo(Object compareTo) {
         ClusterDataPointNeighbor other = (ClusterDataPointNeighbor) compareTo;
         return ClusterDataHelper.compareDoubles(this.distance, other.distance);
+    }
+
+    global String getExternalRecordId() {
+        return this.externalRecordId;
+    }
+
+    global Double getDistance() {
+        return this.distance;
+    }
+
+    global Id getRecordId() {
+        return this.recordId;
+    }
+
+    global Id getJobId() {
+        return this.jobId;
+    }
+
+    global String getNeighborExternalRecordId() {
+        return this.neighborExternalRecordId;
+    }
+
+    global ClusterDataPoint getNeighborDataPoint() {
+        return this.neighborDataPoint;
     }
 
 }

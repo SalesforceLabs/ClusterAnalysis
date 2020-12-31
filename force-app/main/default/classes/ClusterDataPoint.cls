@@ -3,7 +3,7 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterDataPoint {
+global with sharing class ClusterDataPoint {
     @AuraEnabled
     public Object[] values;
     @AuraEnabled
@@ -22,11 +22,12 @@ public with sharing class ClusterDataPoint {
     public Double distanceToNNCluster;
     public Integer index; //index of the item in the array
     public Double cost;
-    public ClusterDataPoint() {
+
+    global ClusterDataPoint() {
 
     }
 
-    public ClusterDataPoint(ClusterJobResult__c resultRecord) {
+    global ClusterDataPoint(ClusterJobResult__c resultRecord) {
         this.recordId = resultRecord.Id;
         this.externalId = resultRecord.RecordId__c;
         this.clusterIndex = Integer.valueOf(resultRecord.ClusterNumber__c);
@@ -59,6 +60,46 @@ public with sharing class ClusterDataPoint {
                 }
             }
         }
+    }
+
+    global Object[] getValues() {
+        return this.values;
+    }
+
+    global void setValues(Object[] newValues) {
+        this.values = newValues;
+    }
+
+    global Id getRecordId() {
+        return this.recordId;
+    }
+
+    global void setRecordId(Id newRecordId) {
+        this.recordId = newRecordId;
+    }
+
+    global String getExternalId() {
+        return this.externalId;
+    }
+
+    global void setExternalId(String newExternalId) {
+        this.externalId = newExternalId;
+    }
+
+    global Integer getClusterIndex() {
+        return this.clusterIndex;
+    }
+
+    global void setClusterIndex(Integer newClusterIndex) {
+        this.clusterIndex = newClusterIndex;
+    }
+
+    global String getRecordName() {
+        return this.recordName;
+    }
+
+    global void setRecordName(String newRecordName) {
+        this.recordName = newRecordName;
     }
     
 }

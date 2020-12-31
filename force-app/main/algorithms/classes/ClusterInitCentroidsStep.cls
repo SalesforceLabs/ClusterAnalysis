@@ -123,6 +123,8 @@ public with sharing class ClusterInitCentroidsStep extends ClusterIterableBase {
 
     public override void done() {
         ClusterKMeansJobState jobState = (ClusterKMeansJobState)this.runner.getJobState();
+        //Initializing nearest centroids
+        jobState.nearestCentroids = new Integer[jobState.centroids.size()];
 
         if (!this.cacheRecords) {
             //Clear the data point cache
@@ -132,7 +134,7 @@ public with sharing class ClusterInitCentroidsStep extends ClusterIterableBase {
             jobState.dataPoints = null;
         }
         log.debug('Init centroids step finished');
-        log.debug('initial centroids: ' + jobState.centroids);
+        log.debug('initial centroids: ' + jobState.centroids);        
         super.done();
     }
 
