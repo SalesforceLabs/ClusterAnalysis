@@ -16,6 +16,7 @@ global with sharing class ClusterApi {
     }
 
     global void setModelOrJobId(string modelOrJobId) {
+        //TODO: We're using UI controller here, refactor to use ClusterJobManager instead
         ClusterPredictController.ClusterModelJob modelJob = ClusterPredictController.getModelJob(modelOrJobId);
         Id jobId = modelJob.jobId;
         this.runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);

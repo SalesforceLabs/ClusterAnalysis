@@ -1,4 +1,4 @@
-<aura:component implements="force:hasRecordId,flexipage:availableForRecordHome" controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
+<aura:component implements="force:hasRecordId" controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
     <ltng:require scripts="{!join(',', 
         $Resource.d3tsne + '/tsne.js',     
         $Resource.d3tsne + '/d3.v5.min.js',

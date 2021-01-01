@@ -71,7 +71,6 @@
         <fields>NAME</fields>
         <fields>RelatedRecordLink__c</fields>
         <fields>ClusterNumber__c</fields>
-        <fields>Json__c</fields>
         <relatedList>ClusterJobResult__c.Cluster__c</relatedList>
     </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
@@ -80,7 +79,7 @@
     <showRunAssignmentRulesCheckbox>false</showRunAssignmentRulesCheckbox>
     <showSubmitAndAttachButton>false</showSubmitAndAttachButton>
     <summaryLayout>
-        <masterLabel>00h11000001cDFL</masterLabel>
+        <masterLabel>00hS00000033V5E</masterLabel>
         <sizeX>4</sizeX>
         <sizeY>2</sizeY>
         <summaryLayoutItems>
