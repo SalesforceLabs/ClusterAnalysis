@@ -11,6 +11,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
     ClusterJobState jobState;
     Map<String,ClusterWordPreprocessor> wordPreprocessors;
     Boolean useCompression;
+    private Integer minWordCount;
 
     public ClusterLongTextFieldValueProcessor(ClusterJobState state) {
         this.jobState = state;
@@ -20,6 +21,15 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         for (UiSelectOption language : languages) {
             wordPreprocessors.put(language.value.toLowerCase(), new ClusterWordPreprocessor(language.value.toLowerCase()));
         }
+        if (state == null || state.model == null || state.model.parameters == null || !state.model.parameters.containsKey('minWordFrequency')) {
+            this.minWordCount = null;
+        }
+        else {
+            this.minWordCount = Integer.valueOf(state.model.parameters.get('minWordFrequency'));
+        }
+        if (this.minWordCount == null) {
+            this.minWordCount = ClusterConstants.getMinTfIdfWordCount();
+        }
     }
 
     public void setCompression(Boolean compression) {
@@ -28,6 +38,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
 
     public Object processFieldValue(SObject record, ClusterModelFieldWrapper fieldDesc, ClusterMinMaxValue minMaxValue) {
         //Initializing word counter map and word list if needed
+        List<String> wordList = (List<String>)minMaxValue.minValue;
+        if (wordList == null) {
+            wordList = new List<String>();
+            minMaxValue.minValue = wordList;
+        }
         Map<String, Integer> wordMap;
         try {
             wordMap = (Map<String, Integer>)minMaxValue.maxValue;
@@ -36,16 +51,18 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 minMaxValue.maxValue =wordMap;
             }
         }
-        catch (System.TypeException ex) {
+        catch (System.TypeException ex) {            
             //TODO: This is an ugly workaround for "System.TypeException: Invalid conversion from runtime type clustan.ClusterCompressedDoubleArray to Map<String,Integer>"
-            //in predict code flow
+            //Because we replaced wordMap minMaxValue.maxValue with idf compressed array we can't get wordMap anymore
+            //Previous wordMap is not needed to calculate tf and we are not going to recalculate idf in predict flow
+            //So we just catch this exception and initialize word map from word list
+            //This way in Apex is faster than using instanceof (in clustering flow this method will be called N times, in predict flow only once)
             wordMap = new Map<String, Integer>();
+            for (String word: wordList) {
+                wordMap.put(word, 0);
+            }
         }
-        List<String> wordList = (List<String>)minMaxValue.minValue;
-        if (wordList == null) {
-            wordList = new List<String>();
-            minMaxValue.minValue = wordList;
-        }
+
         
         Object fieldValue = ClusterDataHelper.getSObjectFieldValue(record, fieldDesc);
         if (fieldValue == null) {
@@ -57,10 +74,10 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         }
         String language = fieldDesc.language != null ? fieldDesc.language.toLowerCase() : ClusterConstants.LANGUAGE_NONE;
         if (this.useCompression) {
-            return calculateCompressedTF(text, wordMap, wordList, this.wordPreprocessors.get(language));
+            return calculateCompressedTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount);
         }
         else {
-            Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language));
+            Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount);
             return tf;
         }
     }
@@ -69,14 +86,16 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return text==null ? null : text.split(WORD_SPLIT_REGEX);
     }
 
-    private static Integer prepareWordList(String text, Map<String, Integer> wordMap, List<String> wordList, Map<String, Integer> currentWordMap, ClusterWordPreprocessor wordPreprocessor) {
+    private static Integer prepareWordList(String text, Map<String, Integer> wordMap, List<String> wordList, Map<String, Integer> currentWordMap, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
         if (text == '') {
             return null;
         }
         //Removing html tags and breaking into words
         String[] words = splitText(text.stripHtmlTags());
 
-        Integer numTokens = 0;
+        //Unfiltered word map
+        Map<String, Integer> tempWordMap = new Map<String, Integer>();
+        
         for (Integer i = 0; i < words.size(); i++) {
             //Skip empty and single character words
             if (words[i].length() < 2) {
@@ -87,21 +106,40 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             if (token == null) {
                 continue;
             }
-            addWordToMap(token, currentWordMap, 1, null);
-            numTokens++;
+            addWordToMap(token, tempWordMap, 1, null);
         }
+
         //Adding words and updating counts in aggregated structures
-        for (String currentToken:currentWordMap.keySet()) {
-            addWordToMap(currentToken, wordMap, 1, wordList); // Adding 1 here because for IDF we need to calculate the number of documents containing this term
-        }
+        Integer numTokens = 0;
+        Integer currMinWordCount = minWordCount;
+        do {
+            for (String currentToken:tempWordMap.keySet()) {
+                Integer currentTokenCount = tempWordMap.get(currentToken);
+                //Use the word if is used more than currMinWordCount times in the document
+                if (currentTokenCount >= currMinWordCount) {
+                    currentWordMap.put(currentToken, currentTokenCount);
+                    numTokens += currentTokenCount;
+                    addWordToMap(currentToken, wordMap, 1, wordList); // Adding 1 here because for IDF we need to calculate the number of documents containing this term                
+                }
+            }
+            if (numTokens == 0) {
+                //If no words were retrieved we will try one more time with currMinWordCount = 1
+                if (currMinWordCount > 1) {
+                    currMinWordCount = 1;
+                }
+                else {
+                    currMinWordCount = 0;
+                }
+            }            
+        } while (currMinWordCount > 0 && numTokens == 0);
         return numTokens;
     }
     
-    public static Double[] calculateTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor) {
+    public static Double[] calculateTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
         //This will contain word counts for the current document
         Map<String, Integer> currentWordMap = new Map<String,Integer>();
 
-        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor);
+        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount);
         //Calculating tf for the text
         Double[] tf = new Double[wordList.size()];
         for (Integer i=0; i<wordList.size(); i++) {
@@ -117,11 +155,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return tf;
     }
 
-    public static ClusterCompressedDoubleArray calculateCompressedTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor) {
+    public static ClusterCompressedDoubleArray calculateCompressedTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
         //This will contain word counts for the current document
         Map<String, Integer> currentWordMap = new Map<String,Integer>();
 
-        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor);
+        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount);
         //Calculating tf for the text
         ClusterCompressedDoubleArray tf = new ClusterCompressedDoubleArray();
         for (Integer i=0; i<wordList.size(); i++) {

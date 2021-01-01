@@ -3,24 +3,40 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterCompressedDoubleArray {
-    public class ClusterCompressedDouble {
+global with sharing class ClusterCompressedDoubleArray {
+    global class ClusterCompressedDouble {
         @AuraEnabled        
         public Integer count;
         @AuraEnabled
         public Double value;
 
-        public ClusterCompressedDouble() {
+        global ClusterCompressedDouble() {
 
         }
 
-        public ClusterCompressedDouble(Double doubleValue) {
+        global ClusterCompressedDouble(Double doubleValue) {
             this.value = doubleValue;
             this.count = 1;
         }
+
+        global Integer getCount() {
+            return this.count;
+        }
+
+        global void setCount(Integer newCount) {
+            this.count = newCount;
+        }
+
+        global Double getValue() {
+            return this.value;
+        }
+
+        global void setValue(Double newValue) {
+            this.value = newValue;
+        }
     }
 
-    public class ClusterCompressedDoubleArrayIterator implements Iterator<Double> {
+    global class ClusterCompressedDoubleArrayIterator implements Iterator<Double> {
         private ClusterCompressedDoubleArray iterableArray;
         private Integer currentArrayIndex;
         private Integer currentValueIndex;
@@ -31,7 +47,7 @@ public with sharing class ClusterCompressedDoubleArray {
         private Double currentValue;
         private Integer iterableArraySize;
 
-        public ClusterCompressedDoubleArrayIterator(ClusterCompressedDoubleArray value) {
+        global ClusterCompressedDoubleArrayIterator(ClusterCompressedDoubleArray value) {
             this.iterableArray = value;
             this.iterableArraySize = value.size();
             this.currentArrayIndex = -1;
@@ -42,7 +58,7 @@ public with sharing class ClusterCompressedDoubleArray {
             this.nextCompressedValue = null;
         }
 
-        public Boolean hasNext() {
+        global Boolean hasNext() {
             this.nextArrayIndex = this.currentArrayIndex;
             if (this.currentCompressedValue != null) {
                 if (this.currentValueIndex + 1 < this.currentCompressedValue.count) {
@@ -62,7 +78,7 @@ public with sharing class ClusterCompressedDoubleArray {
             return this.nextArrayIndex < this.iterableArraySize;            
         }
 
-        public Double next() {
+        global Double next() {
             if (this.nextArrayIndex > -1) {
                 this.currentArrayIndex = this.nextArrayIndex;
                 this.currentValueIndex = this.nextValueIndex;
@@ -77,7 +93,7 @@ public with sharing class ClusterCompressedDoubleArray {
             return this.currentValue;
         }
 
-        public Boolean moveNext() {
+        global Boolean moveNext() {
             if (this.currentCompressedValue != null) {
                 if (this.currentValueIndex < this.currentCompressedValue.count - 1) {
                     this.currentValueIndex++;
@@ -96,7 +112,7 @@ public with sharing class ClusterCompressedDoubleArray {
             return result;
         }
 
-        public Double getValue() {
+        global Double getValue() {
             return this.currentValue;
         }
 
@@ -114,19 +130,19 @@ public with sharing class ClusterCompressedDoubleArray {
     public List<ClusterCompressedDouble> values;
     private transient Double prevValue;
 
-    public ClusterCompressedDoubleArray() {
+    global ClusterCompressedDoubleArray() {
         this.values = new List<ClusterCompressedDouble>();
         this.prevValue = null;
     }
 
-    public ClusterCompressedDoubleArray(List<Double> doubleArray) {
+    global ClusterCompressedDoubleArray(List<Double> doubleArray) {
         this();
         for (Double d:doubleArray) {
             this.add(d);
         }
     }
 
-    public void add(Double value) {
+    global void add(Double value) {
         Integer size = this.values.size();
         if (size == 0 || this.prevValue == null) {
             this.values.add(new ClusterCompressedDouble(value));
@@ -145,17 +161,18 @@ public with sharing class ClusterCompressedDoubleArray {
         }
     }
 
-    public void addCompressedValue(Double value, Integer count) {
+    global void addCompressedValue(Double value, Integer count) {
         ClusterCompressedDouble cv = new ClusterCompressedDouble();
         cv.value = value;
         cv.count = count;
         this.values.add(cv);
+        this.prevValue = value;
     }
 
-    public void addCompressedValue(ClusterCompressedDouble value) {
+    global void addCompressedValue(ClusterCompressedDouble value) {
         this.values.add(value);
+        this.prevValue = value.value;
     }
-
 
     public Integer size() {
         return this.values.size();
@@ -165,11 +182,11 @@ public with sharing class ClusterCompressedDoubleArray {
         return this.values.get(index);
     }
 
-    public List<ClusterCompressedDouble> getCompressedList() {
+    global List<ClusterCompressedDouble> getCompressedList() {
         return this.values;
     }
 
-    public List<Double> toList() {
+    global List<Double> toList() {
         ClusterCompressedDoubleArrayIterator ci = this.iterator();
         List<Double> decompressed = new List<Double>();
         while (ci.moveNext()) {
@@ -178,7 +195,7 @@ public with sharing class ClusterCompressedDoubleArray {
         return decompressed;
     }
 
-    public ClusterCompressedDoubleArrayIterator iterator() {
+    global ClusterCompressedDoubleArrayIterator iterator() {
         return new ClusterCompressedDoubleArrayIterator(this);
     }
 

@@ -38,6 +38,12 @@ public class ClusterModelFieldWrapper {
         this.language = (String)fieldValues.get('language');
     }
 
+    public Boolean isFieldDescNumeric() {
+        Schema.DisplayType displayType = this.fieldDesc.getType();
+        return (displayType == Schema.DisplayType.INTEGER) || (displayType == Schema.DisplayType.CURRENCY) 
+            || (displayType == Schema.DisplayType.DOUBLE) || (displayType == Schema.DisplayType.PERCENT) || (displayType == Schema.DisplayType.LONG);
+    }
+
     @AuraEnabled
     public Id fieldId;
     @AuraEnabled
@@ -64,6 +70,10 @@ public class ClusterModelFieldWrapper {
     public Boolean isLongText;
     @AuraEnabled
     public Boolean isCategory;
+    @AuraEnabled
+    public Boolean isPrediction;
     public Boolean isIdField;
     public Boolean isNameField;
+    public Boolean isDataTypeNumeric;
+    public transient DescribeFieldResult fieldDesc;
 }

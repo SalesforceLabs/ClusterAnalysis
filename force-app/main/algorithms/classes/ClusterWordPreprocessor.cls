@@ -14,6 +14,8 @@ public with sharing class ClusterWordPreprocessor {
 
     public String preprocess(String word) {
         String processedWord = word.toLowerCase();
+        processedWord = processedWord.removeStart('\'');
+        processedWord = processedWord.removeEnd('\'');
         if (this.stopWords.contains(processedWord)) {
             return null;
         }

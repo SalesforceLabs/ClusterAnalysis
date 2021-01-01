@@ -5,6 +5,7 @@
  */
 public with sharing class ClusterKMeansJobState extends ClusterJobState {
     public List<ClusterDataPoint> centroids;
+    public List<Integer> nearestCentroids;
     public List<ClusterDataPoint> dataPoints;
     public Map<String, Integer> dataPointsIdMap;
     public Boolean hasAssignmentChanged;
@@ -31,6 +32,16 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
                 this.sampleResultsIds.add(Id.valueOf((String)idValue));
             }
         }
+        List<Object> nearestCentroidsList = (List<Object>)stateValues.get('nearestCentroids');
+        if (nearestCentroids != null) {
+            this.nearestCentroids = new List<Integer>();
+            for (Object nc:nearestCentroidsList) {
+                this.nearestCentroids.add(Integer.valueOf(nc));
+            }
+        }
+        else {
+            this.nearestCentroids = null;
+        }
     }
 
     private List<ClusterDataPoint> loadDataPointList(Object[] values) {
@@ -43,6 +54,36 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
             }
         }
         return dataPoints;
+    }
+
+    public Integer getNextClusterIndex(Integer clusterIndex) {
+        Integer nextClusterIndex;
+        if (this.hasNearestCentroids()) {
+            //If nearest centroids were calculated take the nearest centroid to the current
+            nextClusterIndex = this.nearestCentroids[clusterIndex];
+        }
+        else {
+            //If not take the next one
+            nextClusterIndex = clusterIndex + 1;
+            if (nextClusterIndex >= this.centroids.size()) {
+                nextClusterIndex = 0;
+            }
+        }
+        return nextClusterIndex;
+    }
+
+    public boolean hasNearestCentroids() {
+        if (this.nearestCentroids != null) {
+            Boolean hasNC = true;
+            for (Integer nnIndex:this.nearestCentroids) {
+                hasNC = hasNC && ((nnIndex != null) && nnIndex > -1);
+                if (!hasNC) {
+                    break;
+                }
+            }
+            return hasNC;
+        }
+        return false;
     }
     
 }

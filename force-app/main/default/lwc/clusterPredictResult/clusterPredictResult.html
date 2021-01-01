@@ -9,7 +9,7 @@
                 <div class="slds-media__body">
                     <h2 class="slds-card__header-title">
                     <a class="slds-card__header-link slds-truncate" title="Cluster Prediction">
-                        <span>Cluster Prediction</span>
+                        <span>{headerLabel}</span>
                     </a>
                     </h2>
                 </div>
@@ -19,33 +19,69 @@
         <template if:true={spinnerVisible}>
             <div class="spinnerDiv">
                 <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                <span class="slds-p-horizontal_small">Calculating predictions...</span>
             </div>
         </template>
         <div class="slds-panel slds-p-around_x-small">        
-            <template if:true={predictionLoaded}>            
-                <div class="slds-region_narrow">
-                    <dl class="slds-dl_horizontal">
-                        <dt class="slds-dl_horizontal__label">Record name:</dt>
-                        <dd class="slds-dl_horizontal__detail">{predictCluster.dataPoint.recordName}</dd>
-                        <dt class="slds-dl_horizontal__label">Model:</dt>
-                        <dd class="slds-dl_horizontal__detail">{predictModel.name}</dd>
-                        <dt class="slds-dl_horizontal__label slds-text-heading_small prClusterResult"><strong>Predicted cluster:</strong></dt>
-                        <dd class="slds-dl_horizontal__detail slds-text-heading_small prClusterResult">
-                            <a href={clusterPageUrl} onclick={handleClusterLinkClick}>{predictCluster.clusterName}<div class="clusterbox" id="pr_clusterBox"></div></a>
-                        </dd>
-                    </dl>
-                </div>
-                <div class="slds-text-heading_small slds-m-top_small">Similarity with cluster centroid: <strong>{similarityValue}%</strong></div>
-                <lightning-datatable
-                    key-field="name"
-                    columns={similarityColumns}
-                    data={similarityData}
-                    hide-checkbox-column
-                    default-sort-direction={defaultSortDirection}
-                    sorted-direction={sortDirection}
-                    sorted-by={sortedBy}
-                    onsort={onHandleSort}>
-                </lightning-datatable>
+            <template if:true={predictionLoaded}>
+                <template if:true={hideHeader}>
+                    <div class="slds-region_narrow">
+                        <dl class="slds-dl_horizontal">
+                            <dt class="slds-dl_horizontal__label">Record name:</dt>
+                            <dd class="slds-dl_horizontal__detail">{predictCluster.dataPoint.recordName}</dd>
+                            <dt class="slds-dl_horizontal__label">Model:</dt>
+                            <dd class="slds-dl_horizontal__detail">{predictModel.name}</dd>
+                            <dt class="slds-dl_horizontal__label slds-text-heading_small predict-heading"><strong>Predicted cluster:</strong></dt>
+                            <dd class="slds-dl_horizontal__detail slds-text-heading_small predict-heading-value">
+                                <a href={clusterPageUrl} onclick={handleClusterLinkClick}>{predictCluster.clusterName}<div class="clusterbox" id="pr_clusterBox"></div></a>
+                            </dd>
+                        </dl>
+                    </div>
+                </template>
+                <template if:true={hasFieldPredictions}>
+                    <template if:true={hideHeader}>
+                        <h2 class="slds-dl_horizontal__label slds-text-heading_small predict-heading">Field predictions:</h2>
+                    </template>
+                    <template for:each={predictCluster.predictionResult.fieldPredictions} for:item="fieldPrediction">
+                        <article class="slds-card predict-card" key={fieldPrediction.field.fieldId}>
+                            <div class="slds-card__header slds-grid">
+                              <header class="slds-media slds-media_center slds-has-flexi-truncate">
+                                <div class="slds-media__body">
+                                  <h3 class="slds-card__header-title__medium">
+                                    <span class="slds-card__header-link slds-truncate" title={fieldPrediction.fieldLabel}>
+                                        {fieldPrediction.field.displayLabel}
+                                    </span>
+                                  </h3>
+                                </div>
+                              </header>
+                            </div>
+                          </article>
+                        <table class="slds-table slds-table_cell-buffer slds-table_bordered" key={fieldPrediction.field.fieldId}>
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate" title="Predicted Value">Predicted Value</div>
+                                    </th>
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate" title="Probability">Probability</div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={fieldPrediction.fieldValuePredictions} for:item="fieldValuePrediction">
+                                    <tr class="slds-hint-parent" key={fieldValuePrediction.value}>
+                                        <td data-label="Close Date">
+                                            <div class="slds-truncate" title={fieldValuePrediction.value}>{fieldValuePrediction.valueText}</div>
+                                        </td>
+                                        <td data-label="Prospecting">
+                                            <div class="slds-truncate">{fieldValuePrediction.probabilityText}%</div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </template>                
             </template>
             <div class="slds-text-color_destructive">{errorMessage}</div>
         </div>

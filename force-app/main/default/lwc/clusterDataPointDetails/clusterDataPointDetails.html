@@ -1,0 +1,19 @@
+<template>
+    <div>
+        <template if:true={showRecordName}>
+            <a href={externalUrl} onclick={handleLinkClick}><div class="slds-text-heading_small">{clusterDataPoint.recordName}</div></a>
+            <span>Cluster: {clusterDataPoint.clusterIndex}</span><div id="clusterBox" class="crd_clusterbox" style={clusterColorCss}></div>
+        </template>
+        <dl class="slds-dl_horizontal">
+            <template for:each={objectValues} for:item="objectField">
+                <dt key={objectField.name} class="slds-dl_horizontal__label">
+                    <p class="crd_columntext" title={objectField.name}>
+                        {objectField.name}:</p>
+                </dt>
+                <dd key={objectField.name} class="slds-dl_horizontal__detail slds-tile__meta">
+                    <p class="crd_columntext" title={objectField.value}>{objectField.value}</p>
+                </dd>
+            </template>
+        </dl>
+    </div>
+</template>

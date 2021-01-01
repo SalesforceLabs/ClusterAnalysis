@@ -1,0 +1,11 @@
+<aura:component implements="force:lightningQuickAction,force:hasRecordId">
+    <aura:html tag="style">
+        .slds-modal__container {
+             width : 80% !important;
+             max-width : 80% !important;
+         }
+    </aura:html>
+    <div class="cnn-container slds-scope">
+        <c:clusterNearestNeighbors recordId="{!v.recordId}" />
+    </div>    
+</aura:component>	

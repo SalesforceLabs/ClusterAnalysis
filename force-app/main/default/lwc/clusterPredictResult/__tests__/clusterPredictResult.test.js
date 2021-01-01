@@ -46,8 +46,9 @@ describe('c-cluster-predict-result', () => {
         const element = createElement('c-cluster-predict-result', {
             is: ClusterPredictResult
         });
-        element.jobOrModelId = 'a023B000003CvAEQA0';
+        element.jobOrModel = 'a023B000003CvAEQA0';
         element.recordId = '00Q3B000006d55pUAA';
+        element.hideHeader = false;
         document.body.appendChild(element);
         //element.predict();
         return flushPromises().then(() => {
@@ -57,9 +58,12 @@ describe('c-cluster-predict-result', () => {
             );
             expect(dl).not.toBeNull();
             const clusterElement = element.shadowRoot.querySelectorAll(
-                'dd.prClusterResult'
+                'dd.predict-heading-value a'
             );
-            expect(clusterElement[0].textContent).toBe('Cluster 2');
+            expect(clusterElement).not.toBeNull();
+            const predictionHeaderElement = element.shadowRoot.querySelectorAll('span.slds-card__header-link');
+            expect(predictionHeaderElement).not.toBeNull();
+            expect(predictionHeaderElement[0].textContent).toBe('Industry');
         });
 
     });
@@ -69,7 +73,7 @@ describe('c-cluster-predict-result', () => {
         const element = createElement('c-cluster-predict-result', {
             is: ClusterPredictResult
         });
-        element.jobOrModelId = 'a023B000003CvAEQA0';
+        element.jobOrModel = 'a023B000003CvAEQA0';
         element.recordId = '00Q3B000006d55pUAA';
         document.body.appendChild(element);
         return flushPromises().then(() => {

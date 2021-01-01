@@ -120,7 +120,7 @@
         return this.calculateDistance(currentObject.values, centroid.values);
     }
 
-    protected override Double calculateDistance(Object[] currentObject, Object[] centroid) {
+    public override Double calculateDistance(Object[] currentObject, Object[] centroid) {
         return this.useEuclideanDistance ? ClusterDataHelper.calculateEuclideanDistance(currentObject, centroid, this.state) :
             ClusterDataHelper.calculateManhattanDistance(currentObject, centroid, this.state);
     }
@@ -129,12 +129,16 @@
         List<ClusterAlgorithmParameter> parameters = new List<ClusterAlgorithmParameter>();
         Object clusterNumber = model == null ? 4 : model.numberOfClusters;
         parameters.add(new ClusterAlgorithmParameter('numberOfClusters', 'Number of clusters', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, clusterNumber, null));
+        if (model == null || model.hasLongTextFields()) {
+            parameters.add(new ClusterAlgorithmParameter('minWordFrequency', 'Min number of word occurrences', ClusterAlgorithmParameter.ParameterType.INTEGER_PARAMETER, ClusterConstants.getMinTfIdfWordCount(), null));
+        }
         parameters.add(new ClusterAlgorithmParameter('distanceFunction', 'Distance Function', ClusterAlgorithmParameter.ParameterType.SELECT_PARAMETER, ClusterConstants.DISTANCE_MANHATTAN, 
             new String[]{ ClusterConstants.DISTANCE_MANHATTAN, ClusterConstants.DISTANCE_EUCLIDEAN }));
         return parameters;
     }
 
-    public override Integer predict(ClusterDataPoint dataPoint) {
-        return ClusterDataHelper.findNearestCluster(dataPoint, this);
+    public override List<ClusterNeighbor> findNearestClusters(ClusterDataPoint dataPoint, Integer numNeighbors) {
+        return ClusterDataHelper.findNearestClusters(dataPoint, numNeighbors, this);
     }
+
 }

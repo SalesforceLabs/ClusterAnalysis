@@ -78,7 +78,8 @@ export default class ClusterPredict extends LightningElement {
                 target.setSearchResults(results);
             })
             .catch((error) => {
-                this.handleError(error);;
+                this.handleError(error);
+                target.setSearchResults([]);
             });
     }
 

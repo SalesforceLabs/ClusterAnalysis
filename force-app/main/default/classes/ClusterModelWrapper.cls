@@ -68,11 +68,15 @@ public class ClusterModelWrapper {
             field.isIdField = field.name.toLowerCase() == 'id';
             field.isNameField = fd.isNameField();
             field.dataType = fd.getType().name().toLowerCase();
+            field.displayLabel = fd.getLabel();
         }
         field.isNumeric = field.distanceType == ClusterConstants.FIELDTYPE_NUMERIC;
         field.isText = field.distanceType == ClusterConstants.FIELDTYPE_TEXT;
         field.isLongText = field.distanceType == ClusterConstants.FIELDTYPE_LONGTEXT;
         field.isCategory = field.distanceType == ClusterConstants.FIELDTYPE_CATEGORY;
+        field.isPrediction = field.distanceType == ClusterConstants.FIELDTYPE_PREDICTION;
+        field.fieldDesc = fd;
+        field.isDataTypeNumeric = field.isFieldDescNumeric();
     }
 
     public List<ClusterModelField__c> getModelFields() {

@@ -14,7 +14,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
     public static Logger log = LogFactory.getLogger();
     @TestVisible
-    private static ClusterJobState jobState;
+    private static ClusterJobState jobState;  //TODO: get rid of this or store somewhere else
     public List<ClusterAlgorithmStep> steps;
     public ClusterDistanceCacheManager distanceCacheManager;
     public ClusterAlgorithmRunner() {
@@ -185,6 +185,10 @@ public abstract with sharing class ClusterAlgorithmRunner {
         return this.objectFactory.createSObjectProcessor(this.getJobState());
     }
 
+    public ClusterKNNPredictor getPredictor() {
+        return this.objectFactory.createPredictor(this);
+    }
+
     public void setJobState(String jobStateJson) {
         Map<String, Object> jobStateValues = (Map<String, Object>)JSON.deserializeUntyped(jobStateJson);
         ClusterJobState newJobState = this.createJobState();
@@ -195,25 +199,22 @@ public abstract with sharing class ClusterAlgorithmRunner {
 
     public abstract void setJobState(ClusterJobState state);
 
-    public Integer predict(Id recordId, String jobStateJson) {
-        this.setJobState(jobStateJson);
-        return this.predict(recordId);
+    public List<ClusterNeighbor> findNearestClusters(Id recordId, Integer numNeighbors) {
+        ClusterDataPoint dataPoint = this.getDataPoint(recordId);
+        return this.findNearestClusters(dataPoint, numNeighbors);
     }
 
-    public Integer predict(Id dpRecordId) {
-        ClusterDataPoint dataPoint = this.getDataPoint(dpRecordId);
-        return this.predict(dataPoint);
-    }
+    public abstract List<ClusterNeighbor> findNearestClusters(ClusterDataPoint dataPoint, Integer numNeighbors);
 
-    public ClusterDataPoint getDataPoint(Id recordId) {
+    public ClusterDataPoint getDataPoint(Id externalRecordId) {
         ClusterModelWrapper model = this.getJobState().model;
-        String keyCode = String.valueOf(recordId).subString(0,3);
+        String keyCode = String.valueOf(externalRecordId).subString(0,3);
         Schema.DescribeSObjectResult objectDescribe = ClusterUtils.findObjectDescByKeyCode(keyCode);
         if (objectDescribe.getName().toLowerCase() != model.objectName.toLowerCase()) {
             throw new ClusterException('Model object (' + model.objectName +') does not match with the record id object (' + objectDescribe.getName() + ')');
         }
         String modelSoql = model.generateSoqlSelect();
-        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(recordId)) + '\'';
+        modelSoql += ' WHERE Id=\'' + String.escapeSingleQuotes(String.valueOf(externalRecordId)) + '\'';
         ClusterAlgorithmRunner.ModelValidationResult vr = this.validateModel(model);
         if (!vr.isValid) {
             ClusterException ex = new ClusterException();
@@ -222,15 +223,13 @@ public abstract with sharing class ClusterAlgorithmRunner {
         }
         List<SObject> predictRecords = Database.query(modelSoql);
         if (predictRecords.size() != 1) {
-            throw new ClusterException('Record with id ' + recordId + ' was not found');
+            throw new ClusterException('Record with id ' + externalRecordId + ' was not found');
         }
         ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
         return objectProcessor.processSObject(predictRecords.get(0));
     }
 
-    public abstract Integer predict(ClusterDataPoint dataPoint);
-
-    protected abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
+    public abstract Double calculateDistance(Object[] currentObject, Object[] centroid);
 
     public abstract ClusterAlgorithmParameter[] getParameters(ClusterModelWrapper model);
     

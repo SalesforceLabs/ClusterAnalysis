@@ -26,7 +26,7 @@ public with sharing abstract class ClusterBatchBase implements Database.Batchabl
         Boolean hasLongText = model.hasLongTextFields();
         return hasLongText ? ClusterConstants.getLongTextBatchSize() : ClusterConstants.getBatchSize();
     }
-
+    
     public virtual void run(){
         Integer batchSize = Test.isRunningTest() ? ClusterConstants.TEST_BATCH_SIZE : this.getBatchSize();
         ClusterJobState jobState = this.runner.getJobState();

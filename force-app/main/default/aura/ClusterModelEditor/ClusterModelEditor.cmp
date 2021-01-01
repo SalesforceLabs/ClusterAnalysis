@@ -118,6 +118,10 @@
                     <dd class="slds-item_detail">An index of a cluster will
                         be stored in this field during cluster calculations. The field name must start with 'ClusterNumber'. 
                         Warning: Any existing values will be overwritten </dd>
+                    <dt class="slds-item_label slds-text-heading_small">Prediction:</dt>
+                    <dd class="slds-item_detail">Cluster Analysis will try to predict the value of this field. 
+                        Display only, the field value will not be updated or saved </dd>
+    
                 </dl>
             </div>
         </div>

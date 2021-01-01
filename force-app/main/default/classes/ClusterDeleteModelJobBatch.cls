@@ -17,6 +17,7 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
         ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterJob__c);
         ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterJobCluster__c);
         ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterJobResult__c);
+        ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterJobNeighbor__c);
         if (jobIdsToDelete == null || jobIdsToDelete.size() == 0) {
             ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterModel__c);
             ClusterAccessCheck.checkCRUDPermission(Schema.sObjectType.ClusterModelField__c);
@@ -70,6 +71,13 @@ public with sharing class ClusterDeleteModelJobBatch implements Database.Batchab
 
     public virtual void finish(Database.BatchableContext bc){
         ClusterAccessCheck.checkFLSReadPermission(Schema.sObjectType.ClusterJobCluster__c.fields.ClusterJob__c);
+        if (Schema.sObjectType.ClusterJobNeighbor__c.isAccessible() && Schema.sObjectType.ClusterJobNeighbor__c.isDeletable()) {
+            List<ClusterJobNeighbor__c> neighborsToDelete = [SELECT Id FROM ClusterJobNeighbor__c WHERE ClusterJob__c IN :this.jobIdsToDelete WITH SECURITY_ENFORCED];
+            if (neighborsToDelete.size() > 0) {
+                log.debug('Deleting ' + neighborsToDelete.size() + ' nearest neighbors');
+                delete neighborsToDelete;
+            }
+        }
         if (Schema.sObjectType.ClusterJobCluster__c.isAccessible() && Schema.sObjectType.ClusterJobCluster__c.isDeletable()) {
             List<ClusterJobCluster__c> clustersToDelete = [SELECT Id FROM ClusterJobCluster__c WHERE ClusterJob__c IN :this.jobIdsToDelete WITH SECURITY_ENFORCED];
             if (clustersToDelete.size() > 0) {

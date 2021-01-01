@@ -14,4 +14,8 @@ public with sharing class ClusterObjectFactory {
         return sop;
     }
 
+    public virtual ClusterKNNPredictor createPredictor(ClusterAlgorithmRunner runner) {
+        return new ClusterKNNPredictor(runner);
+    }
+
 }

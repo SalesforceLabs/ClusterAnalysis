@@ -67,7 +67,7 @@
         let model = jobState.model;
         let dpValues = dataPoint.values;
         let objectValues = dpValues.map((cv,index) => { return { 
-            name: model.fields[index].name, value: helper.convertDataPointValue(index, cv, jobState)
+            name: model.fields[index].displayLabel, value: helper.convertDataPointValue(index, cv, jobState)
         } });
         component.set('v.objectValues', objectValues);
         let color = helper.getClusterColor(component);

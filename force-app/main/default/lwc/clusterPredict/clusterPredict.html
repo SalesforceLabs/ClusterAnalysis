@@ -27,7 +27,7 @@
                     required></c-lookup>
             </template>
             <template if:true={predictResultsVisible}>
-                <c-cluster-predict-result record-id={dpRecordId} job-or-model-id={jobOrModelId} hide-header=true></c-cluster-predict-result>                
+                <c-cluster-predict-result record-id={dpRecordId} job-or-model={jobOrModelId} hide-header=true></c-cluster-predict-result>                
             </template>
             <div class="slds-text-color_destructive">{errorMessage}</div>
         </div>

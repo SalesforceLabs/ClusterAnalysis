@@ -3,30 +3,11 @@ import predict from '@salesforce/apex/ClusterPredictController.predict';
 import clustanUtils from 'c/clustanUtils';
 import { NavigationMixin } from 'lightning/navigation';
 
-const columns = [
-    { label: 'Name', fieldName: 'name' },
-    {
-        label: 'Similarity',
-        fieldName: 'similarity',
-        type: 'percent',
-        typeAttributes: { maximumFractionDigits: 2 },
-        sortable: true,
-        cellAttributes: { alignment: 'left' },
-    },
-    {
-        label: 'Weight',
-        fieldName: 'weight',
-        type: 'percent',
-        typeAttributes: { maximumFractionDigits: 2 },
-        sortable: true,
-        cellAttributes: { alignment: 'left' },
-    },
-];
-
 export default class ClusterPredictResult extends NavigationMixin(LightningElement) {
     @api recordId;
-    @api jobOrModelId;
+    @api jobOrModel;
     @api hideHeader = false;
+    @api headerLabel = 'Cluster Predictions';
     @track predictCluster;
     @track predictModel;
     @track predictionLoaded = false;
@@ -35,16 +16,16 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     @track similarityValue;
     @track spinnerVisible = true;
     @track clusterPageUrl = '#';
-    similarityColumns = columns;
-    defaultSortDirection = 'asc';
-    sortDirection = 'asc';
-    sortedBy;
+    pollingCount = 0;
+    timeoutHandle = null;
 
     connectedCallback() {
-        if (this.recordId && this.jobOrModelId) {
+        this.pollingCount = 0;
+        if (this.recordId && this.jobOrModel) {
             predict({
                     recordId: this.recordId,
-                    jobOrModelId: this.jobOrModelId
+                    jobOrModel: this.jobOrModel,
+                    isPolling: false
                 })
             .then(result => {
                 this.predictCallback(result);
@@ -55,6 +36,12 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
         }
         else {
             this.handleError('Model or record are required for prediction');
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.timeoutHandle) {
+            clearTimeout(this.timeoutHandle);
         }
     }
 
@@ -73,11 +60,12 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
 
     @api
     predict() {
-        if (this.recordId && this.jobOrModelId) {
+        if (this.recordId && this.jobOrModel) {
             this.spinnerVisible = true;
             return predict({
                 recordId: this.recordId,
-                jobOrModelId: this.jobOrModelId
+                jobOrModel: this.jobOrModel,
+                isPolling: this.pollingCount > 0
             })
             .then(result => {
                 this.predictCallback(result);
@@ -92,21 +80,53 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
     }
 
     predictCallback(result) {
-        this.spinnerVisible = false;
         this.predictCluster = result;
+        if (this.predictCluster.clusterIndex == -1 || this.predictCluster.predictionResult == null) {
+            this.setPolling();
+            return;
+        }
+        this.pollingCount = 0;
+        this.spinnerVisible = false;
         this.predictCluster.jobState = JSON.parse(this.predictCluster.jobState);
         this.predictModel = this.predictCluster.jobState.model;
         clustanUtils.decompressDataPointValues(this.predictCluster.jobState, this.predictCluster.dataPoint.values);
         clustanUtils.decompressJobState(this.predictCluster.jobState);
-        this.similarityValue = (100.0 - 100.0 * clustanUtils.gowerDistance(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState)).toFixed(2);
-        let similarities = clustanUtils.calculateSimilarity(this.predictCluster.dataPoint.values, this.predictCluster.jobState.centroids[this.predictCluster.clusterIndex].values, this.predictCluster.jobState);
-        this.similarityData = similarities
-            .map((value, index) =>({ name: this.predictCluster.jobState.model.fields[index].name, similarity: value, weight: this.predictCluster.jobState.model.fields[index].weight}))
-            .filter(item => item.similarity != null);        
+        this.predictCluster.predictionResult.fieldPredictions.forEach(fieldPrediction => {
+            fieldPrediction.fieldValuePredictions.forEach(fvp => {
+                fvp.probabilityText = (100.0 * fvp.probability).toFixed(2) 
+                if (fieldPrediction.isNumeric) {
+                    fvp.valueText = Number(fvp.value).toLocaleString();
+                }
+                else {
+                    fvp.valueText = fvp.value;
+                }
+            });
+        });
+        
         this.predictionLoaded = true;
         this[NavigationMixin.GenerateUrl](this.getClusterPageNavigationDetails(this.predictCluster.clusterId)).then(url => {
             this.clusterPageUrl = url;
         });
+    }
+
+    setPolling() {
+        this.timeoutHandle = null;
+        if (!this.recordId) return;
+        let MAX_POLLING_COUNT = 12; //we will poll for 2 mins max
+        this.pollingCount++;
+        if (this.pollingCount < MAX_POLLING_COUNT) {
+            this.spinnerVisible = true;
+            this.timeoutHandle = setTimeout(() => {
+                this.predict();
+            }, 10000);
+        }
+        else if (this.pollingCount == MAX_POLLING_COUNT) {
+            this.handleError('Could not get prediction. Try reloading the page in few minutes');
+        }
+    }
+
+    get hasFieldPredictions() {
+        return this.predictionLoaded && (this.predictCluster.predictionResult.fieldPredictions && this.predictCluster.predictionResult.fieldPredictions.length > 0);
     }
 
     handleClusterLinkClick(event) {
@@ -141,29 +161,4 @@ export default class ClusterPredictResult extends NavigationMixin(LightningEleme
         }
     }
 
-    sortBy(field, reverse, primer) {
-        const key = primer
-            ? function(x) {
-                  return primer(x[field]);
-              }
-            : function(x) {
-                  return x[field];
-              };
-
-        return function(a, b) {
-            a = key(a);
-            b = key(b);
-            return reverse * ((a > b) - (b > a));
-        };
-    }
-
-    onHandleSort(event) {
-        const { fieldName: sortedBy, sortDirection } = event.detail;
-        const cloneData = [...this.similarityData];
-
-        cloneData.sort(this.sortBy(sortedBy, sortDirection === 'asc' ? 1 : -1));
-        this.similarityData = cloneData;
-        this.sortDirection = sortDirection;
-        this.sortedBy = sortedBy;
-    }
 }

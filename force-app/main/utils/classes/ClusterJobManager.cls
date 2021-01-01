@@ -164,7 +164,7 @@ public with sharing class ClusterJobManager {
     }
 
     public static void deleteClusterAttachments(List<ClusterJobCluster__c> clusters) {
-        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.Attachment);        
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.Attachment);
         List<Id> clusterIds = new List<Id>();
         for(ClusterJobCluster__c cluster:clusters) {
             clusterIds.add(cluster.Id);
@@ -175,6 +175,18 @@ public with sharing class ClusterJobManager {
             if (attachments.size() > 0) {
                 delete attachments;
             }
+        }
+    }
+
+    public static void deleteNearestNeighborsFromResults(List<ClusterJobResult__c> jobResults) {
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
+        List<Id> resultIds = new List<Id>();
+        for (ClusterJobResult__c jobResult:jobResults) {
+            resultIds.add(jobResult.Id);
+        }
+        List<ClusterJobNeighbor__c> jrNeighbors = [SELECT Id FROM ClusterJobNeighbor__c WHERE ClusterJobResult__c IN :resultIds];
+        if (jrNeighbors.size() > 0) {            
+            delete jrNeighbors;
         }
     }
 
