@@ -119,8 +119,10 @@ public with sharing class ClusterKNNPredictor {
                     if (jobResults.size() == 0) {
                         ClusterJobResult__c jobResult = new ClusterJobResult__c();
                         jobResult.RecordId__c = dataPoint.externalId;
-                        jobResult.RecordName__c = dataPoint.recordName;            
+                        jobResult.RecordName__c = dataPoint.recordName;
                         jobResult.ClusterJob__c = state.clusterJob.Id;
+                        jobResult.ClusterNumber__c = dataPoint.clusterIndex;
+                        jobResult.Cluster__c = state.jobClusters[dataPoint.clusterIndex].Id;
                         ClusterDataHelper.populateClusterJobResultJsonValues(jobResult, this.runner.getSObjectProcessor().serializeValuesToJson(dataPoint.values));
                         jobResult.Random__c = ClusterDataHelper.getRandomInt(0, 1000000); //Randomize record order
                         jobResult.DistanceToCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[dataPoint.clusterIndex].values);

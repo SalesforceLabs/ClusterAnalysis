@@ -3,7 +3,7 @@
 - Supports clustering of objects with mixed data types (numeric, category/picklist, text) using Gower distance function.<br/>
 - Supports clustering of free text (LongTextArea) values using [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) NLP technique.<br/>
 - Visualizes the clustering result using [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) dimensionality reduction technique.<br/>
-- Can predict cluster for any record if model has completed runs (jobs).<br/>
+- Can find similar records and predict field values for any record using [K-Nearest Neighbors](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm) algorithm.<br/>
 Click [here](../../wiki/Cluster-Analysis-in-Salesforce) to get more information about the methodology and algorithms used in this app.
 
 ## Installation

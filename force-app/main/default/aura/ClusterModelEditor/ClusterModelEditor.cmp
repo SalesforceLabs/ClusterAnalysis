@@ -106,7 +106,7 @@
                     <dt class="slds-item_label slds-text-heading_small">Category:</dt>
                     <dd class="slds-item_detail">An Equal (0)/Not equal
                         (1) comparison will be used to measure similarity of values. Not supported in K-means</dd>
-                    <dt class="slds-item_label slds-text-heading_small">Long Text (BETA):</dt>
+                    <dt class="slds-item_label slds-text-heading_small">Long Text:</dt>
                     <dd class="slds-item_detail">TF-IDF algorithm (based on identical keywords)
                         will be used to measure similarity.</dd>    
                     <dt class="slds-item_label slds-text-heading_small">None:</dt>
@@ -118,8 +118,8 @@
                     <dd class="slds-item_detail">An index of a cluster will
                         be stored in this field during cluster calculations. The field name must start with 'ClusterNumber'. 
                         Warning: Any existing values will be overwritten </dd>
-                    <dt class="slds-item_label slds-text-heading_small">Prediction:</dt>
-                    <dd class="slds-item_detail">Cluster Analysis will try to predict the value of this field. 
+                    <dt class="slds-item_label slds-text-heading_small">Prediction (BETA):</dt>
+                    <dd class="slds-item_detail">Cluster Analysis will try to predict the value of this field using K-Neareast Neighbors algorithm.
                         Display only, the field value will not be updated or saved </dd>
     
                 </dl>
