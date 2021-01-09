@@ -43,21 +43,29 @@ public with sharing class ClusterPAMDataAssignmentStep extends ClusterIterableBa
             ClusterDataPoint currentRecord = dataPoints[sindex];
             //ClusterDataHelper.normalizeObject(currentObject, jobState);
             //Calculating min distance to centroids
-            Integer nearestCentroidIndex = 0;
+            Integer nearestCentroidIndex = -1;
+            Integer prevNearestCentroidIndex = -1;
             Boolean isCentroid = false;
             Integer centroidIndex;
-            Double minDistance = this.runner.calculateDPDistance(currentRecord, centroids[nearestCentroidIndex]);
-            for (Integer cindex = 1; cindex < centroidSize; cindex++) {
+            Double minDistance = ClusterDataHelper.DOUBLE_MAX_VALUE;
+            Double prevMinDistance = ClusterDataHelper.DOUBLE_MAX_VALUE;
+            for (Integer cindex = 0; cindex < centroidSize; cindex++) {
                 Boolean isCurrentCentroid = centroids[cindex].recordId == currentRecord.recordId;
                 isCentroid = isCentroid || isCurrentCentroid;
                 if (isCurrentCentroid) {
                     currentRecord.clusterIndex = null;
                     centroidIndex = cindex;
                 }
-                Double distance = this.runner.calculateDPDistance(currentRecord, centroids[cindex]);
-                if (Math.abs(distance) < Math.abs(minDistance)) {
+                Double distance = Math.abs(this.runner.calculateDPDistance(currentRecord, centroids[cindex]));
+                if (distance < minDistance) {
+                    prevMinDistance = minDistance;
+                    prevNearestCentroidIndex = nearestCentroidIndex;
                     minDistance = distance;
                     nearestCentroidIndex = cindex;
+                }
+                else if (distance < prevMinDistance) {
+                    prevMinDistance = distance;
+                    prevNearestCentroidIndex = cindex;
                 }
             }
             if (!isCentroid) {
@@ -72,7 +80,7 @@ public with sharing class ClusterPAMDataAssignmentStep extends ClusterIterableBa
             }
             else {
                 //If current dp is a centroid store the nearest centroid
-                jobState.nearestCentroids[centroidIndex] = nearestCentroidIndex;
+                jobState.nearestCentroids[centroidIndex] = prevNearestCentroidIndex;
             }
         }        
         //Aggregating cost for each centroid/medoid

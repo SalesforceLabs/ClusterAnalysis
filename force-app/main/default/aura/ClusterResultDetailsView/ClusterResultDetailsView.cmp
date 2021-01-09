@@ -1,7 +1,8 @@
 <aura:component implements="force:hasRecordId,lightning:actionOverride"
     controller="ClusterJobDetailsController" extends="c:ClusterUiBaseComponent" access="global">
     <aura:attribute name="jobResultDetails" type="Object" access="public" />
-    <aura:handler name="init" value="{!this}" action="{!c.onInit}" />
+    <ltng:require scripts="{!join(',',
+        $Resource.clustanUtils + '/clustanUtils.js')}" afterScriptsLoaded="{!c.onInit}"  />    
     <lightning:notificationsLibrary aura:id="notifLib" />
     <div class="c-container slds-scope slds-container slds-panel">
 

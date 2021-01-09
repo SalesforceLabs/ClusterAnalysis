@@ -180,4 +180,10 @@ public with sharing class ClusterConstants {
         return (String[])JSON.deserialize(getLongTextSettingValue('DefaultClusterColors','[]'), String[].class);
     }
 
+    public static Boolean getStorePredictions() {
+        Integer storePredictions = getIntegerSettingValue('StorePredictedDataPoints', 0);
+        return storePredictions == 1;
+        
+    }
+
 }

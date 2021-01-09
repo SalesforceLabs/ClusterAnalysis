@@ -11,7 +11,7 @@ public with sharing class ClusterApiTest {
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
             Test.startTest();
-            List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 10];
+            List<Lead> leads = [SELECT Id, Name, AnnualRevenue, NumberOfEmployees FROM Lead LIMIT 10];
             List<ClusterJob__c> jobs = [SELECT Id FROM ClusterJob__c LIMIT 1];
             Id jobId = jobs[0].Id;
             Id recordId = leads[0].Id;
@@ -23,6 +23,8 @@ public with sharing class ClusterApiTest {
             System.assertEquals(true, predictionResult.getClusterIndex() >= 0, 'Incorrect prediction cluster index');
             ClusterDataPoint dataPoint = api.getDataPoint(recordId);
             System.assertEquals(recordId, dataPoint.getExternalId(), 'Incorrect data point id');
+            ClusterDataPoint dataPoint2 = api.convertToDataPoint(leads[0]);
+            System.assertEquals(dataPoint.getRecordName(), dataPoint2.getRecordName(), 'Incorrect data point name');
             Double distance = api.calculateDistance(dataPoint.getValues(), dataPoint.getValues());
             System.assertEquals(true, ClusterDataHelper.doublesEqual(distance, ClusterDataHelper.DOUBLE_ZERO), 'Incorrect distance');
             Test.stopTest();
@@ -35,7 +37,7 @@ public with sharing class ClusterApiTest {
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {
             Test.startTest();
-            List<Lead> leads = [SELECT Id, Name FROM Lead LIMIT 11];
+            List<Lead> leads = [SELECT Id, Name, AnnualRevenue, NumberOfEmployees FROM Lead LIMIT 11];
             List<ClusterJob__c> jobs = [SELECT Id FROM ClusterJob__c LIMIT 1];
             Id jobId = jobs[0].Id;
             Id recordId = leads[0].Id;

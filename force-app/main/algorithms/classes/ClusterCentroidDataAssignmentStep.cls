@@ -84,15 +84,20 @@ public with sharing class ClusterCentroidDataAssignmentStep extends ClusterBatch
             //Calculating min distance to centroids
             Integer nearestCentroidIndex = 0;
             Integer previousCentroidIndex = 0;
-            Double minDistance = this.runner.calculateDistance(currentDataPoint.values, centroids[nearestCentroidIndex].values);
-            centroidDistances[0] = minDistance;
-            for (Integer cindex = 1; cindex < centroidSize; cindex++) {
-                Double distance = this.runner.calculateDistance(currentDataPoint.values, centroids[cindex].values);
+            Double minDistance = ClusterDataHelper.DOUBLE_MAX_VALUE;
+            Double prevMinDistance = ClusterDataHelper.DOUBLE_MAX_VALUE;
+            for (Integer cindex = 0; cindex < centroidSize; cindex++) {
+                Double distance = Math.abs(this.runner.calculateDistance(currentDataPoint.values, centroids[cindex].values));
                 centroidDistances[cindex] = distance;
-                if (Math.abs(distance) < Math.abs(minDistance)) {
+                if (distance < minDistance) {
+                    previousCentroidIndex = nearestCentroidIndex;
+                    prevMinDistance = minDistance;
                     minDistance = distance;
                     nearestCentroidIndex = cindex;
-                    previousCentroidIndex = nearestCentroidIndex;
+                }
+                else if (distance < prevMinDistance) {
+                    prevMinDistance = distance;
+                    previousCentroidIndex = cindex;
                 }
             }
             //We found closest and second closest centroids to the current data point

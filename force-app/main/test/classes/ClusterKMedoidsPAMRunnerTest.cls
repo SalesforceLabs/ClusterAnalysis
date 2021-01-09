@@ -236,8 +236,14 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             pdaStep.execute(null, dataPoints);
             pdaStep.finish(null);
 
-            //TODO: this asserm might fail if two centroids are top 2 items. Probability is somewhat low
-            System.assertEquals(true, (state.centroids[0].cost > 0) || (state.centroids[1].cost > 0), 'Centroid cost calculated incorrectly');
+            Double centroidCost = 0.0;
+            for (Integer i = 0; i<state.centroids.size(); i++){
+                if (state.centroids[i].cost > 0) {
+                    centroidCost += state.centroids[i].cost;
+                }
+            }
+
+            System.assertEquals(true, (centroidCost > 0.0), 'Centroid cost calculated incorrectly');
             Boolean isCentroidFirst = false;
             for (ClusterDataPoint centroid:state.centroids){
                 if (state.dataPoints[0].recordId == centroid.recordId) {
@@ -247,6 +253,7 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             }
             System.assertEquals(true, state.dataPoints[0].clusterIndex >=0 || isCentroidFirst, 'Assignment to cluster is incorrect');
             System.assertEquals(3, state.currentAlgorithmStep, 'Incorrect next step after PAM data assignment');
+            System.assertEquals(true, state.hasNearestCentroids(), 'Nearest centroids calculated incorrectly');
 
             Integer currentStep = state.currentAlgorithmStep;
             ClusterPAMSwapStep swapStep = (ClusterPAMSwapStep)runner.steps[state.currentAlgorithmStep];
@@ -257,8 +264,8 @@ public with sharing class ClusterKMedoidsPAMRunnerTest {
             swapStep.init(runner);
             swapStep.execute(null, swapScope);
             swapStep.finish(null);
-            System.assertEquals(true, state.hasSwapped, 'There was no centroid swap');
-            System.assertEquals(currentStep - 1, state.currentAlgorithmStep, 'Incorrect next step if there is swap');
+            //We are not testing if the centroid swap actually hapenned, because long text model has only 10 items
+            System.assertEquals(state.hasSwapped ? currentStep - 1 : currentStep + 1, state.currentAlgorithmStep, 'Incorrect next step if there is swap');
             
             state.hasSwapped = false;
             state.currentAlgorithmStep = currentStep; //Setting current step back to swap step

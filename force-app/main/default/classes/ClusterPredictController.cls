@@ -24,7 +24,7 @@ public with sharing class ClusterPredictController {
             ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterModel__c);
             ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJob__c);
             uiModel.models = new List<ClusterModelWrapper>();
-            if (objectDescribe.getSObjectType() == ClusterModel__c.getSObjectType()) {
+            if (objectDescribe.getKeyPrefix() == ClusterModel__c.getSObjectType().getDescribe().getKeyPrefix()) {
                 ClusterModelWrapper model = ClusterModelBuilderController.loadModel(recordId);
                 uiModel.models.add(model);
                 uiModel.jobId = getLastCompletedJobId(model.modelId);
@@ -33,7 +33,7 @@ public with sharing class ClusterPredictController {
                 }
                 uiModel.recordIdNeeded = true;
             }
-            else if (objectDescribe.getSObjectType() == ClusterJob__c.getSObjectType()) {
+            else if (objectDescribe.getKeyPrefix() == ClusterJob__c.getSObjectType().getDescribe().getKeyPrefix()) {
                 List<ClusterJob__c> jobs = [SELECT Id,ClusterModel__c FROM ClusterJob__c WHERE Id = :recordId AND JobStatus__c = :ClusterConstants.JOBSTATUS_COMPLETED  
                     WITH SECURITY_ENFORCED ORDER BY CreatedDate DESC LIMIT 1];
                 if (jobs.size() == 1) {
@@ -86,10 +86,10 @@ public with sharing class ClusterPredictController {
             ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterModel__c);
             ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJob__c);
             ClusterModelWrapper model;
-            if (objectDescribe.getSObjectType() == ClusterModel__c.getSObjectType()) {
+            if (objectDescribe.getKeyPrefix() == ClusterModel__c.getSObjectType().getDescribe().getKeyPrefix()) {
                 model = ClusterModelBuilderController.loadModel(jobOrModelId);
             }
-            else if (objectDescribe.getSObjectType() == ClusterJob__c.getSObjectType()) {
+            else if (objectDescribe.getKeyPrefix() == ClusterJob__c.getSObjectType().getDescribe().getKeyPrefix()) {
                 List<ClusterJob__c> jobs = [SELECT Id,ClusterModel__c FROM ClusterJob__c WHERE Id = :jobOrModelId AND JobStatus__c = :ClusterConstants.JOBSTATUS_COMPLETED  
                     WITH SECURITY_ENFORCED ORDER BY CreatedDate DESC LIMIT 1];
                 if (jobs.size() == 1) {
@@ -285,7 +285,7 @@ public with sharing class ClusterPredictController {
             log.debug('Starting k nearest neighbor calculations for record id: ' + recordId);
             ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);
             ClusterAlgorithmRunner runner = ClusterAlgorithmFactory.getRunnerFromJobId(jobId);
-            List<ClusterDataPointNeighbor> neighbors = runner.getPredictor().findNearestNeighbors(recordId, numNeighbors, true);
+            List<ClusterDataPointNeighbor> neighbors = runner.getPredictor().findNearestNeighbors(recordId, numNeighbors, ClusterConstants.getStorePredictions());
             return neighbors;
         }
         catch (Exception ex) {

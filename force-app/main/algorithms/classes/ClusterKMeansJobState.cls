@@ -12,12 +12,16 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
     public Boolean hasSwapped;
     public List<Id> sampleResultsIds;
     public Integer iterationsCount;
+    private Boolean hasNearestCentroidsCache;
+    private Boolean hasNearestCentroidsCalculated;
 
     public ClusterKMeansJobState() {
         this.centroids = new List<ClusterDataPoint>();
         this.hasAssignmentChanged = false;
         this.hasSwapped = false;
         this.iterationsCount = 0;
+        this.hasNearestCentroidsCache = false;
+        this.hasNearestCentroidsCalculated = false;
     }
 
     public override void loadFromMap(Map<String, Object> stateValues) {
@@ -73,6 +77,10 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
     }
 
     public boolean hasNearestCentroids() {
+        if (this.hasNearestCentroidsCalculated) {
+            return this.hasNearestCentroidsCache;
+        }
+        this.hasNearestCentroidsCalculated = true;
         if (this.nearestCentroids != null) {
             Boolean hasNC = true;
             for (Integer nnIndex:this.nearestCentroids) {
@@ -81,9 +89,11 @@ public with sharing class ClusterKMeansJobState extends ClusterJobState {
                     break;
                 }
             }
+            this.hasNearestCentroidsCache = hasNC;
             return hasNC;
         }
-        return false;
+        this.hasNearestCentroidsCache = false;
+        return this.hasNearestCentroidsCache;
     }
     
 }

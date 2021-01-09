@@ -98,5 +98,16 @@ global with sharing class ClusterApi {
         return this.runner.getDataPoint(externalRecordId);
     }
 
+    /**
+     * Converts an SObject to a data point
+     * @param record
+     *        SObject record to convert
+     * @returns ClusterDataPoint object with converted data
+     */
+    global ClusterDataPoint convertToDataPoint(SObject record) {
+        this.checkRunnerInitialized();
+        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
+        return objectProcessor.processSObject(record);
+    }
 
 }
