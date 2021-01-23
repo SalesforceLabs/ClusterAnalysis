@@ -4,7 +4,7 @@
 - Supports clustering of free text (LongTextArea) values using [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) NLP technique.<br/>
 - Visualizes the clustering result using [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) dimensionality reduction technique.<br/>
 - Can find similar records and predict field values for any record using [K-Nearest Neighbors](https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm) algorithm.<br/>
-Click [here](../../wiki/Cluster-Analysis-in-Salesforce) to get more information about the methodology and algorithms used in this app.
+Click [here](../../wiki/Finding-similarities-and-making-predictions-with-TF-IDF-and-k-Nearest-Neighbors-in-Salesforce) and [here](../../wiki/Cluster-Analysis-in-Salesforce) to get more information about the methodology and algorithms used in this app.
 
 ## Installation
 Install the application from [Salesforce AppExchange](https://appexchange.salesforce.com/appxListingDetail?listingId=a0N3A00000G11fzUAB)
@@ -62,6 +62,7 @@ sfdx force:package:version:promote --package "Cluster Analysis@1.0.0-1"
 * **force-app**: Directory that contains the source for the Cluster Analysis package and tests.
 * **force-app/main/default**: Directory that contains the app source and shared classes.
 * **force-app/main/algorithms**: Directory that contains algorithm classes.
+* **force-app/main/api**: Directory that contains Cluster Analysis global api Apex classes.
 * **force-app/main/utils**: Directory that contains utility classes.
 * **force-app/main/test**: Directory that contains Apex test classes.
 * **.gitignore**:  Optional Git file. Specifies intentionally untracked files that you want Git (or in this case GitHub) to ignore.
