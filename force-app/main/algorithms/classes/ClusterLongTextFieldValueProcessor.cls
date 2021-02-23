@@ -12,6 +12,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
     Map<String,ClusterWordPreprocessor> wordPreprocessors;
     Boolean useCompression;
     private Integer minWordCount;
+    private Integer maxWordBagSize;
 
     public ClusterLongTextFieldValueProcessor(ClusterJobState state) {
         this.jobState = state;
@@ -30,6 +31,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         if (this.minWordCount == null) {
             this.minWordCount = ClusterConstants.getMinTfIdfWordCount();
         }
+        this.maxWordBagSize = ClusterConstants.getTFIDFWordBagSize();
     }
 
     public void setCompression(Boolean compression) {
@@ -74,10 +76,10 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         }
         String language = fieldDesc.language != null ? fieldDesc.language.toLowerCase() : ClusterConstants.LANGUAGE_NONE;
         if (this.useCompression) {
-            return calculateCompressedTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount);
+            return calculateCompressedTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount, this.maxWordBagSize);
         }
         else {
-            Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount);
+            Double[] tf = calculateTF(text, wordMap, wordList, this.wordPreprocessors.get(language), this.minWordCount, this.maxWordBagSize);
             return tf;
         }
     }
@@ -86,7 +88,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return text==null ? null : text.split(WORD_SPLIT_REGEX);
     }
 
-    private static Integer prepareWordList(String text, Map<String, Integer> wordMap, List<String> wordList, Map<String, Integer> currentWordMap, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
+    private static Integer prepareWordList(String text, Map<String, Integer> wordMap, List<String> wordList, Map<String, Integer> currentWordMap, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount, Integer maxWordBagSize) {
         if (text == '') {
             return null;
         }
@@ -106,7 +108,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
             if (token == null) {
                 continue;
             }
-            addWordToMap(token, tempWordMap, 1, null);
+            addWordToMap(token, tempWordMap, 1, null, maxWordBagSize);
         }
 
         //Adding words and updating counts in aggregated structures
@@ -119,7 +121,7 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
                 if (currentTokenCount >= currMinWordCount) {
                     currentWordMap.put(currentToken, currentTokenCount);
                     numTokens += currentTokenCount;
-                    addWordToMap(currentToken, wordMap, 1, wordList); // Adding 1 here because for IDF we need to calculate the number of documents containing this term                
+                    addWordToMap(currentToken, wordMap, 1, wordList, maxWordBagSize); // Adding 1 here because for IDF we need to calculate the number of documents containing this term                
                 }
             }
             if (numTokens == 0) {
@@ -135,11 +137,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return numTokens;
     }
     
-    public static Double[] calculateTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
+    public static Double[] calculateTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount, Integer maxWordBagSize) {
         //This will contain word counts for the current document
         Map<String, Integer> currentWordMap = new Map<String,Integer>();
 
-        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount);
+        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount, maxWordBagSize);
         //Calculating tf for the text
         Double[] tf = new Double[wordList.size()];
         for (Integer i=0; i<wordList.size(); i++) {
@@ -155,11 +157,11 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return tf;
     }
 
-    public static ClusterCompressedDoubleArray calculateCompressedTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount) {
+    public static ClusterCompressedDoubleArray calculateCompressedTF(String text, Map<String, Integer> wordMap, List<String> wordList, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount, Integer maxWordBagSize) {
         //This will contain word counts for the current document
         Map<String, Integer> currentWordMap = new Map<String,Integer>();
 
-        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount);
+        Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount, maxWordBagSize);
         //Calculating tf for the text
         ClusterCompressedDoubleArray tf = new ClusterCompressedDoubleArray();
         for (Integer i=0; i<wordList.size(); i++) {
@@ -175,10 +177,10 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         return tf;
     }
 
-    private static void addWordToMap(String word, Map<String, Integer> wordMap, Integer count, List<String> wordList) {
+    private static void addWordToMap(String word, Map<String, Integer> wordMap, Integer count, List<String> wordList, Integer maxWordBagSize) {
         Integer currentCount = wordMap.get(word);
         if (currentCount == null) {
-            if ((wordList == null) || (wordList.size() < ClusterConstants.MAX_TFIDF_WORDBAG_SIZE)) {
+            if ((wordList == null) || (wordList.size() < maxWordBagSize)) {
                 wordMap.put(word, count);
                 //Also adding new word to the list
                 if (wordList != null) {

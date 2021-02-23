@@ -7,6 +7,8 @@ public with sharing class ClusterKNNPredictor {
     public static Logger log = LogFactory.getLogger();
 
     ClusterAlgorithmRunner runner;
+    Integer maxNNSearchCount = ClusterConstants.getKNNSearchLimit();
+    Integer knnNumber = ClusterConstants.getKNNNumber();
     
     public ClusterKNNPredictor() {
 
@@ -33,7 +35,7 @@ public with sharing class ClusterKNNPredictor {
     public virtual ClusterPredictionResult predict(ClusterDataPoint dataPoint, Boolean insertDataPoint) {
         log.debug('Starting prediction calculations for ' + dataPoint.recordName);
         ClusterJobState jobState = this.runner.getJobState();
-        List<ClusterDataPointNeighbor> nearestNeighbors = this.getNearestNeighborsFromDb(dataPoint.externalId, jobState.clusterJob.Id, ClusterConstants.NUM_NEAREST_NEIGHBORS_PREDICTION);
+        List<ClusterDataPointNeighbor> nearestNeighbors = this.getNearestNeighborsFromDb(dataPoint.externalId, jobState.clusterJob.Id, this.knnNumber);
         if (nearestNeighbors.size() == 0) {
             nearestNeighbors = this.findNearestNeighbors(dataPoint.externalId, ClusterConstants.NUM_NEAREST_NEIGHBORS_PREDICTION, insertDataPoint);
         }
@@ -179,7 +181,8 @@ public with sharing class ClusterKNNPredictor {
         List<ClusterDataPointNeighbor> neighbors = new List<ClusterDataPointNeighbor>();
         Set<String> processedDpIds = new Set<String>();
         for (ClusterDataPoint nearestDP:nearestDataPoints) {
-            if (!processedDpIds.contains(nearestDP.recordId)) {
+            //Excluding already processed and self datapoints
+            if (!processedDpIds.contains(nearestDP.recordId) && (dataPoint.externalId != nearestDP.externalId)) {
                 ClusterDataPointNeighbor neighbor = new ClusterDataPointNeighbor();
                 neighbor.externalRecordId = dataPoint.externalId;
                 neighbor.neighborDataPoint = nearestDP;
@@ -188,6 +191,10 @@ public with sharing class ClusterKNNPredictor {
                 neighbor.jobId = jobState.clusterJob.Id;            
                 neighbors.add(neighbor);
                 processedDpIds.add(nearestDP.recordId);
+            }
+            //Checking NN search limits
+            if (neighbors.size() > this.maxNNSearchCount) {
+                break;
             }
         }
         //Sorting based on distance and retrieving first numNeighbors
@@ -213,7 +220,7 @@ public with sharing class ClusterKNNPredictor {
             ClusterJobResult__r.Id, ClusterJobResult__r.Name, ClusterJobResult__r.Cluster__c, ClusterJobResult__r.ClusterJob__c, ClusterJobResult__r.ClusterName__c,
             ClusterJobResult__r.ClusterNumber__c, ClusterJobResult__r.DistanceToCluster__c, ClusterJobResult__r.DistanceToNNCluster__c, ClusterJobResult__r.Json__c, ClusterJobResult__r.Json2__c,
             ClusterJobResult__r.Json3__c, ClusterJobResult__r.Json4__c, ClusterJobResult__r.Json5__c, ClusterJobResult__r.Random__c, ClusterJobResult__r.RecordId__c, ClusterJobResult__r.RecordName__c
-            FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+            FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED ORDER BY Distance__c];
         ClusterJobResult__c[] jobResults = new ClusterJobResult__c[1];
         Set<String> neighborIds = new Set<String>();
         if (neighbors.size() > 0) {

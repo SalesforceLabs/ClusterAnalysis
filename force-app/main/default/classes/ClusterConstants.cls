@@ -186,4 +186,16 @@ public with sharing class ClusterConstants {
         
     }
 
+    public static Integer getKNNSearchLimit() {
+        return getIntegerSettingValue('KNNSearchLimit', 100);
+    }
+
+    public static Integer getKNNNumber() {
+        return getIntegerSettingValue('KNNNumber', NUM_NEAREST_NEIGHBORS_PREDICTION);
+    }
+
+    public static Integer getTFIDFWordBagSize() {
+        return getIntegerSettingValue('TFIDFWordBagSize', MAX_TFIDF_WORDBAG_SIZE);
+    }
+
 }
