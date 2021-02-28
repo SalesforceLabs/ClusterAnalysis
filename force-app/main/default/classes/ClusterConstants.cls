@@ -33,7 +33,8 @@ public with sharing class ClusterConstants {
     public static final Integer MAX_NEIGHBORS = 50;
     public static final Integer MAX_PREDICTION_VALUES = 5;
     public static final Integer MIN_KNN_NEIGHBOR_SIZE = 4; //Min neighbor count per cluster
-    public static final Integer MIN_KNN_DP_COUNT = 20;
+    public static final Integer MIN_KNN_DP_COUNT = 15;
+    public static final Double KNN_NEIGHBORHOOD_DISTANCE = 0.99; //Max distance between neighbors
 
     public static final Integer MAX_LONGTEXTCLASSES = 35;
     public static final Integer MIN_LONGTEXTCLASSES = 10;
@@ -58,6 +59,25 @@ public with sharing class ClusterConstants {
         }
         return intValue;
     }
+
+    private static String getStringSettingValue(String name, String defaultValue) {
+        String value = defaultValue;
+        try {
+            ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterSetting__mdt);
+            //Read permission is checked in ClusterAccessCheck.checkReadPermission, exception is thrown in case of no access
+            List<ClusterSetting__mdt> settings = [SELECT DeveloperName, Value__c FROM ClusterSetting__mdt WHERE DeveloperName = :name];
+            if (settings.size() > 0) {
+                if (settings[0].Value__c != null) {
+                    value = settings[0].Value__c;
+                }
+            }
+        }
+        catch (Exception ex) {
+            LogFactory.getLogger().error('Error getting custom setting ' + name, ex);            
+        }
+        return value;
+    }
+
 
     private static String getLongTextSettingValue(String name, String defaultValue) {
         String textValue = defaultValue;
@@ -182,12 +202,20 @@ public with sharing class ClusterConstants {
 
     public static Boolean getStorePredictions() {
         Integer storePredictions = getIntegerSettingValue('StorePredictedDataPoints', 0);
-        return storePredictions == 1;
-        
+        return storePredictions == 1;        
+    }
+
+    public static Boolean getStoreNearestNeighbors() {
+        Integer storePredictions = getIntegerSettingValue('StoreNearestNeighbors', 1);
+        return storePredictions == 1;        
     }
 
     public static Integer getKNNSearchLimit() {
         return getIntegerSettingValue('KNNSearchLimit', 100);
+    }
+
+    public static Integer getKNNResultLimit() {
+        return getIntegerSettingValue('KNNResultLimit', MAX_NEIGHBORS);
     }
 
     public static Integer getKNNNumber() {
@@ -196,6 +224,10 @@ public with sharing class ClusterConstants {
 
     public static Integer getTFIDFWordBagSize() {
         return getIntegerSettingValue('TFIDFWordBagSize', MAX_TFIDF_WORDBAG_SIZE);
+    }
+
+    public static String getApexRecordPreprocessorClassName() {
+        return getStringSettingValue('ApexRecordPreprocessorClassName', '');
     }
 
 }

@@ -3,7 +3,7 @@
  *
  * @author: Iskander Mukhamedgaliyev
  */
-public with sharing class ClusterObjectFactory {
+public virtual with sharing class ClusterObjectFactory {
     public virtual ClusterSObjectProcessor createSObjectProcessor(ClusterJobState state) {
         return this.createSObjectProcessor(state, true);
     }
@@ -16,6 +16,23 @@ public with sharing class ClusterObjectFactory {
 
     public virtual ClusterKNNPredictor createPredictor(ClusterAlgorithmRunner runner) {
         return new ClusterKNNPredictor(runner);
+    }
+
+    public virtual ClusterRecordPreprocessor createRecordPreprocessor() {
+        String customPreprocessorApexClassName = ClusterConstants.getApexRecordPreprocessorClassName();
+        return this.createRecordPreprocessor(customPreprocessorApexClassName);
+    }
+
+    public virtual ClusterRecordPreprocessor createRecordPreprocessor(String customPreprocessorApexClassName) {
+        ClusterRecordPreprocessor recordPreprocessor;
+        if (String.isNotBlank(customPreprocessorApexClassName)) {
+            Type customApexPreprocessorType = Type.forName(customPreprocessorApexClassName);
+            recordPreprocessor = (ClusterRecordPreprocessor)customApexPreprocessorType.newInstance();
+        }
+        else {
+            recordPreprocessor = null;
+        }
+        return recordPreprocessor;
     }
 
 }

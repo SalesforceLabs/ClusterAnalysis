@@ -97,13 +97,15 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
 
         //Unfiltered word map
         Map<String, Integer> tempWordMap = new Map<String, Integer>();
+        Integer wordsSize = words.size();
         
-        for (Integer i = 0; i < words.size(); i++) {
+        for (Integer i = 0; i < wordsSize; i++) {
+            String currWord = words[i];
             //Skip empty and single character words
-            if (words[i].length() < 2) {
+            if (currWord.length() < 2) {
                 continue;
             }
-            String token = wordPreprocessor != null ? wordPreprocessor.preprocess(words[i]) : words[i];
+            String token = wordPreprocessor != null ? wordPreprocessor.preprocess(currWord) : currWord;
             //Skip words that were filtered out by the preprocessor
             if (token == null) {
                 continue;
@@ -164,7 +166,8 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
         Integer numTokens = prepareWordList(text, wordMap, wordList, currentWordMap, wordPreprocessor, minWordCount, maxWordBagSize);
         //Calculating tf for the text
         ClusterCompressedDoubleArray tf = new ClusterCompressedDoubleArray();
-        for (Integer i=0; i<wordList.size(); i++) {
+        Integer wordListSize = wordList.size();
+        for (Integer i=0; i<wordListSize; i++) {
             String currentToken = wordList.get(i);
             Integer wordCount = currentWordMap.get(currentToken);
             if (wordCount != null && numTokens > 0) {

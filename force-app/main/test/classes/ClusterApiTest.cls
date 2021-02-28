@@ -51,6 +51,11 @@ public with sharing class ClusterApiTest {
 
             neighbors = api.getNearestNeighborsFromDb(recordId, 5);
             System.assertEquals(5, neighbors.size(), 'Incorrect nn size');
+
+            api.deleteNearestNeighborsFromDb(recordId);
+            neighbors = api.getNearestNeighborsFromDb(recordId, 5);
+            System.assertEquals(0, neighbors.size(), 'Incorrect nn size');
+
             Test.stopTest();
         }
     }

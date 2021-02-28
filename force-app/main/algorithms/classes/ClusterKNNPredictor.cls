@@ -92,46 +92,47 @@ public with sharing class ClusterKNNPredictor {
         }
         log.debug('Retrieved ' + nearestClusters.size() + ' nearest clusters');
         //We will retrieve MAX_NEIGHBORS neighbors and then return first numNeighbors
-        List<ClusterDataPointNeighbor> neighbors = this.findNearestNeighbors(dataPoint, nearestClusters, ClusterConstants.MAX_NEIGHBORS);
-        List<ClusterJobNeighbor__c> neighborRecords = new List<ClusterJobNeighbor__c>();
-        for (ClusterDataPointNeighbor neighbor:neighbors) {
-            ClusterJobNeighbor__c neighborRecord = new ClusterJobNeighbor__c();
-            neighbor.populateNeighborRecord(neighborRecord);
-            neighborRecords.add(neighborRecord);
-        }
-        //Check again is another future method finished calculations
-        Integer count = [SELECT count() FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
-        if (count == 0) {
-            System.Savepoint sp1 = Database.setSavepoint();
-            log.debug('Inserting ' + neighborRecords.size() + ' nearest neighbors');
-            insert neighborRecords;
-
-            //Locking records
-            List<ClusterJobNeighbor__c> insertedNeighborRecords = [SELECT Id FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED FOR UPDATE];
-            if (insertedNeighborRecords.size() > neighborRecords.size()) {
-                //We retrieved more than inserted. Most likely another future had already calculated NN
-                //Let's rollback what we inserted
-                Database.rollback(sp1);
+        List<ClusterDataPointNeighbor> neighbors = this.findNearestNeighbors(dataPoint, nearestClusters, ClusterConstants.getKNNResultLimit());
+        if (ClusterConstants.getStoreNearestNeighbors()) {
+            List<ClusterJobNeighbor__c> neighborRecords = new List<ClusterJobNeighbor__c>();
+            for (ClusterDataPointNeighbor neighbor:neighbors) {
+                ClusterJobNeighbor__c neighborRecord = new ClusterJobNeighbor__c();
+                neighbor.populateNeighborRecord(neighborRecord);
+                neighborRecords.add(neighborRecord);
             }
-            else {
-                if (insertDataPoint) {
-                    //We will insert the source datapoint if specified so it can be found as a neighbor itself
-                    List<ClusterJobResult__c> jobResults = [SELECT Id FROM ClusterJobResult__c WHERE ClusterJob__c = :state.clusterJob.Id AND RecordId__c = :dataPoint.externalId WITH SECURITY_ENFORCED LIMIT 1];
-                    if (jobResults.size() == 0) {
-                        ClusterJobResult__c jobResult = new ClusterJobResult__c();
-                        jobResult.RecordId__c = dataPoint.externalId;
-                        jobResult.RecordName__c = dataPoint.recordName;
-                        jobResult.ClusterJob__c = state.clusterJob.Id;
-                        jobResult.ClusterNumber__c = dataPoint.clusterIndex;
-                        jobResult.Cluster__c = state.jobClusters[dataPoint.clusterIndex].Id;
-                        ClusterDataHelper.populateClusterJobResultJsonValues(jobResult, this.runner.getSObjectProcessor().serializeValuesToJson(dataPoint.values));
-                        jobResult.Random__c = ClusterDataHelper.getRandomInt(0, 1000000); //Randomize record order
-                        jobResult.DistanceToCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[dataPoint.clusterIndex].values);
-                        Integer nextClusterIndex = state.getNextClusterIndex(dataPoint.clusterIndex);
-                        jobResult.DistanceToNNCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[nextClusterIndex].values);
-                        insert jobResult;
-                    }
+            //Check again is another future method finished calculations
+            Integer count = [SELECT count() FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+            if (count == 0) {
+                System.Savepoint sp1 = Database.setSavepoint();
+                log.debug('Inserting ' + neighborRecords.size() + ' nearest neighbors');
+                insert neighborRecords;
+
+                //Locking records
+                List<ClusterJobNeighbor__c> insertedNeighborRecords = [SELECT Id FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED FOR UPDATE];
+                if (insertedNeighborRecords.size() > neighborRecords.size()) {
+                    //We retrieved more than inserted. Most likely another future had already calculated NN
+                    //Let's rollback what we inserted
+                    Database.rollback(sp1);
                 }
+            }
+        }
+        if (insertDataPoint) {
+            //We will insert the source datapoint if specified so it can be found as a neighbor itself
+            List<ClusterJobResult__c> jobResults = [SELECT Id FROM ClusterJobResult__c WHERE ClusterJob__c = :state.clusterJob.Id AND RecordId__c = :dataPoint.externalId WITH SECURITY_ENFORCED LIMIT 1];
+            if (jobResults.size() == 0) {
+                log.debug('Inserting new data point with record id: ' + dataPoint.externalId);
+                ClusterJobResult__c jobResult = new ClusterJobResult__c();
+                jobResult.RecordId__c = dataPoint.externalId;
+                jobResult.RecordName__c = dataPoint.recordName;
+                jobResult.ClusterJob__c = state.clusterJob.Id;
+                jobResult.ClusterNumber__c = dataPoint.clusterIndex;
+                jobResult.Cluster__c = state.jobClusters[dataPoint.clusterIndex].Id;
+                ClusterDataHelper.populateClusterJobResultJsonValues(jobResult, this.runner.getSObjectProcessor().serializeValuesToJson(dataPoint.values));
+                jobResult.Random__c = ClusterDataHelper.getRandomInt(0, 1000000); //Randomize record order
+                jobResult.DistanceToCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[dataPoint.clusterIndex].values);
+                Integer nextClusterIndex = state.getNextClusterIndex(dataPoint.clusterIndex);
+                jobResult.DistanceToNNCluster__c = this.runner.calculateDistance(dataPoint.values, state.centroids[nextClusterIndex].values);
+                insert jobResult;
             }
         }
         List<ClusterDataPointNeighbor> firstNeighbors = this.getFirstNeighbors(neighbors, numNeighbors);
@@ -188,8 +189,11 @@ public with sharing class ClusterKNNPredictor {
                 neighbor.neighborDataPoint = nearestDP;
                 neighbor.neighborExternalRecordId = nearestDP.externalId;
                 neighbor.distance = this.runner.calculateDPDistance(dataPoint, nearestDP);
-                neighbor.jobId = jobState.clusterJob.Id;            
-                neighbors.add(neighbor);
+                //Checking if this neightbor is in the neighborhood
+                if (neighbor.distance < ClusterConstants.KNN_NEIGHBORHOOD_DISTANCE) {                    
+                    neighbor.jobId = jobState.clusterJob.Id;            
+                    neighbors.add(neighbor);
+                }
                 processedDpIds.add(nearestDP.recordId);
             }
             //Checking NN search limits
@@ -247,6 +251,15 @@ public with sharing class ClusterKNNPredictor {
         return nearestNeighbors;
     }
 
+    public void deleteNearestNeighbors(Id recordId, Id jobId) {
+        ClusterAccessCheck.checkCRUDPermission(Schema.SObjectType.ClusterJobNeighbor__c);        
+        List<ClusterJobNeighbor__c> neighbors = [SELECT Id FROM ClusterJobNeighbor__c WHERE RecordId__c = :String.valueOf(recordId) AND ClusterJob__c = :jobId WITH SECURITY_ENFORCED];
+        if (neighbors.size() > 0) {
+            delete neighbors;
+            log.debug('Deleted ' + neighbors.size() + ' nearest neighbors for record ' + recordId);
+        }
+    }
+
     public ClusterDataPoint[] getRandomDataPoints(Integer count, Integer clusterIndex, Double distanceToCenter, Double distanceToNextCluster, ClusterJobState jobState) {
         log.debug('Retrieving nearest random data points in cluster ' + clusterIndex + ', distanceToCenter: ' + distanceToCenter + ', distanceToNextCluster: ' + distanceToNextCluster);
         ClusterAccessCheck.checkReadPermission(Schema.SObjectType.ClusterJobResult__c);
@@ -255,11 +268,11 @@ public with sharing class ClusterKNNPredictor {
             Double[] distanceTolerances = new Double[10];
             distanceTolerances[0] = 0.001;  //0.1%
             distanceTolerances[1] = 0.002;  //0.2%
-            distanceTolerances[2] = 0.004;  //0.2%
-            distanceTolerances[3] = 0.008;  //0.2%
+            distanceTolerances[2] = 0.004;  //0.4%
+            distanceTolerances[3] = 0.008;  //0.8%
             distanceTolerances[4] = 0.01; //1%
-            distanceTolerances[5] = 0.02; //1%
-            distanceTolerances[6] = 0.04; //1%
+            distanceTolerances[5] = 0.02; //2%
+            distanceTolerances[6] = 0.04; //4%
             distanceTolerances[7] = 0.05; //5%
             distanceTolerances[8] = 0.1; //10%
             distanceTolerances[9] = 0.25; //25%

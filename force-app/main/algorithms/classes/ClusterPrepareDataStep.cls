@@ -40,6 +40,9 @@ public with sharing class ClusterPrepareDataStep extends ClusterBatchBase implem
             //Somebody could provide a SOQL query from an object which is different from the model object
             //This is not allowed
             ClusterAccessCheck.checkSObjectReadPermission(scope.get(0), model.objectName);
+
+            //Preprocessing records if custom preprocessor is specified
+            this.runner.preprocessSObjects(scope, true);
         }
         for (Integer sindex = 0; sindex < scopeSize; sindex++){
             SObject record = scope[sindex];
