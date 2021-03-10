@@ -26,7 +26,21 @@ public virtual with sharing class ClusterObjectFactory {
     public virtual ClusterRecordPreprocessor createRecordPreprocessor(String customPreprocessorApexClassName) {
         ClusterRecordPreprocessor recordPreprocessor;
         if (String.isNotBlank(customPreprocessorApexClassName)) {
-            Type customApexPreprocessorType = Type.forName(customPreprocessorApexClassName);
+            String[] classNameSplit = customPreprocessorApexClassName.split('.');
+            String namespace;
+            String className;
+            if (classNameSplit.size() >= 2) {
+                namespace = classNameSplit[0];
+                className = classNameSplit[1];
+                if (classNameSplit.size() == 3) {
+                    className += '.' + classNameSplit[2];
+                }
+            }
+            else {
+                namespace = '';
+                className = customPreprocessorApexClassName;
+            }
+            Type customApexPreprocessorType = Type.forName(namespace, customPreprocessorApexClassName);
             recordPreprocessor = (ClusterRecordPreprocessor)customApexPreprocessorType.newInstance();
         }
         else {

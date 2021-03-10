@@ -19,7 +19,7 @@ public inherited sharing class ClusterRecordPreprocessorTest {
     public class ClusterObjectFactoryMock extends ClusterObjectFactory {
         public override ClusterRecordPreprocessor createRecordPreprocessor() {
             String customPreprocessorApexClassName = ClusterConstants.getApexRecordPreprocessorClassName();
-            return this.createRecordPreprocessor('ClusterRecordPreprocessorTest.ClusterRecordPreprocessorImpl');
+            return this.createRecordPreprocessor('clustan.ClusterRecordPreprocessorTest.ClusterRecordPreprocessorImpl');
         }
     }
 
