@@ -7,15 +7,23 @@ public with sharing class ClusterKNNPredictor {
     public static Logger log = LogFactory.getLogger();
 
     ClusterAlgorithmRunner runner;
-    Integer maxNNSearchCount = ClusterConstants.getKNNSearchLimit();
-    Integer knnNumber = ClusterConstants.getKNNNumber();
+    Integer maxNNSearchCount;
+    Integer knnNumber;
+    Integer maxNNSearchChunkCount;
     
     public ClusterKNNPredictor() {
-
+        this.init();
     }
 
     public ClusterKNNPredictor(ClusterAlgorithmRunner runner) {
         this.setRunner(runner);
+        this.init();
+    }
+
+    private void init() {
+        this.maxNNSearchCount = ClusterConstants.getKNNSearchLimit();
+        this.knnNumber = ClusterConstants.getKNNNumber();
+        this.maxNNSearchChunkCount = ClusterConstants.getKNNSearchChunkLimit();    
     }
 
     public void setRunner(ClusterAlgorithmRunner runner) {
@@ -171,12 +179,12 @@ public with sharing class ClusterKNNPredictor {
             }
             Integer nextClusterIndex = jobState.getNextClusterIndex(nearestClusters[i]);
             Double nextClusterDistance = this.runner.calculateDPDistance(dataPoint, jobState.centroids[nextClusterIndex]);
-            nearestDataPoints.addAll(this.getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, nearestClusters[i], distance, nextClusterDistance, jobState));
+            nearestDataPoints.addAll(this.getRandomDataPoints(this.maxNNSearchChunkCount, nearestClusters[i], distance, nextClusterDistance, jobState));
         }
         //Also getting random datapoints from the same cluster which have less distance to center than current dataPoint
-        nearestDataPoints.addAll(getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, dataPoint.clusterIndex, currentCentroidDistance));
+        nearestDataPoints.addAll(getRandomDataPoints(this.maxNNSearchChunkCount, dataPoint.clusterIndex, currentCentroidDistance));
         //Also getting other random datapoints from the same cluster
-        nearestDataPoints.addAll(getRandomDataPoints(ClusterConstants.MIN_KNN_DP_COUNT, dataPoint.clusterIndex, null, null, jobState));
+        nearestDataPoints.addAll(getRandomDataPoints(this.maxNNSearchChunkCount, dataPoint.clusterIndex, null, null, jobState));
         log.debug('Retrieved ' + nearestDataPoints.size() + ' nearest data points from ' + nearestClusters.size() + ' nearest clusters');
 
         List<ClusterDataPointNeighbor> neighbors = new List<ClusterDataPointNeighbor>();
@@ -287,7 +295,7 @@ public with sharing class ClusterKNNPredictor {
                     FROM ClusterJobResult__c WHERE ClusterJob__c = :jobState.clusterJob.Id AND ClusterNumber__c = :clusterIndex 
                     AND (DistanceToCluster__c >= :distanceMin AND DistanceToCluster__c<= :distanceMax AND DistanceToNNCluster__c<=:nextDistanceMax AND DistanceToNNCluster__c>=:nextDistanceMin) 
                     ORDER BY DistanceToCluster__c DESC LIMIT :count];
-                if (jobResults.size() > ClusterConstants.MIN_KNN_NEIGHBOR_SIZE) {
+                if (jobResults.size() >= this.knnNumber) {
                     log.debug('Retrieved ' + jobResults.size() + ' nearest data points with tolerance ' + distanceTolerances[i]);
                     log.debug('distanceMin: ' + distanceMin + ', distanceMax: ' + distanceMax + ', nextDistanceMax: ' + nextDistanceMax);
                     break;
