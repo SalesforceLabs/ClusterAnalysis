@@ -470,12 +470,16 @@ public with sharing class ClusterDataHelper {
                 v2HasNext = v2ArrayIndex < v2Size;
             }
         }
-        Double magnitude = magnitude1 * magnitude2;
-        if ((magnitude - DOUBLE_ZERO) < DOUBLEEPSILON) {
-            return DOUBLE_ONE;
+        v1zero = (magnitude1 - DOUBLE_ZERO) < DOUBLEEPSILON;
+        v2zero = (magnitude2 - DOUBLE_ZERO) < DOUBLEEPSILON;
+        if (!v1zero && !v2zero) {
+            return dotProduct / Math.sqrt(magnitude1 * magnitude2);
+        }
+        else if (v1zero && v2zero) {
+            return DOUBLE_ONE; //If both vectors are zero we consider them equal
         }
         else {
-            return dotProduct / Math.sqrt(magnitude);
+            return DOUBLE_ZERO; //If one of the vectors is non zero the similarity is 0 - completely different
         }
     }
 
@@ -600,12 +604,16 @@ public with sharing class ClusterDataHelper {
                 v2HasNext = v2ArrayIndex < v2Size;
             }
         }
-        Double magnitude = magnitude1 * magnitude2;
-        if ((magnitude - DOUBLE_ZERO) < DOUBLEEPSILON) {
-            result.value = DOUBLE_ONE;
+        Boolean v1zero = (magnitude1 - DOUBLE_ZERO) < DOUBLEEPSILON;
+        Boolean v2zero = (magnitude2 - DOUBLE_ZERO) < DOUBLEEPSILON;
+        if (!v1zero && !v2zero) {
+            result.value = dotProduct / Math.sqrt(magnitude1 * magnitude2);
+        }
+        else if (v1zero && v2zero) {
+            result.value = DOUBLE_ONE; //If both vectors are zero we consider them equal
         }
         else {
-            result.value = dotProduct / Math.sqrt(magnitude);
+            result.value = DOUBLE_ZERO; //If one of the vectors is non zero the similarity is 0 - completely different
         }
         result.idf = idfDecompressed;
         return result;

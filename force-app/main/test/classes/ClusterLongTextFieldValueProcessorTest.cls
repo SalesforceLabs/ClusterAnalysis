@@ -62,6 +62,19 @@ public with sharing class ClusterLongTextFieldValueProcessorTest {
     }
 
     @isTest
+    public static void testTfIdfBrokenHtml() {
+        User clusterUser = ClusterTestData.createClusterUser();
+        System.runAs(clusterUser) {
+            ClusterWordPreprocessor wordPreprocessor = new ClusterWordPreprocessor('english');
+            Map<String, Integer> wordMap = new Map<String,Integer>();
+            List<String> wordList = new List<String>();
+            String text = '<apex:outputLink drops a part of URL. <apex:outputLink drops a part of URL. <apex:outputLink looses part of url when we open link in new tab.. Visualforce. When link is clicked by pressing a control button (to open it in a new tab) on keyboard, it loses the part of the url.. It should show the url completely.';
+            Double[] tf = ClusterLongTextFieldValueProcessor.calculateTF(text, wordMap, wordList, wordPreprocessor, 2, ClusterConstants.MAX_TFIDF_WORDBAG_SIZE);
+            System.assertEquals(true, wordMap.containsKey('part'), 'TF word parsing failed');
+        }
+    }
+
+    @isTest
     public static void testTfIdfCompressed() {
         User clusterUser = ClusterTestData.createClusterUser();
         System.runAs(clusterUser) {

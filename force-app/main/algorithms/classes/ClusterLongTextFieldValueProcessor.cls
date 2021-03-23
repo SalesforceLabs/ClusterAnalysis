@@ -89,11 +89,15 @@ public with sharing class ClusterLongTextFieldValueProcessor implements ClusterF
     }
 
     private static Integer prepareWordList(String text, Map<String, Integer> wordMap, List<String> wordList, Map<String, Integer> currentWordMap, ClusterWordPreprocessor wordPreprocessor, Integer minWordCount, Integer maxWordBagSize) {
-        if (text == '') {
-            return null;
+        if (text.isWhitespace()) {
+            return 0;
         }
         //Removing html tags and breaking into words
-        String[] words = splitText(text.stripHtmlTags());
+        String strippedText = text.stripHtmlTags();
+        if (strippedText.isWhitespace()) {
+            strippedText = text;
+        }
+        String[] words = splitText(strippedText);
 
         //Unfiltered word map
         Map<String, Integer> tempWordMap = new Map<String, Integer>();

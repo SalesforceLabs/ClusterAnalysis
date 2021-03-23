@@ -27,6 +27,11 @@ public with sharing class ClusterApiTest {
             System.assertEquals(dataPoint.getRecordName(), dataPoint2.getRecordName(), 'Incorrect data point name');
             Double distance = api.calculateDistance(dataPoint.getValues(), dataPoint.getValues());
             System.assertEquals(true, ClusterDataHelper.doublesEqual(distance, ClusterDataHelper.DOUBLE_ZERO), 'Incorrect distance');
+
+            dataPoint.externalId = '';
+            ClusterPredictionResult predictionResult2 = api.predict(dataPoint, false);
+            System.assertEquals(predictionResult.getClusterIndex(), predictionResult2.getClusterIndex(), 'Incorrect prediction for empty external id');
+
             Test.stopTest();
         }
     }
