@@ -45,7 +45,15 @@ public class ClusterModelWrapper {
         Map<String,Schema.SObjectField> fieldsMap = descResult[0].fields.getMap();
         for (ClusterModelField__c cmf:modelFields) {
             ClusterModelFieldWrapper field = new ClusterModelFieldWrapper(cmf);
-            SObjectField sof = fieldsMap.get(field.name);
+            SObjectField sof = null;
+            if (field.objectName != null && field.objectName.toLowerCase() == objectName.toLowerCase()) {
+                sof = fieldsMap.get(field.name);
+            }
+            else if (field.objectName != null && field.objectName.toLowerCase() != objectName.toLowerCase()) {
+                Schema.DescribeSObjectResult[] relatedDescResult = Schema.describeSObjects(new String[]{field.objectName});
+                Map<String,Schema.SObjectField> relatedFieldsMap = relatedDescResult[0].fields.getMap();
+                sof = relatedFieldsMap.get(field.name);
+            }
             DescribeFieldResult fd = sof == null ? null : sof.getDescribe();
             this.populateField(field, fd);
             this.fields.add(field);
@@ -57,7 +65,15 @@ public class ClusterModelWrapper {
         System.assertNotEquals(descResult.size(), 0, 'Cannot find object ' + objectName + ' in the describe result');
         Map<String,Schema.SObjectField> fieldsMap = descResult[0].fields.getMap();
         for (ClusterModelFieldWrapper field:this.fields) {
-            SObjectField sof = fieldsMap.get(field.name);
+            SObjectField sof = null;
+            if (field.objectName != null && field.objectName.toLowerCase() == objectName.toLowerCase()) {
+                sof = fieldsMap.get(field.name);
+            }
+            else if (field.objectName != null && field.objectName.toLowerCase() != objectName.toLowerCase()) {
+                Schema.DescribeSObjectResult[] relatedDescResult = Schema.describeSObjects(new String[]{field.objectName});
+                Map<String,Schema.SObjectField> relatedFieldsMap = relatedDescResult[0].fields.getMap();
+                sof = relatedFieldsMap.get(field.name);
+            }
             DescribeFieldResult fd = sof == null ? null : sof.getDescribe();
             this.populateField(field, fd);
         }

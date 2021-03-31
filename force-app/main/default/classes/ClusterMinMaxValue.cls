@@ -40,4 +40,5 @@ public class ClusterMinMaxValue {
     public object minValue;
     public object maxValue;
     public Double delta;
+    public transient Double[] vector;
 }

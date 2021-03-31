@@ -62,6 +62,15 @@ global with sharing class ClusterApi {
         return this.runner.getPredictor().getNearestNeighborsFromDb(recordId, runner.getJobState().clusterJob.id, numNeighbors);
     }
 
+    /**
+     * Deletes previously calculated nearest neighbors from the database
+     * @param recordId
+     *        Id of the source record
+     */
+    global void deleteNearestNeighborsFromDb(Id recordId) {
+        this.checkRunnerInitialized();
+        this.runner.getPredictor().deleteNearestNeighbors(recordId, runner.getJobState().clusterJob.id);
+    }
     
     /**
      * Finds (calculates) nearest neighbors and stores calculations in the db
@@ -106,8 +115,7 @@ global with sharing class ClusterApi {
      */
     global ClusterDataPoint convertToDataPoint(SObject record) {
         this.checkRunnerInitialized();
-        ClusterSObjectProcessor objectProcessor = this.runner.getSObjectProcessor();
-        return objectProcessor.processSObject(record);
+        return this.runner.getDataPoint(record);
     }
 
 }

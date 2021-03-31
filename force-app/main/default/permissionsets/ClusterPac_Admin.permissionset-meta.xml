@@ -269,6 +269,18 @@
         <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ClusterRecordPreprocessor</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ClusterRecordPreprocessorParameters</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ClusterRecordPreprocessorTest</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ClusterResultDetailsUiModel</apexClass>
         <enabled>true</enabled>
     </classAccesses>

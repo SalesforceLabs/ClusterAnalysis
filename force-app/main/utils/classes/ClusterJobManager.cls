@@ -101,6 +101,7 @@ public with sharing class ClusterJobManager {
         }
         else {
             if (Schema.SObjectType.ClusterJob__c.isUpdateable()) {
+                state.clusterJob.JobName__c = currentJob.JobName__c; //User may have changed the job name
                 update state.clusterJob;
             }
         }

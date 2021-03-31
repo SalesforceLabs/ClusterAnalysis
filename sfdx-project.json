@@ -1,15 +1,15 @@
 {
     "namespace": "clustan",
     "sfdcLoginUrl": "https://login.salesforce.com",
-    "sourceApiVersion": "50.0",
+    "sourceApiVersion": "51.0",
     "packageDirectories": [
         {
             "path": "force-app",
             "package": "Cluster Analysis",
-            "versionName": "v2.1",
-            "versionNumber": "2.1.0.NEXT",
+            "versionName": "v2.3.1",
+            "versionNumber": "2.3.1.NEXT",
             "postInstallScript": "ClusterPostInstallHandler",
-            "ancestorId": "04t3h000004m75dAAA",
+            "ancestorId": "04t3h000004m7uPAAQ",
             "default": true
         }
     ],
@@ -27,6 +27,10 @@
         "Cluster Analysis@2.0.0-1": "04t3h000004m75YAAQ",
         "Cluster Analysis@2.0.0-2": "04t3h000004m75dAAA",
         "Cluster Analysis@2.1.0-1": "04t3h000004m7BmAAI",
-        "Cluster Analysis@2.1.0-2": "04t3h000004m7C1AAI"
+        "Cluster Analysis@2.1.0-2": "04t3h000004m7C1AAI",
+        "Cluster Analysis@2.2.0-1": "04t3h000004m7gKAAQ",
+        "Cluster Analysis@2.2.0-2": "04t3h000004m7gPAAQ",
+        "Cluster Analysis@2.3.0-1": "04t3h000004m7uPAAQ",
+        "Cluster Analysis@2.3.1-1": "04t3h000004m8DkAAI"
     }
 }

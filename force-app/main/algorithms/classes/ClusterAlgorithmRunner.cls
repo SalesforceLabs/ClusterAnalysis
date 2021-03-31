@@ -17,9 +17,19 @@ public abstract with sharing class ClusterAlgorithmRunner {
     private static ClusterJobState jobState;  //TODO: get rid of this or store somewhere else
     public List<ClusterAlgorithmStep> steps;
     public ClusterDistanceCacheManager distanceCacheManager;
+    private ClusterRecordPreprocessor recordPreprocessor;
+
     public ClusterAlgorithmRunner() {
         this.steps = new List<ClusterAlgorithmStep>();
         this.objectFactory = new ClusterObjectFactory();
+    }
+
+    protected virtual void initRecordPreprocessor() {
+        this.recordPreprocessor = this.objectFactory.createRecordPreprocessor();
+    }
+
+    public void setRecordPreprocessor(ClusterRecordPreprocessor recordPreprocessor) {
+        this.recordPreprocessor = recordPreprocessor;
     }
 
     public abstract void initializeDistanceCache();
@@ -74,6 +84,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
 
     public virtual void init(ClusterModelWrapper model) {
+        this.initRecordPreprocessor();
         Boolean hasJobOutput = false;
         for (Integer i=0; i<model.fields.size(); i++) {
             if (model.fields[i].distanceType == ClusterConstants.FIELDTYPE_OUTPUT) {
@@ -88,7 +99,7 @@ public abstract with sharing class ClusterAlgorithmRunner {
     }
     public abstract ClusterJobState getJobState();    
     public abstract ClusterJobState createJobState();    
-    private ClusterObjectFactory objectFactory{ get; set; }
+    public ClusterObjectFactory objectFactory{ get; set; }
 
     public virtual void start() {
         try {
@@ -225,8 +236,29 @@ public abstract with sharing class ClusterAlgorithmRunner {
         if (predictRecords.size() != 1) {
             throw new ClusterException('Record with id ' + externalRecordId + ' was not found');
         }
+        return this.getDataPoint(predictRecords.get(0));
+    }
+
+    public ClusterDataPoint getDataPoint(SObject record) {
+        if (this.recordPreprocessor != null) {
+            List<SObject> records = new List<SObject>();
+            records.add(record);
+            this.preprocessSObjects(records, false);
+        }
         ClusterSObjectProcessor objectProcessor = this.getSObjectProcessor();
-        return objectProcessor.processSObject(predictRecords.get(0));
+        return objectProcessor.processSObject(record);
+    }
+
+    public void preprocessSObjects(List<SObject> records, boolean isLearning) {
+        if (this.recordPreprocessor != null) {
+            ClusterRecordPreprocessorParameters parameters = new ClusterRecordPreprocessorParameters();
+            ClusterJobState state = this.getJobState();
+            parameters.setModelId(state.model.modelId);
+            parameters.setModelName(state.model.name);
+            parameters.setJobId(state.clusterJob.Id);
+            parameters.setIsLearning(isLearning);
+            this.recordPreprocessor.processRecords(records, parameters);
+        }
     }
 
     public abstract Double calculateDistance(Object[] currentObject, Object[] centroid);

@@ -27,6 +27,11 @@ public with sharing class ClusterApiTest {
             System.assertEquals(dataPoint.getRecordName(), dataPoint2.getRecordName(), 'Incorrect data point name');
             Double distance = api.calculateDistance(dataPoint.getValues(), dataPoint.getValues());
             System.assertEquals(true, ClusterDataHelper.doublesEqual(distance, ClusterDataHelper.DOUBLE_ZERO), 'Incorrect distance');
+
+            dataPoint.externalId = '';
+            ClusterPredictionResult predictionResult2 = api.predict(dataPoint, false);
+            System.assertEquals(predictionResult.getClusterIndex(), predictionResult2.getClusterIndex(), 'Incorrect prediction for empty external id');
+
             Test.stopTest();
         }
     }
@@ -51,6 +56,11 @@ public with sharing class ClusterApiTest {
 
             neighbors = api.getNearestNeighborsFromDb(recordId, 5);
             System.assertEquals(5, neighbors.size(), 'Incorrect nn size');
+
+            api.deleteNearestNeighborsFromDb(recordId);
+            neighbors = api.getNearestNeighborsFromDb(recordId, 5);
+            System.assertEquals(0, neighbors.size(), 'Incorrect nn size');
+
             Test.stopTest();
         }
     }
