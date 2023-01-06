@@ -4,7 +4,7 @@
   "description": "Cluster Analysis for Salesforce",
   "dependencies": {},
   "devDependencies": {
-    "@salesforce/sfdx-lwc-jest": "^0.10.2"
+    "@salesforce/sfdx-lwc-jest": "^0.10.4"
   },
   "scripts": {
     "test": "npm run test:unit",
